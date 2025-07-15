@@ -1,4 +1,5 @@
 import { ConnectButton } from "@rainbow-me/rainbowkit";
+import Link from "next/link";
 
 export default function Header() {
   return (
@@ -16,18 +17,18 @@ export default function Header() {
           
           {/* Navigation - Centered */}
           <nav className="hidden md:flex items-center space-x-12">
-            <div className="text-gray-300 hover:text-gray-100 cursor-pointer transition-colors duration-200 font-medium">
+            <Link href="#" className="text-gray-300 hover:text-gray-100 cursor-pointer transition-colors duration-200 font-medium">
               Dashboard
-            </div>
-            <div className="text-gray-300 hover:text-gray-100 cursor-pointer transition-colors duration-200 font-medium">
+            </Link>
+            <Link href="#" className="text-gray-300 hover:text-gray-100 cursor-pointer transition-colors duration-200 font-medium">
               Markets
-            </div>
-            <div className="text-gray-300 hover:text-gray-100 cursor-pointer transition-colors duration-200 font-medium">
+            </Link>
+            <Link href="#" className="text-gray-300 hover:text-gray-100 cursor-pointer transition-colors duration-200 font-medium">
               Portfolio
-            </div>
-            <div className="text-gray-300 hover:text-gray-100 cursor-pointer transition-colors duration-200 font-medium">
+            </Link>
+            <Link href="#" className="text-gray-300 hover:text-gray-100 cursor-pointer transition-colors duration-200 font-medium">
               AI Agent
-            </div>
+            </Link>
           </nav>
           
           <div>

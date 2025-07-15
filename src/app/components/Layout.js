@@ -1,17 +1,21 @@
 import Header from './Header';
+import Footer from './Footer';
 
 export default function Layout({ children }) {
   return (
-    <div className="min-h-screen bg-gray-900">
+    <div className="min-h-screen bg-gray-900 flex flex-col">
       {/* Header with navigation */}
       <Header />
       
       {/* Main content area - full width */}
-      <main className="w-full">
+      <main className="w-full flex-1">
         <div className="p-6 lg:p-8">
           {children}
         </div>
       </main>
+
+      {/* Footer */}
+      <Footer />
     </div>
   );
 }
