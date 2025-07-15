@@ -8,10 +8,14 @@ import {
     getDefaultConfig,
 } from "@rainbow-me/rainbowkit";
 import {
-    rainbowWallet,
-    walletConnectWallet,
     metaMaskWallet,
     phantomWallet,
+    trustWallet,
+    rabbyWallet,
+    rainbowWallet,
+    walletConnectWallet,
+    injectedWallet,
+    safeWallet,
 } from "@rainbow-me/rainbowkit/wallets"
 import { WagmiProvider } from "wagmi";
 import {
@@ -24,6 +28,7 @@ import {
     QueryClientProvider,
     QueryClient,
 } from "@tanstack/react-query";
+import { safe } from "wagmi/connectors";
 
 const queryClient = new QueryClient();
 
@@ -31,8 +36,12 @@ const connectors = connectorsForWallets(
     [
         {
             groupName: "Recommended",
-            wallets: [metaMaskWallet, phantomWallet, rainbowWallet, walletConnectWallet],
+            wallets: [metaMaskWallet, trustWallet, phantomWallet, rabbyWallet, rainbowWallet],
         },
+        {
+            groupName: "Other",
+            wallets: [walletConnectWallet, injectedWallet, safeWallet]
+        }
     ],
     {
         appName: "nextjs-hardhat-template",
