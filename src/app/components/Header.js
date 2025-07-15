@@ -14,7 +14,16 @@ export default function Header() {
             <h1 className="text-xl font-bold text-gray-900">dapp template</h1>
           </div>
           <div className="ml-auto">
-            <ConnectButton />
+            <ConnectButton
+              accountStatus={{
+                smallScreen: "avatar",
+                largeScreen: "full",
+              }}
+              showBalance={{
+                smallScreen: "false",
+                largeScreen: "true",
+              }}
+            />
           </div>
         </div>
       </div>

@@ -3,6 +3,7 @@
 import React from "react";
 import {
     RainbowKitProvider,
+    darkTheme,
     connectorsForWallets,
     getDefaultConfig,
 } from "@rainbow-me/rainbowkit";
@@ -50,7 +51,16 @@ const config = getDefaultConfig({
 const Providers = ({ children }) => {
     return <WagmiProvider config={config}>
         <QueryClientProvider client={queryClient}>
-            <RainbowKitProvider>
+            <RainbowKitProvider
+                coolMode
+                theme={darkTheme({
+                    accentColor: '#7b3fe4',
+                    accentColorForeground: 'white',
+                    borderRadius: 'large',
+                    fontStack: 'system',
+                    overlayBlur: 'small',
+                })}
+            >
                 {children}
             </RainbowKitProvider>
         </QueryClientProvider>
