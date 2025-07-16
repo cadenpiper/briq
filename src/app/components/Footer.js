@@ -11,7 +11,7 @@ export default function Footer() {
           </div>
           
           {/* Center - Links */}
-          <div className="absolute left-1/2 transform -translate-x-1/2 flex items-center space-x-12">
+          <div className="flex items-center space-x-12">
             <Link 
               href="#" 
               className="text-gray-400 hover:text-gray-100 transition-colors duration-200 text-sm font-medium"

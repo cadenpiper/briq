@@ -17,16 +17,16 @@ export default function Header() {
           
           {/* Navigation - Centered */}
           <nav className="hidden md:flex items-center space-x-12">
-            <Link href="#" className="text-gray-300 hover:text-gray-100 cursor-pointer transition-colors duration-200 font-medium">
+            <Link href="/dashboard" className="text-gray-300 hover:text-gray-100 transition-colors duration-200 font-medium">
               Dashboard
             </Link>
-            <Link href="#" className="text-gray-300 hover:text-gray-100 cursor-pointer transition-colors duration-200 font-medium">
+            <Link href="/markets" className="text-gray-300 hover:text-gray-100 transition-colors duration-200 font-medium">
               Markets
             </Link>
-            <Link href="#" className="text-gray-300 hover:text-gray-100 cursor-pointer transition-colors duration-200 font-medium">
+            <Link href="/portfolio" className="text-gray-300 hover:text-gray-100 transition-colors duration-200 font-medium">
               Portfolio
             </Link>
-            <Link href="#" className="text-gray-300 hover:text-gray-100 cursor-pointer transition-colors duration-200 font-medium">
+            <Link href="/ai-agent" className="text-gray-300 hover:text-gray-100 transition-colors duration-200 font-medium">
               AI Agent
             </Link>
           </nav>
