@@ -1,14 +1,5 @@
-import Layout from '../components/Layout';
+import PageTemplate from '../components/PageTemplate';
 
 export default function Rupert() {
-  return (
-    <Layout>
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <div className="text-center">
-          <h2 className="text-4xl font-bold mb-4 text-gray-100">Rupert</h2>
-          <p className="text-lg text-gray-400">Build here</p>
-        </div>
-      </div>
-    </Layout>
-  );
+  return <PageTemplate title="Rupert" subtitle="Build here" />;
 }
