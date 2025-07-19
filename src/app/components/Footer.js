@@ -1,28 +1,12 @@
 import Link from "next/link";
-import Image from "next/image";
 
 export default function Footer() {
   return (
     <footer className="w-full bg-cream-200 mt-auto dark:bg-zen-800 transition-colors duration-300">
       <div className="px-0">
-        <div className="flex items-center justify-between h-20 relative">
-          {/* Left side - App name with logo */}
-          <div className="flex items-center pl-1 sm:pl-2">
-            <div className="flex items-center justify-center mr-0">
-              <Image 
-                src="/images/Briq.png" 
-                alt="Briq Logo" 
-                width={32} 
-                height={32}
-                style={{ width: 'auto', height: 'auto' }}
-                className="rounded"
-              />
-            </div>
-            <span className="-ml-1 text-sm text-zen-800 dark:text-cream-300 font-[100] font-jetbrains-mono transition-colors duration-300">Briq</span>
-          </div>
-          
+        <div className="flex items-center justify-center h-20 relative">
           {/* Center - Links */}
-          <div className="flex items-center absolute left-1/2 transform -translate-x-1/2 space-x-12">
+          <div className="flex items-center space-x-12">
             <Link 
               href="https://github.com/cadenpiper/briq" 
               target="_blank" 
@@ -46,9 +30,6 @@ export default function Footer() {
               Feedback
             </Link>
           </div>
-          
-          {/* Right side - Empty space for balance */}
-          <div className="pr-2 sm:pr-4"></div>
         </div>
       </div>
     </footer>
