@@ -1,47 +1,22 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useTheme } from '../context/ThemeContext';
 
 export default function ThemeToggle() {
-  const [darkMode, setDarkMode] = useState(false);
+  const { theme, setTheme } = useTheme();
+  const isDarkMode = theme === 'dark';
 
-  // Initialize theme based on user preference or system preference
-  useEffect(() => {
-    // Only run on client side
-    if (typeof window !== 'undefined') {
-      // Check if user has a saved preference
-      const savedTheme = localStorage.getItem('theme');
-      if (savedTheme) {
-        setDarkMode(savedTheme === 'dark');
-      } else {
-        // Check system preference
-        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-        setDarkMode(prefersDark);
-      }
-    }
-  }, []);
-
-  // Update theme when darkMode state changes
-  useEffect(() => {
-    // Only run on client side
-    if (typeof window !== 'undefined') {
-      if (darkMode) {
-        document.documentElement.classList.add('dark');
-        localStorage.setItem('theme', 'dark');
-      } else {
-        document.documentElement.classList.remove('dark');
-        localStorage.setItem('theme', 'light');
-      }
-    }
-  }, [darkMode]);
+  const toggleTheme = () => {
+    setTheme(isDarkMode ? 'light' : 'dark');
+  };
 
   return (
     <button
-      onClick={() => setDarkMode(!darkMode)}
+      onClick={toggleTheme}
       className="w-10 h-10 rounded-full flex items-center justify-center transition-colors duration-200 hover:bg-cream-400 dark:hover:bg-zen-700"
-      aria-label={darkMode ? "Switch to light mode" : "Switch to dark mode"}
+      aria-label={isDarkMode ? "Switch to light mode" : "Switch to dark mode"}
     >
-      {darkMode ? (
+      {isDarkMode ? (
         // Elegant crescent moon icon for dark mode
         <svg 
           xmlns="http://www.w3.org/2000/svg" 

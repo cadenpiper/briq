@@ -4,10 +4,10 @@ import Image from "next/image";
 export default function Footer() {
   return (
     <footer className="w-full bg-cream-200 mt-auto dark:bg-zen-800 transition-colors duration-300">
-      <div className="px-4 sm:px-8 lg:px-[100px]">
-        <div className="flex items-center justify-between h-20">
+      <div className="px-0">
+        <div className="flex items-center justify-between h-20 relative">
           {/* Left side - App name with logo */}
-          <div className="flex items-center">
+          <div className="flex items-center pl-1 sm:pl-2">
             <div className="flex items-center justify-center mr-0">
               <Image 
                 src="/images/Briq.png" 
@@ -22,7 +22,7 @@ export default function Footer() {
           </div>
           
           {/* Center - Links */}
-          <div className="flex items-center space-x-12">
+          <div className="flex items-center absolute left-1/2 transform -translate-x-1/2 space-x-12">
             <Link 
               href="https://github.com/cadenpiper/briq" 
               target="_blank" 
@@ -48,7 +48,7 @@ export default function Footer() {
           </div>
           
           {/* Right side - Empty space for balance */}
-          <div></div>
+          <div className="pr-2 sm:pr-4"></div>
         </div>
       </div>
     </footer>

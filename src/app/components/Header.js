@@ -6,9 +6,9 @@ import ThemeToggle from "./ThemeToggle";
 export default function Header() {
   return (
     <header className="w-full bg-cream-200 dark:bg-zen-800 transition-colors duration-300">
-      <div className="px-4 sm:px-8 lg:px-[100px]">
-        <div className="flex items-center justify-between h-20">
-          <div className="flex items-center">
+      <div className="px-0">
+        <div className="flex items-center justify-between h-20 relative">
+          <div className="flex items-center pl-1 sm:pl-2">
             {/* Briq Logo */}
             <div className="w-16 h-16 flex items-center justify-center mr-0">
               <Image 
@@ -31,22 +31,16 @@ export default function Header() {
           </div>
           
           {/* Navigation - Centered */}
-          <nav className="hidden md:flex items-center space-x-12">
-            <Link href="/dashboard" className="hover-highlight-effect text-zen-800 dark:text-cream-200 hover:text-briq-orange dark:hover:text-briq-orange hover:bg-briq-orange/20 dark:hover:bg-briq-orange/30 px-3 py-2 rounded-md transition-all duration-200 font-light font-lato relative hover:shadow-highlight">
-              Dashboard
+          <nav className="hidden md:flex items-center absolute left-1/2 transform -translate-x-1/2 space-x-12">
+            <Link href="/home" className="hover-highlight-effect text-zen-800 dark:text-cream-200 hover:text-briq-orange dark:hover:text-briq-orange hover:bg-briq-orange/20 dark:hover:bg-briq-orange/30 px-3 py-2 rounded-md transition-all duration-200 font-light font-lato relative hover:shadow-highlight">
+              Home
             </Link>
-            <Link href="/markets" className="hover-highlight-effect text-zen-800 dark:text-cream-200 hover:text-briq-orange dark:hover:text-briq-orange hover:bg-briq-orange/20 dark:hover:bg-briq-orange/30 px-3 py-2 rounded-md transition-all duration-200 font-light font-lato relative hover:shadow-highlight">
-              Markets
-            </Link>
-            <Link href="/portfolio" className="hover-highlight-effect text-zen-800 dark:text-cream-200 hover:text-briq-orange dark:hover:text-briq-orange hover:bg-briq-orange/20 dark:hover:bg-briq-orange/30 px-3 py-2 rounded-md transition-all duration-200 font-light font-lato relative hover:shadow-highlight">
-              Portfolio
-            </Link>
-            <Link href="/ai-agent" className="hover-highlight-effect text-zen-800 dark:text-cream-200 hover:text-briq-orange dark:hover:text-briq-orange hover:bg-briq-orange/20 dark:hover:bg-briq-orange/30 px-3 py-2 rounded-md transition-all duration-200 font-light font-lato relative hover:shadow-highlight">
-              AI Agent
+            <Link href="/rupert" className="hover-highlight-effect text-zen-800 dark:text-cream-200 hover:text-briq-orange dark:hover:text-briq-orange hover:bg-briq-orange/20 dark:hover:bg-briq-orange/30 px-3 py-2 rounded-md transition-all duration-200 font-light font-lato relative hover:shadow-highlight">
+              Rupert
             </Link>
           </nav>
           
-          <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-4 pr-2 sm:pr-4">
             <ThemeToggle />
             <ConnectButton
               label="Connect"

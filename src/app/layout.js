@@ -4,6 +4,8 @@ import { Lato } from "next/font/google";
 import "./globals.css";
 import Providers from "./providers";
 import "@rainbow-me/rainbowkit/styles.css";
+import { themeScript } from "./theme-script";
+import { ThemeContextProvider } from "./context/ThemeContext";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -37,9 +39,14 @@ export const metadata = {
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: themeScript() }} />
+      </head>
       <body className={`${geistSans.variable} ${geistMono.variable} ${jetbrainsMono.variable} ${lato.variable} antialiased font-lato font-light`}>
-        <Providers>{children}</Providers> 
+        <ThemeContextProvider>
+          <Providers>{children}</Providers>
+        </ThemeContextProvider>
       </body>
     </html>
   );
