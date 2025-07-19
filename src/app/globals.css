@@ -1,33 +1,49 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #DBC9A6; /* cream-100 - much darker */
+  --foreground: #171717; /* zen-900 - dark grey */
+  --accent: #FF7A2F; /* briq-orange */
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-accent: var(--accent);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
-  --font-jetbrains: var(--font-jetbrains-mono);
+  --font-jetbrains-mono: var(--font-jetbrains-mono);
+  --font-lato: var(--font-lato);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+.dark {
+  --background: #171717; /* zen-900 - dark grey */
+  --foreground: #D1BE95; /* cream-200 - much darker */
+  --accent: #FF7A2F; /* briq-orange */
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-lato), sans-serif;
+  font-weight: 300;
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 .font-jetbrains-mono {
   font-family: var(--font-jetbrains-mono);
+}
+
+.font-lato {
+  font-family: var(--font-lato);
+}
+
+.font-light {
+  font-weight: 300;
+}
+
+.font-thin {
+  font-weight: 100;
 }
 
 .font-\[100\] {

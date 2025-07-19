@@ -17,8 +17,13 @@ export default function Home() {
               priority
             />
           </div>
-          <h2 className="text-4xl text-gray-100 font-[100] font-jetbrains-mono mb-4">Briq</h2>
-          <p className="text-lg text-gray-400">Build here</p>
+          <h2 
+            className="text-4xl text-zen-900 dark:text-cream-100 mb-4 transition-colors duration-300"
+            style={{ fontFamily: 'var(--font-jetbrains-mono)', fontWeight: 100 }}
+          >
+            Briq
+          </h2>
+          <p className="text-lg text-zen-800 dark:text-cream-200 font-light font-lato transition-colors duration-300">Build here</p>
         </div>
       </div>
     </Layout>

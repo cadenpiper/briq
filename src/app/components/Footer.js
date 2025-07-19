@@ -3,7 +3,7 @@ import Image from "next/image";
 
 export default function Footer() {
   return (
-    <footer className="w-full bg-gray-900 border-t border-gray-800 mt-auto">
+    <footer className="w-full bg-cream-200 mt-auto dark:bg-zen-800 transition-colors duration-300">
       <div className="px-4 sm:px-8 lg:px-[100px]">
         <div className="flex items-center justify-between h-20">
           {/* Left side - App name with logo */}
@@ -18,20 +18,20 @@ export default function Footer() {
                 className="rounded"
               />
             </div>
-            <span className="-ml-1 text-sm text-gray-400 font-[100] font-jetbrains-mono">Briq</span>
+            <span className="-ml-1 text-sm text-zen-800 dark:text-cream-300 font-[100] font-jetbrains-mono transition-colors duration-300">Briq</span>
           </div>
           
           {/* Center - Links */}
           <div className="flex items-center space-x-12">
             <Link 
               href="#" 
-              className="text-gray-400 hover:text-gray-100 transition-colors duration-200 text-sm font-medium"
+              className="text-zen-800 dark:text-cream-300 hover:text-briq-orange dark:hover:text-briq-orange transition-colors duration-200 text-sm font-medium"
             >
               Docs
             </Link>
             <Link 
               href="#" 
-              className="text-gray-400 hover:text-gray-100 transition-colors duration-200 text-sm font-medium flex items-center space-x-1"
+              className="text-zen-800 dark:text-cream-300 hover:text-briq-orange dark:hover:text-briq-orange transition-colors duration-200 text-sm font-medium flex items-center space-x-1"
             >
               <svg 
                 className="w-4 h-4" 
@@ -45,7 +45,7 @@ export default function Footer() {
             </Link>
             <Link 
               href="#" 
-              className="text-gray-400 hover:text-gray-100 transition-colors duration-200 text-sm font-medium"
+              className="text-zen-800 dark:text-cream-300 hover:text-briq-orange dark:hover:text-briq-orange transition-colors duration-200 text-sm font-medium"
             >
               Feedback
             </Link>

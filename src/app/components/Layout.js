@@ -3,7 +3,7 @@ import Footer from './Footer';
 
 export default function Layout({ children }) {
   return (
-    <div className="min-h-screen bg-gray-900 flex flex-col">
+    <div className="min-h-screen bg-cream-100 dark:bg-zen-900 flex flex-col transition-colors duration-300">
       {/* Header with navigation */}
       <Header />
       
