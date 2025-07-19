@@ -1,13 +1,24 @@
 import Link from "next/link";
+import Image from "next/image";
 
 export default function Footer() {
   return (
     <footer className="w-full bg-gray-900 border-t border-gray-800 mt-auto">
       <div className="px-4 sm:px-8 lg:px-[100px]">
         <div className="flex items-center justify-between h-20">
-          {/* Left side - App name */}
-          <div className="text-sm font-medium text-gray-400">
-            dapp template
+          {/* Left side - App name with logo */}
+          <div className="flex items-center">
+            <div className="flex items-center justify-center mr-0">
+              <Image 
+                src="/images/Briq.png" 
+                alt="Briq Logo" 
+                width={32} 
+                height={32}
+                style={{ width: 'auto', height: 'auto' }}
+                className="rounded"
+              />
+            </div>
+            <span className="-ml-1 text-sm text-gray-400 font-[100] font-jetbrains-mono">Briq</span>
           </div>
           
           {/* Center - Links */}

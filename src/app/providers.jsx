@@ -44,13 +44,13 @@ const connectors = connectorsForWallets(
         }
     ],
     {
-        appName: "nextjs-hardhat-template",
+        appName: "Briq",
         projectId: process.env.NEXT_PUBLIC_PROJECT_ID
     }
 );
 
 const config = getDefaultConfig({
-    appName: "nextjs-hardhat-template",
+    appName: "Briq",
     projectId: process.env.NEXT_PUBLIC_PROJECT_ID,
     chains: [mainnet, sepolia, base, arbitrum],
     ssr: true,
@@ -63,7 +63,7 @@ const Providers = ({ children }) => {
             <RainbowKitProvider
                 coolMode
                 theme={darkTheme({
-                    accentColor: '#7b3fe4',
+                    accentColor: '#FF7A2F',
                     accentColorForeground: 'white',
                     borderRadius: 'large',
                     fontStack: 'system',

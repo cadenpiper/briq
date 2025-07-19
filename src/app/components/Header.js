@@ -1,18 +1,27 @@
 import { ConnectButton } from "@rainbow-me/rainbowkit";
 import Link from "next/link";
+import Image from "next/image";
 
 export default function Header() {
   return (
     <header className="w-full bg-gray-900 border-b border-gray-800">
       <div className="px-4 sm:px-8 lg:px-[100px]">
         <div className="flex items-center justify-between h-20">
-          <div className="flex items-center space-x-3">
-            {/* Logo placeholder */}
-            <div className="w-8 h-8 bg-gray-700 rounded flex items-center justify-center">
-              <span className="text-gray-300 text-sm font-bold">L</span>
+          <div className="flex items-center">
+            {/* Briq Logo */}
+            <div className="w-16 h-16 flex items-center justify-center mr-0">
+              <Image 
+                src="/images/Briq.png" 
+                alt="Briq Logo" 
+                width={64} 
+                height={64}
+                style={{ width: 'auto', height: 'auto' }}
+                className="rounded"
+                priority
+              />
             </div>
             {/* App name */}
-            <h1 className="text-xl font-bold text-gray-100">dapp template</h1>
+            <h1 className="-ml-1 text-3xl text-gray-100 font-[100] font-jetbrains-mono">Briq</h1>
           </div>
           
           {/* Navigation - Centered */}
@@ -33,6 +42,7 @@ export default function Header() {
           
           <div>
             <ConnectButton
+              label="Connect"
               accountStatus={{
                 smallScreen: "avatar",
                 largeScreen: "full",
