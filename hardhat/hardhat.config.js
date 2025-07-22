@@ -19,4 +19,14 @@ module.exports = {
       chainId: 11155111,
     },
   },
+  gasReporter: {
+    enabled: process.env.REPORT_GAS ? true : false,
+    currency: 'USD',
+    gasPrice: 30,
+    coinmarketcap: process.env.COINMARKETCAP_API_KEY,
+    token: 'ETH',
+    showTimeSpent: true,
+    // Use a fixed ETH price when no API key is provided
+    ethPrice: 3500, // Current approximate ETH price in USD
+  },
 };
