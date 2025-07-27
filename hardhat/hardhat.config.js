@@ -40,7 +40,6 @@ module.exports = {
   gasReporter: {
     enabled: true,
     currency: 'USD',
-    // If testing layer 2 gas costs:
     L2: "base",
     currencyDisplayPrecision: 5,
     token: 'ETH',
