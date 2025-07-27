@@ -1,5 +1,6 @@
 require("dotenv").config();
 require("@nomicfoundation/hardhat-toolbox");
+require("hardhat-gas-reporter");
 
 const privateKey = process.env.PRIVATE_KEY || "";
 
@@ -7,10 +8,27 @@ const privateKey = process.env.PRIVATE_KEY || "";
 module.exports = {
   solidity: "0.8.28",
   networks: {
+    /* Eth mainnet forking
     hardhat: {
+      chainId: 1,
       forking: {
         url: `https://eth-mainnet.g.alchemy.com/v2/${process.env.ALCHEMY_API_KEY}`,
-        chainId: 1,
+      },
+    },
+    */
+   /* Arbitrum mainnet forking
+    hardhat: {
+      chainId: 42161,
+      forking: {
+        url: `https://arb-mainnet.g.alchemy.com/v2/${process.env.ALCHEMY_API_KEY}`,
+      },
+    },
+   */
+    /* Base mainnet forking */
+    hardhat: {
+      chainId: 8453,
+      forking: {
+        url: `https://base-mainnet.g.alchemy.com/v2/${process.env.ALCHEMY_API_KEY}`,
       },
     },
     sepolia: {
@@ -22,12 +40,13 @@ module.exports = {
   gasReporter: {
     enabled: true,
     currency: 'USD',
+    // If testing layer 2 gas costs:
+    // L2: "arbitrum"
+    L2: 'base',
     currencyDisplayPrecision: 5,
     token: 'ETH',
     coinmarketcap: process.env.COINMARKETCAP_API_KEY,
-    gasPriceApi: `https://api.etherscan.io/api?module=proxy&action=eth_gasPrice&apikey=${process.env.ETHERSCAN_API_KEY}`
+    etherscan: process.env.ETHERSCAN_API_KEY,
   },
-  etherscan: {
-    apiKey: process.env.ETHERSCAN_API_KEY,
-  },
+  
 };
