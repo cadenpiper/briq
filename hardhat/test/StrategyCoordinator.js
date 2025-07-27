@@ -1,19 +1,28 @@
 const { expect } = require("chai");
 const { ethers } = require("hardhat");
 const { loadFixture } = require("@nomicfoundation/hardhat-toolbox/network-helpers");
-
-// Mainnet addresses
-const AAVE_POOL_V3 = "0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2"; // Aave V3 Pool on Ethereum mainnet
-const COMPOUND_COMET_USDC = "0xc3d688B66703497DAA19211EEdff47f25384cdc3"; // Compound v3 USDC market (Comet)
-const USDC_ADDRESS = "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48"; // USDC on Ethereum mainnet
+const fs = require('fs');
 
 describe("StrategyCoordinator", function () {
   // Increase timeout for forked network tests
   this.timeout(60000);
 
+  let USDC_ADDRESS, AAVE_POOL_V3, COMPOUND_COMET_USDC, USDC_WHALE;
+
   async function deployStrategyCoordinatorFixture() {
     // Get signers
     const [owner, vault, user] = await ethers.getSigners();
+
+    const chainId = (await ethers.provider.getNetwork()).chainId;
+
+    const configData = JSON.parse(fs.readFileSync('./config.json', 'utf8'));
+    const chainConfig = configData.CHAIN_CONFIG[chainId.toString()];
+    if (!chainConfig) throw new Error(`No config for chain ID ${chainId}`);
+
+    USDC_WHALE = chainConfig.whale;
+    AAVE_POOL_V3 = chainConfig.aavePoolV3;
+    COMPOUND_COMET_USDC = chainConfig.compoundCometUsdc;
+    USDC_ADDRESS = chainConfig.usdcAddress;
 
     // Deploy StrategyAave
     const StrategyAave = await ethers.getContractFactory("StrategyAave");
@@ -49,9 +58,14 @@ describe("StrategyCoordinator", function () {
     const usdc = await ethers.getContractAt("IERC20", USDC_ADDRESS);
 
     // Get a USDC whale to fund our tests
-    const USDC_WHALE = "0x55FE002aefF02F77364de339a1292923A15844B8"; // Example USDC whale address
     await ethers.provider.send("hardhat_impersonateAccount", [USDC_WHALE]);
     const usdcWhale = await ethers.getSigner(USDC_WHALE);
+
+    // Fund the whale with ETH for gas fees
+    await ethers.provider.send("hardhat_setBalance", [
+      USDC_WHALE,
+      "0x56BC75E2D630E0000", // 100 ETH in hex
+    ]);
 
     // Transfer some USDC to the vault for testing
     const testAmount = ethers.parseUnits("1000", 6); // 1000 USDC (6 decimals)

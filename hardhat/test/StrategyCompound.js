@@ -1,18 +1,27 @@
 const { expect } = require("chai");
 const { ethers } = require("hardhat");
 const { loadFixture } = require("@nomicfoundation/hardhat-toolbox/network-helpers");
-
-// Mainnet addresses
-const COMPOUND_COMET_USDC = "0xc3d688B66703497DAA19211EEdff47f25384cdc3"; // Compound v3 USDC market (Comet)
-const USDC_ADDRESS = "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48"; // USDC on Ethereum mainnet
+const fs = require('fs');
 
 describe("StrategyCompoundComet", function () {
   // Increase timeout for forked network tests
   this.timeout(60000);
 
+  let USDC_ADDRESS, COMPOUND_COMET_USDC, USDC_WHALE;
+
   async function deployStrategyCompoundFixture() {
     // Get signers
     const [owner, coordinator, user] = await ethers.getSigners();
+
+    const chainId = (await ethers.provider.getNetwork()).chainId;
+
+    const configData = JSON.parse(fs.readFileSync('./config.json', 'utf8'));
+    const chainConfig = configData.CHAIN_CONFIG[chainId.toString()];
+    if (!chainConfig) throw new Error(`No config for chain ID ${chainId}`);
+
+    USDC_WHALE = chainConfig.whale;
+    COMPOUND_COMET_USDC = chainConfig.compoundCometUsdc;
+    USDC_ADDRESS = chainConfig.usdcAddress;
 
     // Deploy StrategyCompoundComet
     const StrategyCompoundComet = await ethers.getContractFactory("StrategyCompoundComet");
@@ -23,9 +32,14 @@ describe("StrategyCompoundComet", function () {
     const usdc = await ethers.getContractAt("IERC20", USDC_ADDRESS);
 
     // Get a USDC whale to fund our tests
-    const USDC_WHALE = "0x55FE002aefF02F77364de339a1292923A15844B8"; // Example USDC whale address
     await ethers.provider.send("hardhat_impersonateAccount", [USDC_WHALE]);
     const usdcWhale = await ethers.getSigner(USDC_WHALE);
+
+    // Fund the whale with ETH for gas fees
+    await ethers.provider.send("hardhat_setBalance", [
+      USDC_WHALE,
+      "0x56BC75E2D630E0000", // 100 ETH in hex
+    ]);
 
     // Transfer some USDC to the coordinator for testing
     const testAmount = ethers.parseUnits("1000", 6); // 1000 USDC (6 decimals)

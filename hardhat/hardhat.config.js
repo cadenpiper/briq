@@ -16,14 +16,14 @@ module.exports = {
       },
     },
     */
-   /* Arbitrum mainnet forking
+    /* Arbitrum mainnet forking
     hardhat: {
       chainId: 42161,
       forking: {
         url: `https://arb-mainnet.g.alchemy.com/v2/${process.env.ALCHEMY_API_KEY}`,
       },
     },
-   */
+    */
     /* Base mainnet forking */
     hardhat: {
       chainId: 8453,
@@ -41,8 +41,7 @@ module.exports = {
     enabled: true,
     currency: 'USD',
     // If testing layer 2 gas costs:
-    // L2: "arbitrum"
-    L2: 'base',
+    L2: "base",
     currencyDisplayPrecision: 5,
     token: 'ETH',
     coinmarketcap: process.env.COINMARKETCAP_API_KEY,
