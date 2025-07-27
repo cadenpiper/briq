@@ -6,16 +6,23 @@ const privateKey = process.env.PRIVATE_KEY || "";
 
 /** @type import('hardhat/config').HardhatUserConfig */
 module.exports = {
-  solidity: "0.8.28",
+  solidity: {
+    version: "0.8.28",
+    settings: {
+      optimizer: {
+        enabled: true,
+        runs: 200
+      }
+    }
+  },
   networks: {
-    /* Eth mainnet forking
+    /* Eth mainnet forking */
     hardhat: {
       chainId: 1,
       forking: {
         url: `https://eth-mainnet.g.alchemy.com/v2/${process.env.ALCHEMY_API_KEY}`,
       },
     },
-    */
     /* Arbitrum mainnet forking
     hardhat: {
       chainId: 42161,
@@ -24,13 +31,14 @@ module.exports = {
       },
     },
     */
-    /* Base mainnet forking */
+    /* Base mainnet forking
     hardhat: {
       chainId: 8453,
       forking: {
         url: `https://base-mainnet.g.alchemy.com/v2/${process.env.ALCHEMY_API_KEY}`,
       },
     },
+    */
     sepolia: {
       url: `https://eth-sepolia.g.alchemy.com/v2/${process.env.ALCHEMY_API_KEY}`,
       accounts: [privateKey],
@@ -40,7 +48,7 @@ module.exports = {
   gasReporter: {
     enabled: true,
     currency: 'USD',
-    L2: "base",
+    // L2: "arbitrum",
     currencyDisplayPrecision: 5,
     token: 'ETH',
     coinmarketcap: process.env.COINMARKETCAP_API_KEY,
