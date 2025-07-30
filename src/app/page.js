@@ -1,29 +1,100 @@
 import Layout from './components/Layout';
 import Image from 'next/image';
+import Link from 'next/link';
+import TokenCard from './components/TokenCard';
+import ProtocolCard from './components/ProtocolCard';
+import ChainCard from './components/ChainCard';
 
 export default function Home() {
   return (
     <Layout>
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <div className="text-center">
-          <div className="flex justify-center mb-6">
-            <Image 
-              src="/images/Briq.png" 
-              alt="Briq Logo" 
-              width={120} 
-              height={120}
-              style={{ width: 'auto', height: 'auto' }}
-              className="rounded"
-              priority
-            />
+      <div className="flex justify-center py-12">
+        <div className="text-center max-w-6xl mx-auto px-4 sm:px-6">
+          
+          {/* Hero Section */}
+          <div className="mb-50">
+            <h1 className="text-5xl md:text-6xl text-zen-900 dark:text-cream-100 font-light mb-6 transition-colors duration-300"
+                style={{ fontFamily: 'var(--font-jetbrains-mono)', fontWeight: 100 }}>
+              AI-Powered Yield Optimization
+            </h1>
+            <p className="text-xl text-zen-700 dark:text-cream-300 max-w-3xl mx-auto font-light font-lato">
+              Maximize your returns across DeFi protocols effortlessly
+            </p>
           </div>
-          <h2 
-            className="text-4xl text-zen-900 dark:text-cream-100 mb-4 transition-colors duration-300"
-            style={{ fontFamily: 'var(--font-jetbrains-mono)', fontWeight: 100 }}
-          >
-            Briq
-          </h2>
-          <p className="text-lg text-zen-800 dark:text-cream-200 font-light font-lato transition-colors duration-300">Build here</p>
+
+          {/* Call to Action */}
+          <div className="mb-50">
+            <p className="text-lg text-zen-700 dark:text-cream-300 mb-6 font-light font-lato text-center">
+              Optimize your returns with Rupert or manually
+            </p>
+            <div className="flex gap-4 justify-center items-center flex-wrap">
+              <Link 
+                href="/rupert" 
+                className="border border-briq-orange text-briq-orange hover:text-briq-orange hover:bg-briq-orange/20 dark:hover:bg-briq-orange/30 px-8 py-3 rounded-lg transition-all duration-200 font-medium"
+              >
+                Rupert
+              </Link>
+              <Link 
+                href="/home" 
+                className="border border-briq-orange text-briq-orange hover:text-briq-orange hover:bg-briq-orange/20 dark:hover:bg-briq-orange/30 px-8 py-3 rounded-lg transition-all duration-200 font-medium"
+              >
+                DIY
+              </Link>
+            </div>
+          </div>
+
+          {/* Available Networks Module */}
+          <div className="mb-20">
+            <h2 
+              className="text-3xl text-zen-900 dark:text-cream-100 mb-8 transition-colors duration-300 text-center"
+              style={{ fontFamily: 'var(--font-jetbrains-mono)', fontWeight: 100 }}
+            >
+              Available Networks
+            </h2>
+            <div className="flex justify-center items-center gap-6 flex-wrap">
+              <ChainCard chain="Ethereum" status="Testing" />
+              {/* Easy to add more chains */}
+            </div>
+          </div>
+
+          {/* Supported Tokens Module */}
+          <div className="mb-20">
+            <h2 
+              className="text-3xl text-zen-900 dark:text-cream-100 mb-8 transition-colors duration-300 text-center"
+              style={{ fontFamily: 'var(--font-jetbrains-mono)', fontWeight: 100 }}
+            >
+              Supported Assets
+            </h2>
+            <div className="flex justify-center items-center gap-6 flex-wrap">
+              <TokenCard token="USDC" />
+              {/* Easy to add more tokens */}
+            </div>
+          </div>
+
+          {/* Supported Protocols Module */}
+          <div className="mb-20">
+            <h2 
+              className="text-3xl text-zen-900 dark:text-cream-100 mb-8 transition-colors duration-300 text-center"
+              style={{ fontFamily: 'var(--font-jetbrains-mono)', fontWeight: 100 }}
+            >
+              Integrated Protocols
+            </h2>
+            <div className="flex justify-center items-center">
+              <div className="grid md:grid-cols-2 gap-6 max-w-4xl w-full">
+                <ProtocolCard 
+                  name="AAVE v3" 
+                  apy="4.2%" 
+                  description="Leading decentralized lending protocol with competitive rates"
+                />
+                <ProtocolCard 
+                  name="Compound v3 (Comet)" 
+                  apy="3.8%"
+                  description="Next-generation lending with improved capital efficiency"
+                />
+              </div>
+            </div>
+          </div>
+
         </div>
       </div>
     </Layout>

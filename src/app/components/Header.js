@@ -9,25 +9,27 @@ export default function Header() {
       <div className="px-0">
         <div className="flex items-center justify-between h-20 relative">
           <div className="flex items-center pl-1 sm:pl-2">
-            {/* Briq Logo */}
-            <div className="w-16 h-16 flex items-center justify-center mr-0">
-              <Image 
-                src="/images/Briq.png" 
-                alt="Briq Logo" 
-                width={64} 
-                height={64}
-                style={{ width: 'auto', height: 'auto' }}
-                className="rounded"
-                priority
-              />
-            </div>
-            {/* App name */}
-            <h1 
-              className="-ml-1 text-3xl text-zen-900 dark:text-cream-100 transition-colors duration-300"
-              style={{ fontFamily: 'var(--font-jetbrains-mono)', fontWeight: 100 }}
-            >
-              Briq
-            </h1>
+            {/* Clickable Briq Logo and Name */}
+            <Link href="/" className="flex items-center hover:opacity-80 transition-opacity duration-200">
+              <div className="w-16 h-16 flex items-center justify-center mr-0">
+                <Image 
+                  src="/images/Briq.png" 
+                  alt="Briq Logo" 
+                  width={64} 
+                  height={64}
+                  style={{ width: 'auto', height: 'auto' }}
+                  className="rounded"
+                  priority
+                />
+              </div>
+              {/* App name */}
+              <h1 
+                className="-ml-1 text-3xl text-zen-900 dark:text-cream-100 transition-colors duration-300"
+                style={{ fontFamily: 'var(--font-jetbrains-mono)', fontWeight: 100 }}
+              >
+                Briq
+              </h1>
+            </Link>
           </div>
           
           {/* Navigation - Centered */}

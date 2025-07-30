@@ -4,7 +4,7 @@ import { Lato } from "next/font/google";
 import "./globals.css";
 import Providers from "./providers";
 import "@rainbow-me/rainbowkit/styles.css";
-import { themeScript } from "./theme-script";
+import { themeScript } from "./prevent-theme-flash";
 import { ThemeContextProvider } from "./context/ThemeContext";
 
 const geistSans = Geist({
@@ -33,7 +33,7 @@ export const metadata = {
   title: "Briq",
   description: "Briq - Web3 Application",
   icons: {
-    icon: '/favicon.png',
+    icon: './favicon.png',
   },
 };
 
