@@ -35,7 +35,7 @@ export default function Home() {
                 Rupert
               </Link>
               <Link 
-                href="/home" 
+                href="/markets" 
                 className="border border-briq-orange text-briq-orange hover:text-briq-orange hover:bg-briq-orange/20 dark:hover:bg-briq-orange/30 px-8 py-3 rounded-lg transition-all duration-200 font-medium"
               >
                 DIY

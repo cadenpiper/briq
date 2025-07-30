@@ -6,7 +6,7 @@ This repository contains the smart contracts for Briq, a decentralized finance (
 
 This hardhat project contains the **smart contract layer** of Briq, including:
 - Core vault and shares contracts
-- Strategy implementations for Aave V3 and Compound V3
+- Strategy implementations for Aave V3 and Compound V3 (Comet)
 - Strategy coordination logic
 - Comprehensive test suite with multi-chain support
 

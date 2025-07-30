@@ -1,7 +1,7 @@
 import Layout from '../components/Layout';
 import MarketTable from '../components/MarketTable';
 
-export default function Home() {
+export default function Markets() {
   return (
     <Layout>
       <div className="flex justify-center py-12">
