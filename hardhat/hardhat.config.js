@@ -21,7 +21,7 @@ module.exports = {
       chainId: 1,
       forking: {
         url: `https://eth-mainnet.g.alchemy.com/v2/${process.env.ALCHEMY_API_KEY}`,
-        blockNumber: 21100000,
+        // blockNumber: 21100000,
       },
     },
     /* Arbitrum mainnet forking
@@ -29,7 +29,7 @@ module.exports = {
       chainId: 42161,
       forking: {
         url: `https://arb-mainnet.g.alchemy.com/v2/${process.env.ALCHEMY_API_KEY}`,
-        blockNumber: 275000000,
+        // blockNumber: 275000000,
       },
     },
     */
@@ -38,7 +38,7 @@ module.exports = {
       chainId: 8453,
       forking: {
         url: `https://base-mainnet.g.alchemy.com/v2/${process.env.ALCHEMY_API_KEY}`,
-        blockNumber: 22500000,
+        //blockNumber: 22500000,
       },
     },
     */
@@ -49,7 +49,7 @@ module.exports = {
     },
   },
   gasReporter: {
-    enabled: true,
+    enabled: false,
     currency: 'USD',
     // L2: "arbitrum",
     currencyDisplayPrecision: 5,
@@ -57,5 +57,4 @@ module.exports = {
     coinmarketcap: process.env.COINMARKETCAP_API_KEY,
     etherscan: process.env.ETHERSCAN_API_KEY,
   },
-  
 };

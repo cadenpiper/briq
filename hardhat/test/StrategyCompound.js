@@ -19,8 +19,8 @@ describe("StrategyCompoundComet", function () {
     const chainConfig = configData.CHAIN_CONFIG[chainId.toString()];
     if (!chainConfig) throw new Error(`No config for chain ID ${chainId}`);
 
-    USDC_WHALE = chainConfig.whale;
-    COMPOUND_COMET_USDC = chainConfig.compoundCometUsdc;
+    USDC_WHALE = chainConfig.usdcWhale;
+    COMPOUND_COMET_USDC = chainConfig.compoundMarketUSDC;
     USDC_ADDRESS = chainConfig.usdcAddress;
 
     // Deploy StrategyCompoundComet

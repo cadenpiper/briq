@@ -19,7 +19,7 @@ describe("StrategyAave", function () {
     const chainConfig = configData.CHAIN_CONFIG[chainId.toString()];
     if (!chainConfig) throw new Error(`No config for chain ID ${chainId}`);
 
-    USDC_WHALE = chainConfig.whale;
+    USDC_WHALE = chainConfig.usdcWhale;
     AAVE_POOL_V3 = chainConfig.aavePoolV3;
     USDC_ADDRESS = chainConfig.usdcAddress;
 
