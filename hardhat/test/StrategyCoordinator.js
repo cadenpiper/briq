@@ -47,8 +47,8 @@ describe("StrategyCoordinator", function () {
     await (await strategyCompound.setCoordinator(await strategyCoordinator.getAddress())).wait();
 
     // Configure Aave strategy
-    await (await strategyAave.updatePoolSupport(AAVE_POOL_V3, USDC_ADDRESS, true)).wait();
-    await (await strategyAave.updateTokenSupport(USDC_ADDRESS, true)).wait();
+    await (await strategyAave.setAavePool(AAVE_POOL_V3)).wait();
+    await (await strategyAave.addSupportedToken(USDC_ADDRESS)).wait();
 
     // Configure Compound strategy
     await (await strategyCompound.updateMarketSupport(COMPOUND_COMET_USDC, USDC_ADDRESS, true)).wait();

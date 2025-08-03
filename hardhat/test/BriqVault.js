@@ -53,8 +53,8 @@ describe("BriqVault", function () {
     await (await strategyCompound.setCoordinator(await strategyCoordinator.getAddress())).wait();
     await (await strategyCoordinator.updateVaultAddress(await briqVault.getAddress())).wait();
 
-    await (await strategyAave.updatePoolSupport(AAVE_POOL_V3, USDC_ADDRESS, true)).wait();
-    await (await strategyAave.updateTokenSupport(USDC_ADDRESS, true)).wait();
+    await (await strategyAave.setAavePool(AAVE_POOL_V3)).wait();
+    await (await strategyAave.addSupportedToken(USDC_ADDRESS)).wait();
 
     await (await strategyCompound.updateMarketSupport(COMPOUND_COMET_USDC, USDC_ADDRESS, true)).wait();
     await (await strategyCompound.updateTokenSupport(USDC_ADDRESS, true)).wait();

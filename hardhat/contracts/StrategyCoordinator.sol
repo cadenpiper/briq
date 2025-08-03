@@ -52,7 +52,7 @@ contract StrategyCoordinator is Ownable, ReentrancyGuard {
         
         // Check if the token is supported by the selected strategy
         if (_strategyType == StrategyType.AAVE) {
-            if (!strategyAave.supportedTokens(_token)) revert Errors.UnsupportedToken();
+            if (!strategyAave.isTokenSupported(_token)) revert Errors.UnsupportedToken();
         } else if (_strategyType == StrategyType.COMPOUND) {
             if (!strategyCompound.supportedTokens(_token)) revert Errors.UnsupportedToken();
         }
@@ -133,7 +133,7 @@ contract StrategyCoordinator is Ownable, ReentrancyGuard {
     // Helper for minting shares and tracking total token balance across strategies
     function getTotalTokenBalance(address _token) external view returns (uint256) {
         uint256 total = 0;
-        if (strategyAave.supportedTokens(_token)) {
+        if (strategyAave.isTokenSupported(_token)) {
             total += strategyAave.balanceOf(_token);
         }
         if (strategyCompound.supportedTokens(_token)) {

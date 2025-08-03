@@ -13,13 +13,13 @@ import "@aave/core-v3/contracts/protocol/libraries/types/DataTypes.sol";
 contract StrategyAave is StrategyBase, ReentrancyGuard, Ownable {
     using SafeERC20 for IERC20;
 
-    mapping(address => bool) public supportedTokens;
-    mapping(address => bool) public supportedPools;
+    address public aavePool;
+    address[] public supportedTokens;
+    mapping(address => bool) public isTokenSupported;
     mapping(address => address) public tokenToAToken; // token => aToken
-    mapping(address => IPool) public tokenToPool;     // token => Aave pool
 
+    event AavePoolUpdated(address indexed pool);
     event TokenSupportUpdated(address indexed token, bool status);
-    event PoolSupportUpdated(address indexed pool, bool status, address indexed token);
     event CoordinatorUpdated(address indexed coordinator);
 
     constructor() StrategyBase() Ownable(msg.sender) {}
@@ -33,63 +33,73 @@ contract StrategyAave is StrategyBase, ReentrancyGuard, Ownable {
         emit CoordinatorUpdated(_coordinator);
     }
 
-    function updateTokenSupport(address _token, bool _status) external onlyOwner {
-        if (_token == address(0)) revert Errors.InvalidAddress();
-        if (supportedTokens[_token] == _status) revert Errors.TokenSupportUnchanged();
-        if (_status && tokenToPool[_token] == IPool(address(0))) revert Errors.NoPoolForToken();
-
-        supportedTokens[_token] = _status;
-
-        if (!_status) {
-            delete tokenToPool[_token];
-            delete tokenToAToken[_token];
-        }
-
-        emit TokenSupportUpdated(_token, _status);
+    function setAavePool(address _pool) external onlyOwner {
+        if (_pool == address(0)) revert Errors.InvalidAddress();
+        aavePool = _pool;
+        emit AavePoolUpdated(_pool);
     }
 
-    function updatePoolSupport(address _pool, address _token, bool _status) external onlyOwner {
-        if (_pool == address(0) || _token == address(0)) revert Errors.InvalidAddress();
-        if (supportedPools[_pool] == _status) revert Errors.PoolSupportUnchanged();
+    function addSupportedToken(address _token) external onlyOwner {
+        if (_token == address(0)) revert Errors.InvalidAddress();
+        if (aavePool == address(0)) revert Errors.NoPoolForToken();
+        if (isTokenSupported[_token]) revert Errors.TokenSupportUnchanged();
 
-        supportedPools[_pool] = _status;
+        // Get aToken address from Aave pool
+        DataTypes.ReserveData memory data = IPool(aavePool).getReserveData(_token);
+        if (data.aTokenAddress == address(0)) revert Errors.UnsupportedTokenForPool();
 
-        if (_status) {
-            DataTypes.ReserveData memory data = IPool(_pool).getReserveData(_token);
-            if (data.aTokenAddress == address(0)) revert Errors.UnsupportedTokenForPool();
-            tokenToPool[_token] = IPool(_pool);
-            tokenToAToken[_token] = data.aTokenAddress;
-        } else {
-            delete tokenToPool[_token];
-            delete tokenToAToken[_token];
+        supportedTokens.push(_token);
+        isTokenSupported[_token] = true;
+        tokenToAToken[_token] = data.aTokenAddress;
+
+        emit TokenSupportUpdated(_token, true);
+    }
+
+    function removeSupportedToken(address _token) external onlyOwner {
+        if (_token == address(0)) revert Errors.InvalidAddress();
+        if (!isTokenSupported[_token]) revert Errors.TokenSupportUnchanged();
+
+        // Remove from supportedTokens array
+        for (uint256 i = 0; i < supportedTokens.length; i++) {
+            if (supportedTokens[i] == _token) {
+                supportedTokens[i] = supportedTokens[supportedTokens.length - 1];
+                supportedTokens.pop();
+                break;
+            }
         }
 
-        emit PoolSupportUpdated(_pool, _status, _token);
+        isTokenSupported[_token] = false;
+        delete tokenToAToken[_token];
+
+        emit TokenSupportUpdated(_token, false);
+    }
+
+    function getSupportedTokens() external view returns (address[] memory) {
+        return supportedTokens;
     }
 
     function deposit(address _token, uint256 _amount) external override onlyCoordinator nonReentrant {
-        if (!supportedTokens[_token]) revert Errors.UnsupportedToken();
+        if (!isTokenSupported[_token]) revert Errors.UnsupportedToken();
         if (_amount == 0) revert Errors.InvalidAmount();
-        IPool pool = tokenToPool[_token];
-        if (address(pool) == address(0)) revert Errors.NoPoolForToken();
+        if (aavePool == address(0)) revert Errors.NoPoolForToken();
 
         IERC20(_token).safeTransferFrom(coordinator, address(this), _amount);
-        IERC20(_token).approve(address(pool), _amount);
-        pool.supply(_token, _amount, address(this), 0); // aTokens go to StrategyAave, not vault
+        IERC20(_token).approve(aavePool, _amount);
+        IPool(aavePool).supply(_token, _amount, address(this), 0); // aTokens go to StrategyAave
     }
 
     function withdraw(address _token, uint256 _amount) external override onlyCoordinator nonReentrant {
-        if (!supportedTokens[_token]) revert Errors.UnsupportedToken();
+        if (!isTokenSupported[_token]) revert Errors.UnsupportedToken();
         if (_amount == 0) revert Errors.InvalidAmount();
-        IPool pool = tokenToPool[_token];
-        if (address(pool) == address(0)) revert Errors.NoPoolForToken();
+        if (aavePool == address(0)) revert Errors.NoPoolForToken();
 
-        uint256 withdrawn = pool.withdraw(_token, _amount, coordinator); // Sends USDC back to vault
+        uint256 withdrawn = IPool(aavePool).withdraw(_token, _amount, coordinator); // Sends tokens back to coordinator
         if (withdrawn < _amount) revert("Insufficient withdrawal");
     }
 
     function balanceOf(address _token) external view override returns (uint256) {
         address aToken = tokenToAToken[_token];
+        if (aToken == address(0)) return 0;
         return IERC20(aToken).balanceOf(address(this));
     }
 }

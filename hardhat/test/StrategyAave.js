@@ -78,39 +78,72 @@ describe("StrategyAave", function () {
       ).to.be.revertedWithCustomError(strategyAave, "InvalidAddress");
     });
 
-    it("should update token support", async function () {
+    it("should set Aave pool correctly", async function () {
       const { strategyAave, owner } = await loadFixture(deployStrategyAaveFixture);
       
-      // First set up the pool for the token
-      const tx1 = await strategyAave.connect(owner).updatePoolSupport(AAVE_POOL_V3, USDC_ADDRESS, true);
-      await tx1.wait();
-      
-      // Then enable token support
-      const tx2 = await strategyAave.connect(owner).updateTokenSupport(USDC_ADDRESS, true);
-      await tx2.wait();
-      
-      expect(await strategyAave.supportedTokens(USDC_ADDRESS)).to.be.true;
-    });
-
-    it("should update pool support and set token mappings", async function () {
-      const { strategyAave, owner } = await loadFixture(deployStrategyAaveFixture);
-      
-      const tx = await strategyAave.connect(owner).updatePoolSupport(AAVE_POOL_V3, USDC_ADDRESS, true);
+      const tx = await strategyAave.connect(owner).setAavePool(AAVE_POOL_V3);
       await tx.wait();
       
-      expect(await strategyAave.supportedPools(AAVE_POOL_V3)).to.be.true;
+      expect(await strategyAave.aavePool()).to.equal(AAVE_POOL_V3);
+    });
+
+    it("should revert when setting zero address as Aave pool", async function () {
+      const { strategyAave, owner } = await loadFixture(deployStrategyAaveFixture);
       
-      // Check that token mappings are set correctly
-      const poolAddress = await strategyAave.tokenToPool(USDC_ADDRESS);
-      expect(poolAddress.toLowerCase()).to.equal(AAVE_POOL_V3.toLowerCase());
+      await expect(
+        strategyAave.connect(owner).setAavePool(ethers.ZeroAddress)
+      ).to.be.revertedWithCustomError(strategyAave, "InvalidAddress");
+    });
+
+    it("should add supported token correctly", async function () {
+      const { strategyAave, owner } = await loadFixture(deployStrategyAaveFixture);
       
+      // First set the Aave pool
+      await (await strategyAave.connect(owner).setAavePool(AAVE_POOL_V3)).wait();
+      
+      // Then add token support
+      const tx = await strategyAave.connect(owner).addSupportedToken(USDC_ADDRESS);
+      await tx.wait();
+      
+      expect(await strategyAave.isTokenSupported(USDC_ADDRESS)).to.be.true;
+      
+      // Check that token is in the supported tokens array
+      const supportedTokens = await strategyAave.getSupportedTokens();
+      expect(supportedTokens).to.include(USDC_ADDRESS);
+      
+      // Check that aToken mapping is set correctly
       const aTokenAddress = await strategyAave.tokenToAToken(USDC_ADDRESS);
-      
-      // Verify that we got a valid aToken address (not zero address)
       expect(aTokenAddress).to.not.equal(ethers.ZeroAddress);
+    });
+
+    it("should revert when adding token without setting pool first", async function () {
+      const { strategyAave, owner } = await loadFixture(deployStrategyAaveFixture);
       
-      // Optionally, we can verify it's a valid aToken by checking it has the expected interface
-      // The aToken address should be fetched from the Aave pool during updatePoolSupport
+      await expect(
+        strategyAave.connect(owner).addSupportedToken(USDC_ADDRESS)
+      ).to.be.revertedWithCustomError(strategyAave, "NoPoolForToken");
+    });
+
+    it("should remove supported token correctly", async function () {
+      const { strategyAave, owner } = await loadFixture(deployStrategyAaveFixture);
+      
+      // Set up pool and add token
+      await (await strategyAave.connect(owner).setAavePool(AAVE_POOL_V3)).wait();
+      await (await strategyAave.connect(owner).addSupportedToken(USDC_ADDRESS)).wait();
+      
+      // Remove token support
+      const tx = await strategyAave.connect(owner).removeSupportedToken(USDC_ADDRESS);
+      await tx.wait();
+      
+      expect(await strategyAave.isTokenSupported(USDC_ADDRESS)).to.be.false;
+      
+      // Check that token is removed from the supported tokens array
+      const supportedTokens = await strategyAave.getSupportedTokens();
+      expect(supportedTokens).to.not.include(USDC_ADDRESS);
+      
+      // Check that aToken mapping is cleared
+      const aTokenAddress = await strategyAave.tokenToAToken(USDC_ADDRESS);
+      expect(aTokenAddress).to.equal(ethers.ZeroAddress);
     });
   });
 
@@ -120,8 +153,8 @@ describe("StrategyAave", function () {
       
       // Set up the strategy
       await (await strategyAave.connect(owner).setCoordinator(coordinator.address)).wait();
-      await (await strategyAave.connect(owner).updatePoolSupport(AAVE_POOL_V3, USDC_ADDRESS, true)).wait();
-      await (await strategyAave.connect(owner).updateTokenSupport(USDC_ADDRESS, true)).wait();
+      await (await strategyAave.connect(owner).setAavePool(AAVE_POOL_V3)).wait();
+      await (await strategyAave.connect(owner).addSupportedToken(USDC_ADDRESS)).wait();
       
       // Approve USDC for the strategy
       await (await usdc.connect(coordinator).approve(await strategyAave.getAddress(), testAmount)).wait();
@@ -140,8 +173,8 @@ describe("StrategyAave", function () {
       
       // Set up the strategy
       await (await strategyAave.connect(owner).setCoordinator(coordinator.address)).wait();
-      await (await strategyAave.connect(owner).updatePoolSupport(AAVE_POOL_V3, USDC_ADDRESS, true)).wait();
-      await (await strategyAave.connect(owner).updateTokenSupport(USDC_ADDRESS, true)).wait();
+      await (await strategyAave.connect(owner).setAavePool(AAVE_POOL_V3)).wait();
+      await (await strategyAave.connect(owner).addSupportedToken(USDC_ADDRESS)).wait();
       
       // Approve and deposit USDC
       await (await usdc.connect(coordinator).approve(await strategyAave.getAddress(), testAmount)).wait();
@@ -164,8 +197,8 @@ describe("StrategyAave", function () {
       
       // Set up the strategy
       await (await strategyAave.connect(owner).setCoordinator(owner.address)).wait(); // Set owner as coordinator
-      await (await strategyAave.connect(owner).updatePoolSupport(AAVE_POOL_V3, USDC_ADDRESS, true)).wait();
-      await (await strategyAave.connect(owner).updateTokenSupport(USDC_ADDRESS, true)).wait();
+      await (await strategyAave.connect(owner).setAavePool(AAVE_POOL_V3)).wait();
+      await (await strategyAave.connect(owner).addSupportedToken(USDC_ADDRESS)).wait();
       
       // Try to deposit as non-coordinator
       await expect(
