@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { formatAPY, formatTVL, formatUtilization } from '../utils/formatters';
 import { useMarketData } from '../hooks/useMarketData';
 
@@ -12,8 +12,8 @@ export default function MarketTable() {
   // Fetch real market data from subgraphs
   const { data: subgraphData, loading: subgraphLoading, error: subgraphError, refetch } = useMarketData();
 
-  const networks = ['All', 'Ethereum', 'Arbitrum One'];
-  const tokens = ['All', 'USDC', 'WETH'];
+  const networks = ['Ethereum', 'Arbitrum One'];
+  const tokens = ['USDC', 'WETH'];
 
   // Network abbreviations for chips
   const getNetworkAbbreviation = (network) => {
@@ -29,18 +29,14 @@ export default function MarketTable() {
 
   // Handle network selection
   const handleNetworkSelect = (network) => {
-    if (network === 'All') {
-      setSelectedNetworks(['Ethereum', 'Arbitrum One']);
-    } else if (!selectedNetworks.includes(network)) {
+    if (!selectedNetworks.includes(network)) {
       setSelectedNetworks([...selectedNetworks, network]);
     }
   };
 
   // Handle token selection
   const handleTokenSelect = (token) => {
-    if (token === 'All') {
-      setSelectedTokens(['USDC', 'WETH']);
-    } else if (!selectedTokens.includes(token)) {
+    if (!selectedTokens.includes(token)) {
       setSelectedTokens([...selectedTokens, token]);
     }
   };
@@ -109,7 +105,7 @@ export default function MarketTable() {
         return bValue - aValue;
       }
     });
-  }, [selectedNetworks, selectedTokens, sortConfig]);
+  }, [selectedNetworks, selectedTokens, sortConfig, subgraphData]);
 
   // Handle sorting
   const handleSort = (key) => {
@@ -172,10 +168,7 @@ export default function MarketTable() {
               defaultValue="Select"
             >
               <option value="Select" disabled>Select</option>
-              {networks.filter(network => {
-                if (network === 'All') return true;
-                return !selectedNetworks.includes(network);
-              }).map((network) => (
+              {networks.filter(network => !selectedNetworks.includes(network)).map((network) => (
                 <option key={network} value={network}>
                   {network}
                 </option>
@@ -230,10 +223,7 @@ export default function MarketTable() {
               defaultValue="Select"
             >
               <option value="Select" disabled>Select</option>
-              {tokens.filter(token => {
-                if (token === 'All') return true;
-                return !selectedTokens.includes(token);
-              }).map((token) => (
+              {tokens.filter(token => !selectedTokens.includes(token)).map((token) => (
                 <option key={token} value={token}>
                   {token}
                 </option>
