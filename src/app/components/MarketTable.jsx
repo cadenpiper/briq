@@ -13,7 +13,7 @@ export default function MarketTable() {
   const { data: subgraphData, loading: subgraphLoading, error: subgraphError, refetch } = useMarketData();
 
   const networks = ['All', 'Ethereum', 'Arbitrum One'];
-  const tokens = ['All', 'USDC', 'USDT'];
+  const tokens = ['All', 'USDC', 'WETH'];
 
   // Network abbreviations for chips
   const getNetworkAbbreviation = (network) => {
@@ -39,7 +39,7 @@ export default function MarketTable() {
   // Handle token selection
   const handleTokenSelect = (token) => {
     if (token === 'All') {
-      setSelectedTokens(['USDC', 'USDT']);
+      setSelectedTokens(['USDC', 'WETH']);
     } else if (!selectedTokens.includes(token)) {
       setSelectedTokens([...selectedTokens, token]);
     }
@@ -65,7 +65,7 @@ export default function MarketTable() {
         : selectedNetworks;
       
       const tokensToShow = selectedTokens.length === 0 
-        ? ['USDC', 'USDT'] 
+        ? ['USDC', 'WETH'] 
         : selectedTokens;
 
       return subgraphData.filter(market => 
@@ -288,7 +288,7 @@ export default function MarketTable() {
             <>
               <div className="h-4 w-4 rounded-full bg-green-500"></div>
               <span className="text-sm text-zen-600 dark:text-cream-300">
-                Live data from subgraphs
+                Live data from The Graph
               </span>
             </>
           ) : (

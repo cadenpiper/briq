@@ -133,11 +133,11 @@ export async function getAllMarketData() {
     results.push(aaveArbUSDC);
   }
 
-  // Aave V3 on Arbitrum - USDT
-  const aaveArbUSDT = await queryProtocolMarkets("Aave V3", SUBGRAPH_IDS.AAVE_V3_ARB, "USDT", false);
-  if (aaveArbUSDT) {
-    aaveArbUSDT.network = "Arbitrum One";
-    results.push(aaveArbUSDT);
+  // Aave V3 on Arbitrum - WETH
+  const aaveArbWETH = await queryProtocolMarkets("Aave V3", SUBGRAPH_IDS.AAVE_V3_ARB, "WETH", false);
+  if (aaveArbWETH) {
+    aaveArbWETH.network = "Arbitrum One";
+    results.push(aaveArbWETH);
   }
 
   // Compound V3 on Arbitrum - USDC
@@ -147,11 +147,11 @@ export async function getAllMarketData() {
     results.push(compoundArbUSDC);
   }
 
-  // Compound V3 on Arbitrum - USDT
-  const compoundArbUSDT = await queryProtocolMarkets("Compound V3", SUBGRAPH_IDS.COMPOUND_V3_ARB, "USDT", true);
-  if (compoundArbUSDT) {
-    compoundArbUSDT.network = "Arbitrum One";
-    results.push(compoundArbUSDT);
+  // Compound V3 on Arbitrum - WETH
+  const compoundArbWETH = await queryProtocolMarkets("Compound V3", SUBGRAPH_IDS.COMPOUND_V3_ARB, "WETH", true);
+  if (compoundArbWETH) {
+    compoundArbWETH.network = "Arbitrum One";
+    results.push(compoundArbWETH);
   }
 
   // === ETHEREUM MARKETS ===
@@ -163,11 +163,11 @@ export async function getAllMarketData() {
     results.push(aaveEthUSDC);
   }
 
-  // Aave V3 on Ethereum - USDT
-  const aaveEthUSDT = await queryProtocolMarkets("Aave V3", SUBGRAPH_IDS.AAVE_V3_ETH, "USDT", false);
-  if (aaveEthUSDT) {
-    aaveEthUSDT.network = "Ethereum";
-    results.push(aaveEthUSDT);
+  // Aave V3 on Ethereum - WETH
+  const aaveEthWETH = await queryProtocolMarkets("Aave V3", SUBGRAPH_IDS.AAVE_V3_ETH, "WETH", false);
+  if (aaveEthWETH) {
+    aaveEthWETH.network = "Ethereum";
+    results.push(aaveEthWETH);
   }
 
   // Compound V3 on Ethereum - USDC
@@ -177,11 +177,11 @@ export async function getAllMarketData() {
     results.push(compoundEthUSDC);
   }
 
-  // Compound V3 on Ethereum - USDT
-  const compoundEthUSDT = await queryProtocolMarkets("Compound V3", SUBGRAPH_IDS.COMPOUND_V3_ETH, "USDT", true);
-  if (compoundEthUSDT) {
-    compoundEthUSDT.network = "Ethereum";
-    results.push(compoundEthUSDT);
+  // Compound V3 on Ethereum - WETH
+  const compoundEthWETH = await queryProtocolMarkets("Compound V3", SUBGRAPH_IDS.COMPOUND_V3_ETH, "WETH", true);
+  if (compoundEthWETH) {
+    compoundEthWETH.network = "Ethereum";
+    results.push(compoundEthWETH);
   }
 
   console.log(`Fetched ${results.length} markets from Ethereum and Arbitrum`);

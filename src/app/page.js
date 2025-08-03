@@ -67,7 +67,7 @@ export default function Home() {
             </h2>
             <div className="flex justify-center items-center gap-6 flex-wrap">
               <TokenCard token="USDC" />
-              <TokenCard token="USDT" status="Coming Soon" />
+              <TokenCard token="WETH" />
             </div>
           </div>
 
