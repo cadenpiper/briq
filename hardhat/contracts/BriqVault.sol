@@ -28,18 +28,18 @@ contract BriqVault is Ownable, ReentrancyGuard {
         // Transfer tokens from user to vault
         IERC20(_token).transferFrom(msg.sender, address(this), _amount);
 
+        // Get balance BEFORE depositing to strategy
+        uint256 totalBalanceBefore = strategyCoordinator.getTotalTokenBalance(_token);
+        uint256 totalShares = briqShares.totalSupply();
+
         // Approve and deposit tokens to StrategyCoordinator.sol
         IERC20(_token).approve(address(strategyCoordinator), _amount);
         strategyCoordinator.deposit(_token, _amount);
 
-        // Calculate total token balance across all strategies
-        uint256 totalBalance = strategyCoordinator.getTotalTokenBalance(_token);
-        uint256 totalShares = briqShares.totalSupply();
-
-        // Calculate shares to mint
-        uint256 sharesToMint = (totalShares == 0 || totalBalance == 0)
-            ? _amount * 1e12
-            : (_amount * totalShares) / (totalBalance - _amount);
+        // Calculate shares to mint based on pre-deposit state
+        uint256 sharesToMint = (totalShares == 0 || totalBalanceBefore == 0)
+            ? _amount * 1e12  // First deposit gets fixed ratio
+            : (_amount * totalShares) / totalBalanceBefore;  // Subsequent deposits use pre-deposit balance
 
         // Mint shares to user
         briqShares.mint(msg.sender, sharesToMint);

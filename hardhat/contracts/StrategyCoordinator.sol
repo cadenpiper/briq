@@ -91,15 +91,6 @@ contract StrategyCoordinator is Ownable, ReentrancyGuard {
         
         // Withdraw from appropriate strategy
         if (strategyType == StrategyType.AAVE) {
-            uint256 compoundBalance = strategyCompound.balanceOf(_token);
-            if (compoundBalance >= _amount) {
-                strategyCompound.withdraw(_token, _amount);
-            } else {
-                uint256 remainingBalance = _amount - compoundBalance;
-                strategyCompound.withdraw(_token, compoundBalance);
-                strategyAave.withdraw(_token, remainingBalance);
-            }
-        } else if (strategyType == StrategyType.COMPOUND) {
             uint256 aaveBalance = strategyAave.balanceOf(_token);
             if (aaveBalance >= _amount) {
                 strategyAave.withdraw(_token, _amount);
@@ -107,6 +98,15 @@ contract StrategyCoordinator is Ownable, ReentrancyGuard {
                 uint256 remainingBalance = _amount - aaveBalance;
                 strategyAave.withdraw(_token, aaveBalance);
                 strategyCompound.withdraw(_token, remainingBalance);
+            }
+        } else if (strategyType == StrategyType.COMPOUND) {
+            uint256 compoundBalance = strategyCompound.balanceOf(_token);
+            if (compoundBalance >= _amount) {
+                strategyCompound.withdraw(_token, _amount);
+            } else {
+                uint256 remainingBalance = _amount - compoundBalance;
+                strategyCompound.withdraw(_token, compoundBalance);
+                strategyAave.withdraw(_token, remainingBalance);
             }
         }
 
