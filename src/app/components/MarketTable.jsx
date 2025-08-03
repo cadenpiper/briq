@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useMemo } from 'react';
+import { marketData } from '../utils/marketData';
+import { formatAPY, formatTVL, formatUtilization } from '../utils/formatters';
 
 export default function MarketTable() {
   const [selectedNetworks, setSelectedNetworks] = useState([]);
@@ -21,172 +23,6 @@ export default function MarketTable() {
         return 'ARB';
       default:
         return network;
-    }
-  };
-
-  // Network and token-specific market data
-  const marketData = {
-    'Ethereum': {
-      'USDC': [
-        {
-          protocol: "Aave v3",
-          network: "Ethereum",
-          token: "USDC",
-          apy: "4.2%",
-          apyValue: 4.2,
-          tvl: "$2.1B",
-          tvlValue: 2100000000,
-          utilization: "78.5%",
-          utilizationValue: 78.5,
-          status: "Active"
-        },
-        {
-          protocol: "Compound v3",
-          network: "Ethereum",
-          token: "USDC",
-          apy: "3.8%",
-          apyValue: 3.8,
-          tvl: "$1.8B",
-          tvlValue: 1800000000,
-          utilization: "82.3%",
-          utilizationValue: 82.3,
-          status: "Active"
-        }
-      ],
-      'USDT': [
-        {
-          protocol: "Aave v3",
-          network: "Ethereum",
-          token: "USDT",
-          apy: "3.9%",
-          apyValue: 3.9,
-          tvl: "$1.9B",
-          tvlValue: 1900000000,
-          utilization: "75.2%",
-          utilizationValue: 75.2,
-          status: "Coming Soon"
-        },
-        {
-          protocol: "Compound v3",
-          network: "Ethereum",
-          token: "USDT",
-          apy: "3.5%",
-          apyValue: 3.5,
-          tvl: "$1.6B",
-          tvlValue: 1600000000,
-          utilization: "80.1%",
-          utilizationValue: 80.1,
-          status: "Coming Soon"
-        }
-      ]
-    },
-    'Base': {
-      'USDC': [
-        {
-          protocol: "Aave v3",
-          network: "Base",
-          token: "USDC",
-          apy: "5.1%",
-          apyValue: 5.1,
-          tvl: "$450M",
-          tvlValue: 450000000,
-          utilization: "65.2%",
-          utilizationValue: 65.2,
-          status: "Active"
-        },
-        {
-          protocol: "Compound v3",
-          network: "Base",
-          token: "USDC",
-          apy: "4.7%",
-          apyValue: 4.7,
-          tvl: "$320M",
-          tvlValue: 320000000,
-          utilization: "71.8%",
-          utilizationValue: 71.8,
-          status: "Active"
-        }
-      ],
-      'USDT': [
-        {
-          protocol: "Aave v3",
-          network: "Base",
-          token: "USDT",
-          apy: "4.8%",
-          apyValue: 4.8,
-          tvl: "$380M",
-          tvlValue: 380000000,
-          utilization: "62.7%",
-          utilizationValue: 62.7,
-          status: "Coming Soon"
-        },
-        {
-          protocol: "Compound v3",
-          network: "Base",
-          token: "USDT",
-          apy: "4.4%",
-          apyValue: 4.4,
-          tvl: "$290M",
-          tvlValue: 290000000,
-          utilization: "69.3%",
-          utilizationValue: 69.3,
-          status: "Coming Soon"
-        }
-      ]
-    },
-    'Arbitrum One': {
-      'USDC': [
-        {
-          protocol: "Aave v3",
-          network: "Arbitrum One",
-          token: "USDC",
-          apy: "4.8%",
-          apyValue: 4.8,
-          tvl: "$890M",
-          tvlValue: 890000000,
-          utilization: "73.4%",
-          utilizationValue: 73.4,
-          status: "Active"
-        },
-        {
-          protocol: "Compound v3",
-          network: "Arbitrum One",
-          token: "USDC",
-          apy: "4.3%",
-          apyValue: 4.3,
-          tvl: "$650M",
-          tvlValue: 650000000,
-          utilization: "79.1%",
-          utilizationValue: 79.1,
-          status: "Active"
-        }
-      ],
-      'USDT': [
-        {
-          protocol: "Aave v3",
-          network: "Arbitrum One",
-          token: "USDT",
-          apy: "4.5%",
-          apyValue: 4.5,
-          tvl: "$720M",
-          tvlValue: 720000000,
-          utilization: "70.8%",
-          utilizationValue: 70.8,
-          status: "Coming Soon"
-        },
-        {
-          protocol: "Compound v3",
-          network: "Arbitrum One",
-          token: "USDT",
-          apy: "4.0%",
-          apyValue: 4.0,
-          tvl: "$580M",
-          tvlValue: 580000000,
-          utilization: "76.5%",
-          utilizationValue: 76.5,
-          status: "Coming Soon"
-        }
-      ]
     }
   };
 
@@ -307,8 +143,9 @@ export default function MarketTable() {
     }
   };
 
-  const showNetworkColumn = selectedNetworks.length !== 1;
-  const showTokenColumn = selectedTokens.length !== 1;
+  // Always show network and token columns to maintain consistent table size
+  const showNetworkColumn = true;
+  const showTokenColumn = true;
 
   return (
     <div className="space-y-4">
@@ -437,47 +274,47 @@ export default function MarketTable() {
           <table className="w-full">
             <thead className="bg-cream-200 dark:bg-zen-600">
               <tr>
-                <th className="px-6 py-4 text-left text-sm font-medium text-zen-900 dark:text-cream-100">
+                <th className="px-6 py-4 text-center text-sm font-medium text-zen-900 dark:text-cream-100">
                   Protocols
                 </th>
                 {showNetworkColumn && (
-                  <th className="px-6 py-4 text-left text-sm font-medium text-zen-900 dark:text-cream-100">
+                  <th className="px-6 py-4 text-center text-sm font-medium text-zen-900 dark:text-cream-100">
                     Network
                   </th>
                 )}
                 {showTokenColumn && (
-                  <th className="px-6 py-4 text-left text-sm font-medium text-zen-900 dark:text-cream-100">
+                  <th className="px-6 py-4 text-center text-sm font-medium text-zen-900 dark:text-cream-100">
                     Token
                   </th>
                 )}
                 <th 
-                  className="px-6 py-4 text-left text-sm font-medium text-zen-900 dark:text-cream-100 cursor-pointer hover:bg-cream-300 dark:hover:bg-zen-500 transition-colors duration-200"
+                  className="px-6 py-4 text-center text-sm font-medium text-zen-900 dark:text-cream-100 cursor-pointer hover:bg-cream-300 dark:hover:bg-zen-500 transition-colors duration-200"
                   onClick={() => handleSort('apy')}
                 >
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center justify-center gap-2">
                     APY
                     {getSortIcon('apy')}
                   </div>
                 </th>
                 <th 
-                  className="px-6 py-4 text-left text-sm font-medium text-zen-900 dark:text-cream-100 cursor-pointer hover:bg-cream-300 dark:hover:bg-zen-500 transition-colors duration-200"
+                  className="px-6 py-4 text-center text-sm font-medium text-zen-900 dark:text-cream-100 cursor-pointer hover:bg-cream-300 dark:hover:bg-zen-500 transition-colors duration-200"
                   onClick={() => handleSort('tvl')}
                 >
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center justify-center gap-2">
                     TVL
                     {getSortIcon('tvl')}
                   </div>
                 </th>
                 <th 
-                  className="px-6 py-4 text-left text-sm font-medium text-zen-900 dark:text-cream-100 cursor-pointer hover:bg-cream-300 dark:hover:bg-zen-500 transition-colors duration-200"
+                  className="px-6 py-4 text-center text-sm font-medium text-zen-900 dark:text-cream-100 cursor-pointer hover:bg-cream-300 dark:hover:bg-zen-500 transition-colors duration-200"
                   onClick={() => handleSort('utilization')}
                 >
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center justify-center gap-2">
                     Utilization
                     {getSortIcon('utilization')}
                   </div>
                 </th>
-                <th className="px-6 py-4 text-left text-sm font-medium text-zen-900 dark:text-cream-100">
+                <th className="px-6 py-4 text-center text-sm font-medium text-zen-900 dark:text-cream-100">
                   Status
                 </th>
               </tr>
@@ -485,38 +322,38 @@ export default function MarketTable() {
             <tbody className="divide-y divide-cream-300 dark:divide-zen-600">
               {/* Dividing line between headers and data */}
               <tr className="border-t border-cream-300 dark:border-zen-600">
-                <td colSpan={5 + (showNetworkColumn ? 1 : 0) + (showTokenColumn ? 1 : 0)} className="h-0"></td>
+                <td colSpan={4 + (showNetworkColumn ? 1 : 0) + (showTokenColumn ? 1 : 0)} className="h-0"></td>
               </tr>
               {sortedMarkets.map((market, index) => (
                 <tr 
                   key={index}
                   className="hover:bg-cream-200 dark:hover:bg-zen-600 transition-colors duration-200"
                 >
-                  <td className="px-6 py-4 text-sm font-medium text-zen-900 dark:text-cream-100">
+                  <td className="px-6 py-4 text-sm font-medium text-zen-900 dark:text-cream-100 text-center">
                     {market.protocol}
                   </td>
                   {showNetworkColumn && (
-                    <td className="px-6 py-4 text-sm text-zen-700 dark:text-cream-200">
+                    <td className="px-6 py-4 text-sm text-zen-700 dark:text-cream-200 text-center">
                       {market.network}
                     </td>
                   )}
                   {showTokenColumn && (
-                    <td className="px-6 py-4 text-sm text-zen-700 dark:text-cream-200">
+                    <td className="px-6 py-4 text-sm text-zen-700 dark:text-cream-200 text-center">
                       {market.token}
                     </td>
                   )}
-                  <td className="px-6 py-4 text-sm">
+                  <td className="px-6 py-4 text-sm text-center">
                     <span className="bg-briq-orange/20 text-briq-orange px-2 py-1 rounded-full font-medium">
-                      {market.apy}
+                      {formatAPY(market.apyValue)}
                     </span>
                   </td>
-                  <td className="px-6 py-4 text-sm text-zen-700 dark:text-cream-200">
-                    {market.tvl}
+                  <td className="px-6 py-4 text-sm text-zen-700 dark:text-cream-200 text-center">
+                    {formatTVL(market.tvlValue)}
                   </td>
-                  <td className="px-6 py-4 text-sm text-zen-700 dark:text-cream-200">
-                    {market.utilization}
+                  <td className="px-6 py-4 text-sm text-zen-700 dark:text-cream-200 text-center">
+                    {formatUtilization(market.utilizationValue)}
                   </td>
-                  <td className="px-6 py-4 text-sm">
+                  <td className="px-6 py-4 text-sm text-center">
                     <span className={`px-2 py-1 rounded-full text-xs font-medium ${
                       market.status === 'Active' 
                         ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'

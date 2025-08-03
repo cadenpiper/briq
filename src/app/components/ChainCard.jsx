@@ -1,7 +1,8 @@
 export default function ChainCard({ chain, icon, status = "Active" }) {
   const statusColors = {
     "Active": "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400",
-    "Testing": "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400",
+    "Coming Soon": "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400",
+    "Testing": "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400",
     "Beta": "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400"
   };
 

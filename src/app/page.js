@@ -52,8 +52,9 @@ export default function Home() {
               Available Networks
             </h2>
             <div className="flex justify-center items-center gap-6 flex-wrap">
-              <ChainCard chain="Ethereum" status="Testing" />
-              {/* Easy to add more chains */}
+              <ChainCard chain="Ethereum" status="Coming Soon" />
+              <ChainCard chain="Base" status="Coming Soon" />
+              <ChainCard chain="Arbitrum One" status="Coming Soon" />
             </div>
           </div>
 
@@ -67,7 +68,7 @@ export default function Home() {
             </h2>
             <div className="flex justify-center items-center gap-6 flex-wrap">
               <TokenCard token="USDC" />
-              {/* Easy to add more tokens */}
+              <TokenCard token="USDT" status="Coming Soon" />
             </div>
           </div>
 
@@ -79,19 +80,9 @@ export default function Home() {
             >
               Integrated Protocols
             </h2>
-            <div className="flex justify-center items-center">
-              <div className="grid md:grid-cols-2 gap-6 max-w-4xl w-full">
-                <ProtocolCard 
-                  name="AAVE v3" 
-                  apy="4.2%" 
-                  description="Leading decentralized lending protocol with competitive rates"
-                />
-                <ProtocolCard 
-                  name="Compound v3 (Comet)" 
-                  apy="3.8%"
-                  description="Next-generation lending with improved capital efficiency"
-                />
-              </div>
+            <div className="flex justify-center items-center gap-4">
+              <ProtocolCard name="AAVE v3" />
+              <ProtocolCard name="Compound v3 (Comet)" />
             </div>
           </div>
 
