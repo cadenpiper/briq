@@ -1,15 +1,18 @@
 "use client";
 
 import { useState, useMemo } from 'react';
-import { marketData } from '../utils/marketData';
 import { formatAPY, formatTVL, formatUtilization } from '../utils/formatters';
+import { useMarketData } from '../hooks/useMarketData';
 
 export default function MarketTable() {
   const [selectedNetworks, setSelectedNetworks] = useState([]);
   const [selectedTokens, setSelectedTokens] = useState([]);
   const [sortConfig, setSortConfig] = useState({ key: 'apy', direction: 'desc' });
 
-  const networks = ['All', 'Ethereum', 'Base', 'Arbitrum One'];
+  // Fetch real market data from subgraphs
+  const { data: subgraphData, loading: subgraphLoading, error: subgraphError, refetch } = useMarketData();
+
+  const networks = ['All', 'Ethereum', 'Arbitrum One'];
   const tokens = ['All', 'USDC', 'USDT'];
 
   // Network abbreviations for chips
@@ -17,8 +20,6 @@ export default function MarketTable() {
     switch (network) {
       case 'Ethereum':
         return 'ETH';
-      case 'Base':
-        return 'BASE';
       case 'Arbitrum One':
         return 'ARB';
       default:
@@ -29,7 +30,7 @@ export default function MarketTable() {
   // Handle network selection
   const handleNetworkSelect = (network) => {
     if (network === 'All') {
-      setSelectedNetworks(['Ethereum', 'Base', 'Arbitrum One']);
+      setSelectedNetworks(['Ethereum', 'Arbitrum One']);
     } else if (!selectedNetworks.includes(network)) {
       setSelectedNetworks([...selectedNetworks, network]);
     }
@@ -56,25 +57,25 @@ export default function MarketTable() {
 
   // Function to get current markets based on selections
   const getCurrentMarkets = () => {
-    let markets = [];
+    // Only use subgraph data - no fallback to static data
+    if (subgraphData && subgraphData.length > 0) {
+      // Filter subgraph data based on selections
+      const networksToShow = selectedNetworks.length === 0 
+        ? ['Ethereum', 'Arbitrum One'] 
+        : selectedNetworks;
+      
+      const tokensToShow = selectedTokens.length === 0 
+        ? ['USDC', 'USDT'] 
+        : selectedTokens;
 
-    const networksToShow = selectedNetworks.length === 0 
-      ? ['Ethereum', 'Base', 'Arbitrum One'] 
-      : selectedNetworks;
-    
-    const tokensToShow = selectedTokens.length === 0 
-      ? ['USDC', 'USDT'] 
-      : selectedTokens;
+      return subgraphData.filter(market => 
+        networksToShow.includes(market.network) && 
+        tokensToShow.includes(market.token)
+      );
+    }
 
-    networksToShow.forEach(network => {
-      tokensToShow.forEach(token => {
-        if (marketData[network] && marketData[network][token]) {
-          markets = markets.concat(marketData[network][token]);
-        }
-      });
-    });
-
-    return markets;
+    // Return empty array if no subgraph data available
+    return [];
   };
 
   // Sorting function
@@ -268,6 +269,53 @@ export default function MarketTable() {
         </div>
       </div>
 
+      {/* Status Bar */}
+      <div className="flex items-center justify-between bg-cream-50 dark:bg-zen-800 rounded-lg px-4 py-3 border border-cream-200 dark:border-zen-600">
+        <div className="flex items-center space-x-3">
+          {subgraphLoading ? (
+            <>
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-briq-orange"></div>
+              <span className="text-sm text-zen-600 dark:text-cream-300">Loading market data...</span>
+            </>
+          ) : subgraphError ? (
+            <>
+              <div className="h-4 w-4 rounded-full bg-red-500"></div>
+              <span className="text-sm text-red-600 dark:text-red-400">
+                Error loading subgraph data
+              </span>
+            </>
+          ) : subgraphData && subgraphData.length > 0 ? (
+            <>
+              <div className="h-4 w-4 rounded-full bg-green-500"></div>
+              <span className="text-sm text-zen-600 dark:text-cream-300">
+                Live data from subgraphs
+              </span>
+            </>
+          ) : (
+            <>
+              <div className="h-4 w-4 rounded-full bg-yellow-500"></div>
+              <span className="text-sm text-zen-600 dark:text-cream-300">No market data available</span>
+            </>
+          )}
+        </div>
+        
+        <button
+          onClick={refetch}
+          disabled={subgraphLoading}
+          className="flex items-center space-x-2 px-3 py-1 text-sm bg-briq-orange text-zen-900 dark:text-cream-100 rounded hover:bg-[#e6692a] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+        >
+          <svg 
+            className={`w-4 h-4 ${subgraphLoading ? 'animate-spin' : ''}`} 
+            fill="none" 
+            stroke="currentColor" 
+            viewBox="0 0 24 24"
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+          </svg>
+          <span>Refresh</span>
+        </button>
+      </div>
+
       {/* Markets Table */}
       <div className="bg-cream-100 dark:bg-zen-700 rounded-lg border border-cream-300 dark:border-zen-600 overflow-hidden">
         <div className="overflow-x-auto">
@@ -322,7 +370,7 @@ export default function MarketTable() {
             <tbody className="divide-y divide-cream-300 dark:divide-zen-600">
               {/* Dividing line between headers and data */}
               <tr className="border-t border-cream-300 dark:border-zen-600">
-                <td colSpan={4 + (showNetworkColumn ? 1 : 0) + (showTokenColumn ? 1 : 0)} className="h-0"></td>
+                <td colSpan={5 + (showNetworkColumn ? 1 : 0) + (showTokenColumn ? 1 : 0)} className="h-0"></td>
               </tr>
               {sortedMarkets.map((market, index) => (
                 <tr 

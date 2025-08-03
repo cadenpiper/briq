@@ -2,7 +2,6 @@ export default function ChainCard({ chain, icon, status = "Active" }) {
   const statusColors = {
     "Active": "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400",
     "Coming Soon": "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400",
-    "Testing": "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400",
     "Beta": "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400"
   };
 
@@ -15,7 +14,7 @@ export default function ChainCard({ chain, icon, status = "Active" }) {
         <h3 className="text-lg font-medium text-zen-900 dark:text-cream-100 mb-2">
           {chain}
         </h3>
-        <div className={`inline-block px-2 py-1 rounded-full text-xs font-medium ${statusColors[status]}`}>
+        <div className={`inline-block px-2 py-1 rounded-full text-xs font-medium ${statusColors[status] ?? "bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400"}`}>
           {status}
         </div>
       </div>

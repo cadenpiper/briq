@@ -53,7 +53,6 @@ export default function Home() {
             </h2>
             <div className="flex justify-center items-center gap-6 flex-wrap">
               <ChainCard chain="Ethereum" status="Coming Soon" />
-              <ChainCard chain="Base" status="Coming Soon" />
               <ChainCard chain="Arbitrum One" status="Coming Soon" />
             </div>
           </div>
