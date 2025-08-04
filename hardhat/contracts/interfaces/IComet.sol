@@ -1,9 +1,96 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
+/**
+ * @title IComet
+ * @author Briq Protocol
+ * @notice Interface for Compound V3 (Comet) lending protocol integration
+ * @dev This interface defines the essential functions needed to interact with
+ *      Compound V3 Comet markets for lending and borrowing operations. It provides
+ *      a simplified interface focusing on the core functionality required by the
+ *      Briq Protocol strategies.
+ * 
+ * Compound V3 Overview:
+ * - Comet markets are isolated lending pools for specific base assets
+ * - Each market has one base asset (e.g., USDC, WETH) that can be supplied/borrowed
+ * - Suppliers earn interest on their base asset deposits
+ * - Interest rates are determined algorithmically based on utilization
+ * 
+ * Integration Notes:
+ * - Used by StrategyCompoundComet for yield generation
+ * - Focuses on supply-side operations (lending) for yield
+ * - Balances automatically accrue interest over time
+ */
 interface IComet {
+    
+    /**
+     * @notice Supplies base assets to the Comet market to earn interest
+     * @dev Transfers tokens from the caller to the Comet market and starts
+     *      earning interest immediately. The caller's balance in the market
+     *      increases and begins accruing interest.
+     * 
+     * @param asset Address of the asset to supply (must be the base asset)
+     * @param amount Amount of the asset to supply
+     * 
+     * Requirements:
+     * - Caller must have approved Comet to spend the tokens
+     * - Asset must be the base asset for this Comet market
+     * - Amount must be greater than 0
+     * 
+     * Effects:
+     * - Transfers tokens from caller to Comet
+     * - Increases caller's supply balance in the market
+     * - Starts earning interest on the supplied amount
+     */
     function supply(address asset, uint amount) external;
+    
+    /**
+     * @notice Withdraws base assets from the Comet market
+     * @dev Withdraws the specified amount of base assets from the caller's
+     *      supply balance, including any accrued interest. The withdrawn
+     *      amount is transferred to the caller.
+     * 
+     * @param asset Address of the asset to withdraw (must be the base asset)
+     * @param amount Amount of the asset to withdraw
+     * 
+     * Requirements:
+     * - Caller must have sufficient supply balance in the market
+     * - Asset must be the base asset for this Comet market
+     * - Amount must be greater than 0
+     * 
+     * Effects:
+     * - Decreases caller's supply balance in the market
+     * - Transfers tokens from Comet to the caller
+     * - Stops earning interest on the withdrawn amount
+     */
     function withdraw(address asset, uint amount) external;
+    
+    /**
+     * @notice Returns the current supply balance of an account in the market
+     * @dev Returns the account's current supply balance including accrued interest.
+     *      This balance represents the total amount that can be withdrawn.
+     * 
+     * @param account Address of the account to check balance for
+     * @return Current supply balance including accrued interest
+     * 
+     * Notes:
+     * - Balance automatically increases over time due to interest accrual
+     * - Represents the total withdrawable amount for the account
+     * - Updated in real-time based on current interest rates
+     */
     function balanceOf(address account) external view returns (uint256);
+    
+    /**
+     * @notice Returns the base asset address for this Comet market
+     * @dev Each Comet market has one base asset that can be supplied and borrowed.
+     *      This function returns the address of that base asset token.
+     * 
+     * @return Address of the base asset token for this market
+     * 
+     * Use Cases:
+     * - Validating token compatibility with the market
+     * - Ensuring correct asset is being supplied/withdrawn
+     * - Market identification and configuration
+     */
     function baseToken() external view returns (address);
 }

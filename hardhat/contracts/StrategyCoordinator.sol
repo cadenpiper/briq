@@ -9,23 +9,95 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 
+/**
+ * @title StrategyCoordinator
+ * @author Briq Protocol
+ * @notice Central coordinator that manages fund deployment across multiple DeFi yield strategies
+ * @dev This contract acts as the intermediary between the BriqVault and various yield generation
+ *      strategies (Aave, Compound, etc.). It handles strategy selection, fund allocation, and
+ *      cross-strategy operations for optimal yield generation.
+ * 
+ * Key Features:
+ * - Manages multiple yield generation strategies
+ * - Handles token routing to appropriate strategies
+ * - Supports cross-strategy withdrawals for liquidity optimization
+ * - Provides unified balance tracking across all strategies
+ * 
+ * Architecture:
+ * - Vault deposits/withdraws through this coordinator
+ * - Coordinator routes funds to optimal strategies
+ * - Strategies interact with underlying DeFi protocols
+ * 
+ * Security Features:
+ * - Vault-only access for deposit/withdraw operations
+ * - Owner-only administrative functions
+ * - ReentrancyGuard protection
+ * - Custom error handling for gas efficiency
+ */
 contract StrategyCoordinator is Ownable, ReentrancyGuard {
+    
+    /// @notice Address of the BriqVault contract authorized to call coordinator functions
     address public vault;
+    
+    /// @notice Aave V3 strategy implementation
     StrategyAave public strategyAave;
+    
+    /// @notice Compound V3 (Comet) strategy implementation
     StrategyCompoundComet public strategyCompound;
 
+    /**
+     * @notice Enumeration of available strategy types
+     * @dev Used to identify and route funds to the appropriate strategy implementation
+     */
     enum StrategyType {
-        AAVE,
-        COMPOUND
+        AAVE,      /// @dev Aave V3 lending protocol strategy
+        COMPOUND   /// @dev Compound V3 (Comet) lending protocol strategy
     }
 
+    /// @notice Maps token addresses to their assigned strategy type
     mapping(address => StrategyType) public tokenToStrategy;
+    
+    /// @notice Tracks which tokens are supported by the coordinator
     mapping(address => bool) public supportedTokens;
 
+    /**
+     * @notice Emitted when a token's strategy assignment is updated
+     * @param token Address of the token whose strategy was updated
+     * @param strategyType New strategy type assigned to the token
+     */
     event StrategyUpdated(address indexed token, StrategyType strategyType);
+    
+    /**
+     * @notice Emitted when tokens are deposited into a strategy
+     * @param token Address of the deposited token
+     * @param amount Amount of tokens deposited
+     * @param strategyType Strategy that received the deposit
+     */
     event Deposit(address indexed token, uint256 amount, StrategyType strategyType);
+    
+    /**
+     * @notice Emitted when tokens are withdrawn from a strategy
+     * @param token Address of the withdrawn token
+     * @param amount Amount of tokens withdrawn
+     * @param strategyType Strategy that provided the withdrawal
+     */
     event Withdrawal(address indexed token, uint256 amount, StrategyType strategyType);
 
+    /**
+     * @notice Initializes the StrategyCoordinator with strategy implementations
+     * @dev Sets up the coordinator with references to Aave and Compound strategy contracts
+     * 
+     * @param _strategyAave Address of the deployed StrategyAave contract
+     * @param _strategyCompound Address of the deployed StrategyCompoundComet contract
+     * 
+     * Requirements:
+     * - Neither strategy address can be zero address
+     * - Strategy contracts must be properly deployed and initialized
+     * 
+     * Effects:
+     * - Sets strategy contract references
+     * - Establishes deployer as owner
+     */
     constructor(
         address _strategyAave,
         address _strategyCompound
@@ -37,16 +109,56 @@ contract StrategyCoordinator is Ownable, ReentrancyGuard {
         strategyCompound = StrategyCompoundComet(_strategyCompound);
     }
 
+    /**
+     * @notice Restricts function access to the BriqVault contract only
+     * @dev Ensures that only the authorized vault can execute deposit/withdraw operations
+     */
     modifier onlyVault() {
         if (msg.sender != vault) revert Errors.OnlyVault();
         _;
     }
 
+    /**
+     * @notice Updates the vault address authorized to use this coordinator
+     * @dev Should be called once during deployment to establish the vault relationship
+     * 
+     * @param _vault Address of the BriqVault contract
+     * 
+     * Requirements:
+     * - Vault address cannot be zero address
+     * - Can only be called by the contract owner
+     * 
+     * Effects:
+     * - Updates the vault address
+     * - Enables vault to call deposit/withdraw functions
+     */
     function updateVaultAddress(address _vault) external onlyOwner {
         if (_vault == address(0)) revert Errors.InvalidAddress();
         vault = _vault;
     }
 
+    /**
+     * @notice Assigns a strategy type to a specific token
+     * @dev Configures which strategy should be used for a given token. Validates that
+     *      the selected strategy actually supports the token before assignment.
+     * 
+     * @param _token Address of the token to configure
+     * @param _strategyType Strategy type to assign to the token
+     * 
+     * Requirements:
+     * - Token address cannot be zero address
+     * - Selected strategy must support the token
+     * - Can only be called by the contract owner
+     * 
+     * Effects:
+     * - Marks token as supported
+     * - Assigns strategy type to token
+     * - Emits StrategyUpdated event
+     * 
+     * Security:
+     * - Validates strategy compatibility before assignment
+     * - Owner-only access control
+     */
     function setStrategyForToken(address _token, StrategyType _strategyType) external onlyOwner {
         if (_token == address(0)) revert Errors.InvalidAddress();
         
@@ -62,6 +174,30 @@ contract StrategyCoordinator is Ownable, ReentrancyGuard {
         emit StrategyUpdated(_token, _strategyType);
     }
 
+    /**
+     * @notice Deposits tokens into the assigned strategy for yield generation
+     * @dev Routes tokens to the appropriate strategy based on the token's configuration.
+     *      Handles token transfers and strategy interaction.
+     * 
+     * @param _token Address of the token to deposit
+     * @param _amount Amount of tokens to deposit
+     * 
+     * Requirements:
+     * - Can only be called by the vault contract
+     * - Token must be supported by the coordinator
+     * - Amount must be greater than 0
+     * - Strategy must be properly configured for the token
+     * 
+     * Effects:
+     * - Transfers tokens from vault to coordinator
+     * - Approves and deposits tokens to the assigned strategy
+     * - Emits Deposit event
+     * 
+     * Security:
+     * - Protected by onlyVault modifier
+     * - Protected by nonReentrant modifier
+     * - Validates token support and amount
+     */
     function deposit(address _token, uint256 _amount) external onlyVault nonReentrant {
         if (!supportedTokens[_token]) revert Errors.UnsupportedToken();
         if (_amount == 0) revert Errors.InvalidAmount();
@@ -83,6 +219,36 @@ contract StrategyCoordinator is Ownable, ReentrancyGuard {
         emit Deposit(_token, _amount, strategyType);
     }
 
+    /**
+     * @notice Withdraws tokens from strategies and returns them to the vault
+     * @dev Implements intelligent withdrawal logic that can source funds from multiple
+     *      strategies if needed. Prioritizes the assigned strategy but falls back to
+     *      other strategies for liquidity optimization.
+     * 
+     * @param _token Address of the token to withdraw
+     * @param _amount Amount of tokens to withdraw
+     * 
+     * Requirements:
+     * - Can only be called by the vault contract
+     * - Token must be supported by the coordinator
+     * - Amount must be greater than 0
+     * - Sufficient liquidity must be available across strategies
+     * 
+     * Effects:
+     * - Withdraws tokens from assigned strategy first
+     * - Falls back to other strategies if needed
+     * - Transfers tokens to vault
+     * - Emits Withdrawal event
+     * 
+     * Security:
+     * - Protected by onlyVault modifier
+     * - Protected by nonReentrant modifier
+     * - Validates token support and amount
+     * 
+     * Gas Optimization:
+     * - Prioritizes single-strategy withdrawals
+     * - Only uses cross-strategy logic when necessary
+     */
     function withdraw(address _token, uint256 _amount) external onlyVault nonReentrant {
         if (!supportedTokens[_token]) revert Errors.UnsupportedToken();
         if (_amount == 0) revert Errors.InvalidAmount();
@@ -116,6 +282,17 @@ contract StrategyCoordinator is Ownable, ReentrancyGuard {
         emit Withdrawal(_token, _amount, strategyType);
     }
 
+    /**
+     * @notice Returns the balance of a token in its assigned strategy
+     * @dev Queries the assigned strategy for the current balance of the specified token
+     * 
+     * @param _token Address of the token to check balance for
+     * @return Current balance of the token in its assigned strategy
+     * 
+     * Returns:
+     * - 0 if token is not supported
+     * - Current balance from the assigned strategy
+     */
     function getStrategyBalance(address _token) public view returns (uint256) {
         if (!supportedTokens[_token]) return 0;
 
@@ -130,7 +307,19 @@ contract StrategyCoordinator is Ownable, ReentrancyGuard {
         return 0;
     }
 
-    // Helper for minting shares and tracking total token balance across strategies
+    /**
+     * @notice Returns the total balance of a token across all strategies
+     * @dev Used by the vault for share calculations and total value tracking.
+     *      Aggregates balances from all strategies that support the token.
+     * 
+     * @param _token Address of the token to check total balance for
+     * @return Total balance of the token across all strategies
+     * 
+     * Use Cases:
+     * - Vault share minting calculations
+     * - Total value locked (TVL) reporting
+     * - Withdrawal feasibility checks
+     */
     function getTotalTokenBalance(address _token) external view returns (uint256) {
         uint256 total = 0;
         if (strategyAave.isTokenSupported(_token)) {
@@ -143,7 +332,29 @@ contract StrategyCoordinator is Ownable, ReentrancyGuard {
         return total;
     }
 
-    // Emergency functions
+    /**
+     * @notice Emergency function to withdraw all tokens of a specific type
+     * @dev Withdraws all tokens from the assigned strategy and sends them to the vault.
+     *      Should only be used in emergency situations or for maintenance.
+     * 
+     * @param _token Address of the token to emergency withdraw
+     * 
+     * Requirements:
+     * - Can only be called by the contract owner
+     * - Token must have an assigned strategy
+     * 
+     * Effects:
+     * - Withdraws entire balance from assigned strategy
+     * - Transfers all tokens to vault
+     * - Does not emit standard Withdrawal event (emergency context)
+     * 
+     * Security:
+     * - Owner-only access control
+     * - Should be used sparingly and only in emergencies
+     * 
+     * @dev This function bypasses normal withdrawal logic and should be used
+     *      only when normal operations are not possible or safe.
+     */
     function emergencyWithdraw(address _token) external onlyOwner {
         StrategyType strategyType = tokenToStrategy[_token];
         
