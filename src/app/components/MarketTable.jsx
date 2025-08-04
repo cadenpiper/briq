@@ -3,6 +3,7 @@
 import { useState, useMemo, useEffect } from 'react';
 import { formatAPY, formatTVL, formatUtilization } from '../utils/formatters';
 import { useMarketData } from '../hooks/useMarketData';
+import { ProtocolIcon, TokenIcon, NetworkIcon } from './icons';
 
 export default function MarketTable() {
   const [selectedNetworks, setSelectedNetworks] = useState([]);
@@ -416,16 +417,25 @@ export default function MarketTable() {
                   className="hover:bg-cream-200 dark:hover:bg-zen-600 transition-colors duration-200"
                 >
                   <td className="px-6 py-4 text-sm font-medium text-zen-900 dark:text-cream-100 text-center">
-                    {market.protocol}
+                    <div className="flex items-center justify-center gap-2">
+                      <ProtocolIcon protocol={market.protocol} size={20} />
+                      <span>{market.protocol}</span>
+                    </div>
                   </td>
                   {showNetworkColumn && (
                     <td className="px-6 py-4 text-sm text-zen-700 dark:text-cream-200 text-center">
-                      {market.network}
+                      <div className="flex items-center justify-center gap-2">
+                        <NetworkIcon network={market.network} size={20} />
+                        <span>{market.network}</span>
+                      </div>
                     </td>
                   )}
                   {showTokenColumn && (
                     <td className="px-6 py-4 text-sm text-zen-700 dark:text-cream-200 text-center">
-                      {market.token}
+                      <div className="flex items-center justify-center gap-2">
+                        <TokenIcon token={market.token} size={20} />
+                        <span>{market.token}</span>
+                      </div>
                     </td>
                   )}
                   <td className="px-6 py-4 text-sm text-center">
