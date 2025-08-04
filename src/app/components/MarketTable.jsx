@@ -27,6 +27,51 @@ export default function MarketTable() {
     }
   };
 
+  // Calculate pool health based on APY, utilization, and TVL
+  const calculatePoolHealth = (apy, utilization, tvl) => {
+    let score = 0;
+    
+    // APY scoring (40% weight) - Higher APY is better
+    if (apy >= 8) score += 40;
+    else if (apy >= 5) score += 30;
+    else if (apy >= 3) score += 20;
+    else score += 10;
+    
+    // Utilization scoring (35% weight) - Sweet spot is 70-85%
+    if (utilization >= 70 && utilization <= 85) score += 35;
+    else if (utilization >= 60 && utilization <= 90) score += 25;
+    else if (utilization >= 50 && utilization <= 95) score += 15;
+    else score += 5;
+    
+    // TVL scoring (25% weight) - Higher TVL indicates more trust/liquidity
+    if (tvl >= 100000000) score += 25; // $100M+
+    else if (tvl >= 50000000) score += 20; // $50M+
+    else if (tvl >= 10000000) score += 15; // $10M+
+    else score += 10;
+    
+    // Convert score to health indicator
+    if (score >= 85) return 'Great';
+    else if (score >= 70) return 'Good';
+    else if (score >= 55) return 'Fair';
+    else return 'Poor';
+  };
+
+  // Get health indicator styling
+  const getHealthStyle = (health) => {
+    switch (health) {
+      case 'Great':
+        return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200';
+      case 'Good':
+        return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200';
+      case 'Fair':
+        return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200';
+      case 'Poor':
+        return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200';
+      default:
+        return 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200';
+    }
+  };
+
   // Handle network selection
   const handleNetworkSelect = (network) => {
     if (!selectedNetworks.includes(network)) {
@@ -353,6 +398,9 @@ export default function MarketTable() {
                   </div>
                 </th>
                 <th className="px-6 py-4 text-center text-sm font-medium text-zen-900 dark:text-cream-100">
+                  Health
+                </th>
+                <th className="px-6 py-4 text-center text-sm font-medium text-zen-900 dark:text-cream-100">
                   Status
                 </th>
               </tr>
@@ -360,7 +408,7 @@ export default function MarketTable() {
             <tbody className="divide-y divide-cream-300 dark:divide-zen-600">
               {/* Dividing line between headers and data */}
               <tr className="border-t border-cream-300 dark:border-zen-600">
-                <td colSpan={5 + (showNetworkColumn ? 1 : 0) + (showTokenColumn ? 1 : 0)} className="h-0"></td>
+                <td colSpan={6 + (showNetworkColumn ? 1 : 0) + (showTokenColumn ? 1 : 0)} className="h-0"></td>
               </tr>
               {sortedMarkets.map((market, index) => (
                 <tr 
@@ -390,6 +438,11 @@ export default function MarketTable() {
                   </td>
                   <td className="px-6 py-4 text-sm text-zen-700 dark:text-cream-200 text-center">
                     {formatUtilization(market.utilizationValue)}
+                  </td>
+                  <td className="px-6 py-4 text-sm text-center">
+                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${getHealthStyle(calculatePoolHealth(market.apyValue, market.utilizationValue, market.tvlValue))}`}>
+                      {calculatePoolHealth(market.apyValue, market.utilizationValue, market.tvlValue)}
+                    </span>
                   </td>
                   <td className="px-6 py-4 text-sm text-center">
                     <span className={`px-2 py-1 rounded-full text-xs font-medium ${
