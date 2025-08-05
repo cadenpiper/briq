@@ -18,7 +18,7 @@ module.exports = {
   networks: {
     /* Eth mainnet forking */
     hardhat: {
-      chainId: 1,
+      chainId: 31337, // Use localhost chain ID for safe testing
       forking: {
         url: `https://eth-mainnet.g.alchemy.com/v2/${process.env.ALCHEMY_API_KEY}`,
         // blockNumber: 21100000,

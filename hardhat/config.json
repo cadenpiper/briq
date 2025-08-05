@@ -17,6 +17,15 @@
       "compoundMarketWETH": "0x6f7D514bbD4aFf3BcD1140B7344b32f063dEe486",
       "usdcAddress": "0xaf88d065e77c8cC2239327C5EDb3A432268e5831",
       "wethAddress": "0x82aF49447D8a07e3bd95BD0d56f35241523fBab1"
+    },
+    "31337": {
+      "usdcWhale": "0x55FE002aefF02F77364de339a1292923A15844B8",
+      "wethWhale": "0x312e67b47A2A29AE200184949093D92369F80B53",
+      "aavePoolV3": "0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2",
+      "compoundMarketUSDC": "0xc3d688B66703497DAA19211EEdff47f25384cdc3",
+      "compoundMarketWETH": "0xA17581A9E3356d9A858b789D68B4d866e593aE94",
+      "usdcAddress": "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
+      "wethAddress": "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"
     }
   }
 }

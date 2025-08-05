@@ -113,7 +113,7 @@ async function main() {
   // 5. Set up fork testing environment with whale accounts
   console.log("\n💰 Setting up fork testing environment...");
   
-  const [deployer, user1, user2] = await ethers.getSigners();
+  const [deployer] = await ethers.getSigners();
   const usdc = await ethers.getContractAt("IERC20", USDC_ADDRESS);
   const weth = await ethers.getContractAt("IERC20", WETH_ADDRESS);
 
@@ -128,35 +128,40 @@ async function main() {
   await ethers.provider.send("hardhat_setBalance", [USDC_WHALE, "0x1000000000000000000"]);
   await ethers.provider.send("hardhat_setBalance", [WETH_WHALE, "0x1000000000000000000"]);
 
-  // Transfer real tokens to test accounts
-  const usdcAmount = ethers.parseUnits("1000", 6); // 1000 USDC
-  const wethAmount = ethers.parseUnits("1", 18);   // 1 WETH
+  // Transfer real tokens to hardhat account 0 (deployer)
+  const usdcAmount = ethers.parseUnits("10000", 6); // 10,000 USDC
+  const wethAmount = ethers.parseUnits("5", 18);    // 5 WETH
 
-  await usdc.connect(usdcWhale).transfer(user1.address, usdcAmount);
-  await usdc.connect(usdcWhale).transfer(user2.address, usdcAmount);
-  await weth.connect(wethWhale).transfer(user1.address, wethAmount);
-  await weth.connect(wethWhale).transfer(user2.address, wethAmount);
+  await usdc.connect(usdcWhale).transfer(deployer.address, usdcAmount);
+  await weth.connect(wethWhale).transfer(deployer.address, wethAmount);
 
-  console.log(`   ✅ Funded ${user1.address} with 1000 USDC + 1 WETH`);
-  console.log(`   ✅ Funded ${user2.address} with 1000 USDC + 1 WETH`);
+  console.log(`   ✅ Funded ${deployer.address} (Hardhat Account 0) with:`);
+  console.log(`       - 10,000 USDC`);
+  console.log(`       - 5 WETH`);
+  console.log(`   💡 Import this account into MetaMask using the private key from hardhat node output`);
 
   // Update deployment info
   deploymentInfo.configured = true;
   deploymentInfo.configurationTimestamp = new Date().toISOString();
-  deploymentInfo.forkTestAccounts = {
-    user1: user1.address,
-    user2: user2.address
+  deploymentInfo.fundedAccount = {
+    address: deployer.address,
+    description: "Hardhat Account 0 - Import into MetaMask",
+    tokens: {
+      USDC: "10,000",
+      WETH: "5"
+    }
   };
 
   fs.writeFileSync('./deployment.json', JSON.stringify(deploymentInfo, null, 2));
 
   console.log("\n✅ Fork configuration complete!");
   console.log("\n🎉 Briq Protocol is ready for fork testing!");
-  console.log("\nTest with real mainnet integrations:");
+  console.log("\nFunded Account (Import into MetaMask):");
+  console.log(`   Address: ${deployer.address}`);
+  console.log(`   Tokens: 10,000 USDC + 5 WETH`);
+  console.log("\nContract Addresses:");
   console.log(`   Vault: ${deploymentInfo.contracts.BriqVault}`);
   console.log(`   Shares: ${deploymentInfo.contracts.BriqShares}`);
-  console.log(`   User1: ${user1.address}`);
-  console.log(`   User2: ${user2.address}`);
 }
 
 main()
