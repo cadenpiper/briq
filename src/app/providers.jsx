@@ -20,10 +20,24 @@ import {
 import { WagmiProvider } from "wagmi";
 import {
     mainnet,
-    sepolia,
-    base,
     arbitrum,
 } from "wagmi/chains";
+
+// Define localhost chain with proper configuration
+const localhost = {
+  id: 31337,
+  name: 'Localhost',
+  nativeCurrency: {
+    decimals: 18,
+    name: 'Ether',
+    symbol: 'ETH',
+  },
+  rpcUrls: {
+    default: {
+      http: ['http://127.0.0.1:8545'],
+    },
+  },
+};
 import {
     QueryClientProvider,
     QueryClient,
@@ -52,7 +66,7 @@ const connectors = connectorsForWallets(
 const config = getDefaultConfig({
     appName: "Briq",
     projectId: process.env.NEXT_PUBLIC_PROJECT_ID,
-    chains: [mainnet, sepolia, base, arbitrum],
+    chains: [mainnet, arbitrum, localhost],
     ssr: true,
     connectors,
 })
