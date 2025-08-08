@@ -1,5 +1,6 @@
 const { ethers } = require("hardhat");
 const fs = require('fs');
+const { updateFrontendAddresses } = require('./updateFrontendAddresses');
 
 async function main() {
   console.log("🚀 Deploying Briq Protocol...\n");
@@ -168,6 +169,18 @@ async function main() {
       console.log(`   Expected WETH: ${ethers.formatUnits(expectedWeth, 18)}, Got: ${ethers.formatUnits(finalWethBalance, 18)}`);
     }
   }
+
+  // Update frontend addresses
+  console.log("\n🔄 Updating frontend addresses...");
+  const deployedAddresses = {
+    VAULT: await briqVault.getAddress(),
+    SHARES: await briqShares.getAddress(),
+    USDC: USDC_ADDRESS,
+    WETH: WETH_ADDRESS
+  };
+  
+  updateFrontendAddresses(deployedAddresses);
+  console.log("✅ Frontend addresses synchronized!");
 }
 
 main()
