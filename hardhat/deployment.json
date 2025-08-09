@@ -1,6 +1,6 @@
 {
   "chainId": "31337",
-  "timestamp": "2025-08-09T20:44:55.854Z",
+  "timestamp": "2025-08-09T20:53:03.014Z",
   "contracts": {
     "PriceFeedManager": "0x78155E681c54Da4c25B6228753EcbfF5d8C2Def8",
     "BriqVault": "0xA36B5Fec0E93d24908fAA9966535567E9f888994",

@@ -4,7 +4,7 @@
  * Manually maintained contract addresses for the current fork deployment.
  * Update these addresses after deploying contracts to your local fork.
  * 
- * Last updated: 2025-08-09T20:45:05.622Z
+ * Last updated: 2025-08-09T20:53:11.806Z
  */
 
 export const FORK_ADDRESSES = {
