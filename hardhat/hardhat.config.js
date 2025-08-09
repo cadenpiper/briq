@@ -1,5 +1,5 @@
 require("dotenv").config({ quiet: true });
-require("@nomicfoundation/hardhat-ethers");
+require("@nomicfoundation/hardhat-toolbox");
 require("hardhat-gas-reporter");
 
 const privateKey = process.env.PRIVATE_KEY || "";
