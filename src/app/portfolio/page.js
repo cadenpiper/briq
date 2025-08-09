@@ -4,14 +4,19 @@ import { useState, useEffect } from 'react';
 import { useAccount, useReadContract, useWriteContract, useWaitForTransactionReceipt } from 'wagmi';
 import { parseUnits, formatUnits } from 'viem';
 import Layout from '../components/Layout';
+import { USDCIcon, WETHIcon } from '../components/icons';
 
 // Import ABIs
-import BriqVaultABI from '../abis/BriqVault.json';
-import BriqSharesABI from '../abis/BriqShares.json';
+import BriqVaultArtifact from '../abis/BriqVault.json';
+import BriqSharesArtifact from '../abis/BriqShares.json';
 import ERC20ABI from '../abis/ERC20.json';
 
-// Import deployed addresses utility
-import { getContractAddresses } from '../utils/deployedAddresses';
+// Extract ABIs from artifacts
+const BriqVaultABI = BriqVaultArtifact.abi;
+const BriqSharesABI = BriqSharesArtifact.abi;
+
+// Import fork addresses for development
+import { getContractAddresses } from '../utils/forkAddresses';
 
 export default function Portfolio() {
   const { address, isConnected } = useAccount();
@@ -22,7 +27,7 @@ export default function Portfolio() {
   const [selectedToken, setSelectedToken] = useState('USDC');
   const [transactionStep, setTransactionStep] = useState('idle'); // 'idle', 'approving', 'depositing'
 
-  // Get contract addresses dynamically
+  // Get contract addresses from fork deployment
   const CONTRACTS = getContractAddresses();
 
   // Read user token balances
@@ -165,6 +170,69 @@ export default function Portfolio() {
             </p>
           </div>
 
+          {/* Portfolio Overview */}
+          {isConnected && (
+            <div className="max-w-4xl mx-auto mb-12">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                {/* BriqShares Balance */}
+                <div className="bg-cream-100 dark:bg-zen-700 rounded-lg p-6 border border-zen-200 dark:border-zen-600 transition-colors duration-300">
+                  <div className="flex items-center justify-center gap-3 mb-4">
+                    <div className="w-8 h-8 rounded-full bg-briq-orange flex items-center justify-center flex-shrink-0">
+                      <span className="text-white font-bold text-sm">B</span>
+                    </div>
+                    <h4 className="text-lg font-medium text-zen-900 dark:text-cream-100 font-lato text-center">
+                      BriqShares Balance
+                    </h4>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-2xl font-semibold text-briq-orange mb-1 font-jetbrains-mono">
+                      {formatBalance(sharesBalance, 18)}
+                    </p>
+                    <p className="text-sm text-zen-600 dark:text-cream-400 font-lato">
+                      BRIQ
+                    </p>
+                  </div>
+                </div>
+
+                {/* USDC Balance */}
+                <div className="bg-cream-100 dark:bg-zen-700 rounded-lg p-6 border border-zen-200 dark:border-zen-600 transition-colors duration-300">
+                  <div className="flex items-center justify-center gap-3 mb-4">
+                    <USDCIcon size={32} className="flex-shrink-0" />
+                    <h4 className="text-lg font-medium text-zen-900 dark:text-cream-100 font-lato text-center">
+                      USDC Balance
+                    </h4>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-2xl font-semibold text-zen-900 dark:text-cream-100 mb-1 font-jetbrains-mono">
+                      {formatBalance(usdcBalance, 6)}
+                    </p>
+                    <p className="text-sm text-zen-600 dark:text-cream-400 font-lato">
+                      USDC
+                    </p>
+                  </div>
+                </div>
+
+                {/* WETH Balance */}
+                <div className="bg-cream-100 dark:bg-zen-700 rounded-lg p-6 border border-zen-200 dark:border-zen-600 transition-colors duration-300">
+                  <div className="flex items-center justify-center gap-3 mb-4">
+                    <WETHIcon size={32} className="flex-shrink-0" />
+                    <h4 className="text-lg font-medium text-zen-900 dark:text-cream-100 font-lato text-center">
+                      WETH Balance
+                    </h4>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-2xl font-semibold text-zen-900 dark:text-cream-100 mb-1 font-jetbrains-mono">
+                      {formatBalance(wethBalance, 18)}
+                    </p>
+                    <p className="text-sm text-zen-600 dark:text-cream-400 font-lato">
+                      WETH
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Vault Interface Card */}
           {!isConnected ? (
             <div className="max-w-md mx-auto bg-cream-100 dark:bg-zen-700 rounded-lg p-8 border border-zen-200 dark:border-zen-600 transition-colors duration-300">
@@ -233,7 +301,7 @@ export default function Portfolio() {
                 <button
                   onClick={handleDeposit}
                   disabled={isPending || isConfirming || !depositAmount}
-                  className="w-full border border-briq-orange text-briq-orange hover:bg-briq-orange hover:text-white disabled:opacity-50 disabled:cursor-not-allowed px-8 py-4 rounded-lg transition-all duration-200 font-medium font-lato"
+                  className="w-full border border-briq-orange text-briq-orange bg-transparent hover:bg-briq-orange/10 hover:shadow-highlight disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:hover:shadow-none px-8 py-4 rounded-lg transition-all duration-300 font-medium font-lato relative overflow-hidden hover-highlight-effect"
                 >
                   {isPending || isConfirming ? (
                     transactionStep === 'approving' ? 'Approving...' :
