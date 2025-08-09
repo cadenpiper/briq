@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useAccount, useReadContract, useWriteContract, useWaitForTransactionReceipt } from 'wagmi';
 import { parseUnits, formatUnits } from 'viem';
 import Layout from '../components/Layout';
@@ -16,6 +16,34 @@ import ERC20ABI from '../abis/ERC20.json';
 const BriqVaultABI = BriqVaultArtifact.abi;
 const BriqSharesABI = BriqSharesArtifact.abi;
 
+// PriceFeedManager ABI (only the function we need)
+const PRICE_FEED_MANAGER_ABI = [
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "token",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "amount",
+        "type": "uint256"
+      }
+    ],
+    "name": "getTokenValueInUSD",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  }
+];
+
 // Import fork addresses for development
 import { getContractAddresses } from '../utils/forkAddresses';
 
@@ -30,6 +58,45 @@ export default function Portfolio() {
 
   // Get contract addresses from fork deployment
   const CONTRACTS = getContractAddresses();
+
+  // Calculate token amount for USD conversion
+  const tokenAmountForUSD = useMemo(() => {
+    if (!depositAmount || depositAmount === '0') return BigInt(0);
+    
+    try {
+      const decimals = selectedToken === 'USDC' ? 6 : 18;
+      return parseUnits(depositAmount, decimals);
+    } catch {
+      return BigInt(0);
+    }
+  }, [depositAmount, selectedToken]);
+
+  // Get USD value from PriceFeedManager contract
+  const { data: usdValueRaw, isLoading: priceLoading } = useReadContract({
+    address: CONTRACTS.PRICE_FEED_MANAGER,
+    abi: PRICE_FEED_MANAGER_ABI,
+    functionName: 'getTokenValueInUSD',
+    args: [
+      selectedToken === 'USDC' ? CONTRACTS.USDC : CONTRACTS.WETH,
+      tokenAmountForUSD
+    ],
+    query: { 
+      enabled: !!CONTRACTS.PRICE_FEED_MANAGER && tokenAmountForUSD > 0,
+      refetchInterval: 30000 // Refetch every 30 seconds
+    }
+  });
+
+  // Format USD value for display
+  const usdValue = useMemo(() => {
+    if (!usdValueRaw || tokenAmountForUSD === BigInt(0)) return '0.00';
+    
+    try {
+      const formatted = formatUnits(usdValueRaw, 18);
+      return parseFloat(formatted).toFixed(2);
+    } catch {
+      return '0.00';
+    }
+  }, [usdValueRaw, tokenAmountForUSD]);
 
   // Read user token balances
   const { data: usdcBalance, refetch: refetchUsdcBalance } = useReadContract({
@@ -104,7 +171,7 @@ export default function Portfolio() {
       refetchUsdcAllowance();
       refetchWethAllowance();
     }
-  }, [isConfirmed, transactionStep, selectedToken, depositAmount, CONTRACTS, refetchUsdcBalance, refetchWethBalance, refetchSharesBalance, refetchUsdcAllowance, refetchWethAllowance]);
+  }, [isConfirmed, transactionStep, selectedToken, depositAmount, CONTRACTS, refetchUsdcBalance, refetchWethBalance, refetchSharesBalance, refetchUsdcAllowance, refetchWethAllowance, writeContract]);
 
   const handleDeposit = async () => {
     if (!depositAmount || !isConnected) return;
@@ -280,7 +347,7 @@ export default function Portfolio() {
                   </p>
                 </div>
 
-                {/* Amount Input */}
+                {/* Amount Input with USD Display */}
                 <div>
                   <label 
                     htmlFor="amount-input"
@@ -288,14 +355,26 @@ export default function Portfolio() {
                   >
                     Amount to Deposit
                   </label>
-                  <input
-                    id="amount-input"
-                    type="number"
-                    value={depositAmount}
-                    onChange={(e) => setDepositAmount(e.target.value)}
-                    placeholder="0.0"
-                    className="w-full p-4 border border-zen-300 dark:border-zen-500 rounded-lg bg-cream-50 dark:bg-zen-600 text-zen-900 dark:text-cream-100 transition-colors duration-300 font-lato focus:outline-none focus:ring-2 focus:ring-briq-orange focus:border-transparent [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                  />
+                  <div className="relative">
+                    <input
+                      id="amount-input"
+                      type="number"
+                      value={depositAmount}
+                      onChange={(e) => setDepositAmount(e.target.value)}
+                      placeholder="0.0"
+                      className="w-full p-4 pr-24 border border-zen-300 dark:border-zen-500 rounded-lg bg-cream-50 dark:bg-zen-600 text-zen-900 dark:text-cream-100 transition-colors duration-300 font-lato focus:outline-none focus:ring-2 focus:ring-briq-orange focus:border-transparent [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                    />
+                    {/* USD Value Display */}
+                    <div className="absolute inset-y-0 right-0 flex items-center pr-4">
+                      {priceLoading ? (
+                        <div className="w-4 h-4 border-2 border-briq-orange border-t-transparent rounded-full animate-spin"></div>
+                      ) : (
+                        <span className="text-sm font-medium text-briq-orange font-jetbrains-mono">
+                          ${usdValue}
+                        </span>
+                      )}
+                    </div>
+                  </div>
                 </div>
 
                 {/* Deposit Button */}
