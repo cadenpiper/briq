@@ -5,6 +5,7 @@ import { useAccount, useReadContract, useWriteContract, useWaitForTransactionRec
 import { parseUnits, formatUnits } from 'viem';
 import Layout from '../components/Layout';
 import { USDCIcon, WETHIcon } from '../components/icons';
+import CopyButton from '../components/CopyButton';
 
 // Import ABIs
 import BriqVaultArtifact from '../abis/BriqVault.json';
@@ -313,22 +314,39 @@ export default function Portfolio() {
                 {/* Transaction Status */}
                 {hash && (
                   <div className="mt-6 p-4 bg-briq-orange/10 border border-briq-orange/20 rounded-lg">
-                    <p className="text-sm text-zen-800 dark:text-cream-200 font-lato mb-2">
-                      Transaction Hash:
-                    </p>
-                    <p className="text-sm font-mono text-zen-900 dark:text-cream-100 break-all">
-                      {hash}
-                    </p>
-                    {isConfirming && (
-                      <p className="text-sm text-briq-orange mt-2 font-lato">
-                        Waiting for confirmation...
-                      </p>
-                    )}
+                    {/* Transaction Confirmed Message at Top */}
                     {isConfirmed && (
-                      <p className="text-sm text-green-600 dark:text-green-400 mt-2 font-lato">
-                        Transaction confirmed!
-                      </p>
+                      <div className="flex items-center justify-center gap-2 mb-6">
+                        <p className="text-sm text-green-600 dark:text-green-400 font-lato font-medium">
+                          Transaction confirmed
+                        </p>
+                        <svg className="w-4 h-4 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                        </svg>
+                      </div>
                     )}
+                    
+                    {/* Loading State */}
+                    {isConfirming && (
+                      <div className="flex items-center gap-2 mb-4">
+                        <div className="w-4 h-4 border-2 border-briq-orange border-t-transparent rounded-full animate-spin"></div>
+                        <p className="text-sm text-briq-orange font-lato">
+                          Waiting for confirmation...
+                        </p>
+                      </div>
+                    )}
+
+                    {/* Transaction Hash with Copy Button */}
+                    <div>
+                      <p className="text-sm text-zen-800 dark:text-cream-200 font-lato mb-1">
+                        Transaction Hash:
+                      </p>
+                      <CopyButton 
+                        text={hash} 
+                        showFullHash={true}
+                        className="w-full"
+                      />
+                    </div>
                   </div>
                 )}
               </div>
