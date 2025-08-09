@@ -1,12 +1,13 @@
 /**
- * Deploy Script - Briq Protocol
+ * Deploy Script - Briq Protocol with Chainlink Price Feeds
  * 
  * This script deploys all Briq Protocol smart contracts in the correct dependency order:
- * 1. BriqShares (ERC20 token for vault shares)
- * 2. StrategyAave (Aave V3 lending strategy)
- * 3. StrategyCompoundComet (Compound V3 strategy)
- * 4. StrategyCoordinator (manages strategy routing)
- * 5. BriqVault (main vault contract)
+ * 1. PriceFeedManager (Chainlink price feed integration)
+ * 2. BriqShares (ERC20 token for vault shares)
+ * 3. StrategyAave (Aave V3 lending strategy)
+ * 4. StrategyCompoundComet (Compound V3 strategy)
+ * 5. StrategyCoordinator (manages strategy routing)
+ * 6. BriqVault (main vault contract with USD-normalized shares)
  * 
  * Deployment addresses are saved to deployment.json for use by other scripts.
  */
@@ -15,7 +16,7 @@ const { ethers } = require("hardhat");
 const fs = require('fs');
 
 async function main() {
-  console.log("🚀 Deploying Briq Protocol\n");
+  console.log("🚀 Deploying Briq Protocol with Chainlink Price Feeds\n");
   
   // Get deployer account and network info
   const [deployer] = await ethers.getSigners();
@@ -29,28 +30,35 @@ async function main() {
   // Deploy contracts in dependency order
   console.log("📄 Deploying contracts...");
 
-  // 1. Deploy BriqShares (ERC20 token for vault shares)
+  // 1. Deploy PriceFeedManager (Chainlink price feed integration)
+  const PriceFeedManager = await ethers.getContractFactory("PriceFeedManager");
+  const priceFeedManager = await PriceFeedManager.deploy();
+  await priceFeedManager.waitForDeployment();
+  const priceFeedManagerAddress = await priceFeedManager.getAddress();
+  console.log(`   PriceFeedManager: ${priceFeedManagerAddress}`);
+
+  // 2. Deploy BriqShares (ERC20 token for vault shares)
   const BriqShares = await ethers.getContractFactory("BriqShares");
   const briqShares = await BriqShares.deploy("Briq Shares", "BRIQ");
   await briqShares.waitForDeployment();
   const briqSharesAddress = await briqShares.getAddress();
   console.log(`   BriqShares: ${briqSharesAddress}`);
 
-  // 2. Deploy StrategyAave (Aave V3 lending strategy)
+  // 3. Deploy StrategyAave (Aave V3 lending strategy)
   const StrategyAave = await ethers.getContractFactory("StrategyAave");
   const strategyAave = await StrategyAave.deploy();
   await strategyAave.waitForDeployment();
   const strategyAaveAddress = await strategyAave.getAddress();
   console.log(`   StrategyAave: ${strategyAaveAddress}`);
 
-  // 3. Deploy StrategyCompoundComet (Compound V3 strategy)
+  // 4. Deploy StrategyCompoundComet (Compound V3 strategy)
   const StrategyCompoundComet = await ethers.getContractFactory("StrategyCompoundComet");
   const strategyCompound = await StrategyCompoundComet.deploy();
   await strategyCompound.waitForDeployment();
   const strategyCompoundAddress = await strategyCompound.getAddress();
   console.log(`   StrategyCompoundComet: ${strategyCompoundAddress}`);
 
-  // 4. Deploy StrategyCoordinator (manages strategy routing)
+  // 5. Deploy StrategyCoordinator (manages strategy routing)
   const StrategyCoordinator = await ethers.getContractFactory("StrategyCoordinator");
   const strategyCoordinator = await StrategyCoordinator.deploy(
     strategyAaveAddress,
@@ -60,11 +68,12 @@ async function main() {
   const strategyCoordinatorAddress = await strategyCoordinator.getAddress();
   console.log(`   StrategyCoordinator: ${strategyCoordinatorAddress}`);
 
-  // 5. Deploy BriqVault (main vault contract)
+  // 6. Deploy BriqVault (main vault contract with USD-normalized shares)
   const BriqVault = await ethers.getContractFactory("BriqVault");
   const briqVault = await BriqVault.deploy(
     strategyCoordinatorAddress,
-    briqSharesAddress
+    briqSharesAddress,
+    priceFeedManagerAddress
   );
   await briqVault.waitForDeployment();
   const briqVaultAddress = await briqVault.getAddress();
@@ -77,6 +86,7 @@ async function main() {
     chainId: chainId.toString(),
     timestamp: new Date().toISOString(),
     contracts: {
+      PriceFeedManager: priceFeedManagerAddress,
       BriqVault: briqVaultAddress,
       BriqShares: briqSharesAddress,
       StrategyAave: strategyAaveAddress,
@@ -87,6 +97,12 @@ async function main() {
   
   fs.writeFileSync('./deployment.json', JSON.stringify(deploymentData, null, 2));
   console.log("📝 Addresses saved to deployment.json");
+  
+  console.log("\n🔗 Key Features Deployed:");
+  console.log("   • USD-normalized share distribution");
+  console.log("   • Chainlink price feed integration");
+  console.log("   • Multi-token support (USDC, WETH)");
+  console.log("   • Fair share allocation regardless of deposit token");
   
   console.log("\n" + "=".repeat(60));
 }

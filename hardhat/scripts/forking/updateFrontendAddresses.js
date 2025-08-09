@@ -1,5 +1,5 @@
 /**
- * Update Frontend Addresses - Briq Protocol
+ * Update Frontend Addresses - Briq Protocol with Chainlink Price Feeds
  * 
  * This utility updates the frontend forkAddresses.js file with deployed contract addresses.
  * Used by the configure script to sync contract addresses with the frontend for testing.
@@ -23,7 +23,7 @@ function updateFrontendAddresses(addresses) {
   }
   
   const fileContent = `/**
- * Fork Contract Addresses
+ * Fork Contract Addresses - Briq Protocol with Chainlink Price Feeds
  * 
  * Manually maintained contract addresses for the current fork deployment.
  * Update these addresses after deploying contracts to your local fork.
@@ -32,10 +32,11 @@ function updateFrontendAddresses(addresses) {
  */
 
 export const FORK_ADDRESSES = {
-  VAULT: "${addresses.VAULT}",   // BriqVault address
-  SHARES: "${addresses.SHARES}",  // BriqShares address
-  USDC: "${addresses.USDC}",   // Mainnet USDC (forked)
-  WETH: "${addresses.WETH}"    // Mainnet WETH (forked)
+  VAULT: "${addresses.VAULT}",                    // BriqVault address (with USD-normalized shares)
+  SHARES: "${addresses.SHARES}",                  // BriqShares address
+  PRICE_FEED_MANAGER: "${addresses.PRICE_FEED_MANAGER}", // PriceFeedManager address
+  USDC: "${addresses.USDC}",                     // Mainnet USDC (forked)
+  WETH: "${addresses.WETH}"                      // Mainnet WETH (forked)
 };
 
 /**
@@ -50,7 +51,15 @@ export function getContractAddresses() {
  */
 export function areContractsConfigured() {
   return FORK_ADDRESSES.VAULT !== "0x0000000000000000000000000000000000000000" &&
-         FORK_ADDRESSES.SHARES !== "0x0000000000000000000000000000000000000000";
+         FORK_ADDRESSES.SHARES !== "0x0000000000000000000000000000000000000000" &&
+         FORK_ADDRESSES.PRICE_FEED_MANAGER !== "0x0000000000000000000000000000000000000000";
+}
+
+/**
+ * Check if price feeds are configured
+ */
+export function arePriceFeedsConfigured() {
+  return FORK_ADDRESSES.PRICE_FEED_MANAGER !== "0x0000000000000000000000000000000000000000";
 }`;
 
   try {

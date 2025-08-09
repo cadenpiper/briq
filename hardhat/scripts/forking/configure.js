@@ -1,12 +1,13 @@
 /**
- * Configure Script - Briq Protocol
+ * Configure Script - Briq Protocol with Chainlink Price Feeds
  * 
  * This script configures the deployed Briq Protocol contracts by:
- * 1. Setting up contract relationships (vault ↔ shares, strategies ↔ coordinator)
- * 2. Configuring Aave strategy with pool address and supported tokens
- * 3. Configuring Compound strategy with market addresses and supported tokens
- * 4. Setting up token routing (USDC → Aave, WETH → Compound)
- * 5. Updating frontend addresses for the UI
+ * 1. Setting up Chainlink price feeds for USDC and WETH
+ * 2. Setting up contract relationships (vault ↔ shares, strategies ↔ coordinator)
+ * 3. Configuring Aave strategy with pool address and supported tokens
+ * 4. Configuring Compound strategy with market addresses and supported tokens
+ * 5. Setting up token routing (USDC → Aave, WETH → Compound)
+ * 6. Updating frontend addresses for the UI
  * 
  * Requires deployment.json from the deploy script and config.json for network settings.
  */
@@ -16,7 +17,7 @@ const fs = require('fs');
 const { updateFrontendAddresses } = require('./updateFrontendAddresses');
 
 async function main() {
-  console.log("⚙️  Configuring Briq Protocol\n");
+  console.log("⚙️  Configuring Briq Protocol with Chainlink Price Feeds\n");
   
   // Load deployment addresses
   if (!fs.existsSync('./deployment.json')) {
@@ -27,6 +28,7 @@ async function main() {
   const contracts = deploymentData.contracts;
   
   // Get contract instances
+  const priceFeedManager = await ethers.getContractAt("PriceFeedManager", contracts.PriceFeedManager);
   const briqVault = await ethers.getContractAt("BriqVault", contracts.BriqVault);
   const briqShares = await ethers.getContractAt("BriqShares", contracts.BriqShares);
   const strategyAave = await ethers.getContractAt("StrategyAave", contracts.StrategyAave);
@@ -57,7 +59,41 @@ async function main() {
     wethAddress: WETH_ADDRESS
   } = chainConfig;
 
-  console.log("🔗 Setting up contract relationships...");
+  // Chainlink Price Feed addresses (Ethereum mainnet)
+  const CHAINLINK_FEEDS = {
+    USDC_USD: "0x8fFfFfd4AfB6115b954Bd326cbe7B4BA576818f6", // USDC/USD
+    ETH_USD: "0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419"   // ETH/USD
+  };
+
+  console.log("📊 Setting up Chainlink price feeds...");
+  
+  // Configure USDC price feed (6 decimals)
+  await (await priceFeedManager.setPriceFeed(
+    USDC_ADDRESS,
+    CHAINLINK_FEEDS.USDC_USD,
+    6
+  )).wait();
+  console.log(`   ✅ USDC/USD price feed: ${CHAINLINK_FEEDS.USDC_USD}`);
+  
+  // Configure WETH price feed (18 decimals)
+  await (await priceFeedManager.setPriceFeed(
+    WETH_ADDRESS,
+    CHAINLINK_FEEDS.ETH_USD,
+    18
+  )).wait();
+  console.log(`   ✅ WETH/USD price feed: ${CHAINLINK_FEEDS.ETH_USD}`);
+
+  // Test price feeds are working
+  try {
+    const usdcPrice = await priceFeedManager.getTokenPrice(USDC_ADDRESS);
+    const wethPrice = await priceFeedManager.getTokenPrice(WETH_ADDRESS);
+    console.log(`   📈 Current USDC price: $${ethers.formatUnits(usdcPrice, 8)}`);
+    console.log(`   📈 Current WETH price: $${ethers.formatUnits(wethPrice, 8)}`);
+  } catch (error) {
+    console.log(`   ⚠️  Price feed test failed: ${error.message}`);
+  }
+
+  console.log("\n🔗 Setting up contract relationships...");
   
   // Set vault address in shares contract
   await (await briqShares.setVault(contracts.BriqVault)).wait();
@@ -104,6 +140,7 @@ async function main() {
   const deployedAddresses = {
     VAULT: contracts.BriqVault,
     SHARES: contracts.BriqShares,
+    PRICE_FEED_MANAGER: contracts.PriceFeedManager,
     USDC: USDC_ADDRESS,
     WETH: WETH_ADDRESS
   };
@@ -112,6 +149,17 @@ async function main() {
   console.log("✅ Frontend addresses synchronized");
 
   console.log("\n✅ Configuration complete!");
+  
+  console.log("\n🎉 Briq Protocol Features:");
+  console.log("   • USD-normalized share distribution ✅");
+  console.log("   • Real-time Chainlink price feeds ✅");
+  console.log("   • Fair shares regardless of deposit token ✅");
+  console.log("   • Multi-strategy yield optimization ✅");
+  console.log("   • USDC and WETH support ✅");
+  
+  console.log("\n💡 Users can now deposit USDC or WETH and receive");
+  console.log("   equivalent USD-value shares for maximum fairness!");
+  
   console.log("\n" + "=".repeat(60));
 }
 
