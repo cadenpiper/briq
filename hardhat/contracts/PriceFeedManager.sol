@@ -51,6 +51,18 @@ contract PriceFeedManager is Ownable {
         return usdValue;
     }
 
+    function convertUsdToToken(address _token, uint256 _usdValue) external view returns (uint256 tokenAmount) {
+        uint256 price = getTokenPrice(_token); // Price with 8 decimals
+        uint8 decimals = tokenDecimals[_token];
+        
+        // Convert USD (18 decimals) to token amount (token's native decimals)
+        // _usdValue (18 decimals) / price (8 decimals) * 10^8 = token amount in 18 decimals
+        // Then convert to token's native decimals
+        tokenAmount = (_usdValue * (10 ** decimals)) / (price * 1e10);
+        
+        return tokenAmount;
+    }
+
     function hasPriceFeed(address _token) external view returns (bool) {
         return address(priceFeeds[_token]) != address(0);
     }

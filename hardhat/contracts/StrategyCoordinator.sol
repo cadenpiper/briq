@@ -9,6 +9,12 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 
+// Interface for PriceFeedManager
+interface IPriceFeedManager {
+    function hasPriceFeed(address token) external view returns (bool);
+    function getTokenValueInUSD(address token, uint256 amount) external view returns (uint256);
+}
+
 /**
  * @title StrategyCoordinator
  * @author Briq Protocol
@@ -59,6 +65,12 @@ contract StrategyCoordinator is Ownable, ReentrancyGuard {
     
     /// @notice Tracks which tokens are supported by the coordinator
     mapping(address => bool) public supportedTokens;
+    
+    /// @notice Array to track all supported token addresses
+    address[] private supportedTokensList;
+    
+    /// @notice Mapping to track if token is in the array (for gas optimization)
+    mapping(address => bool) private tokenInList;
 
     /**
      * @notice Emitted when a token's strategy assignment is updated
@@ -170,6 +182,13 @@ contract StrategyCoordinator is Ownable, ReentrancyGuard {
         }
 
         supportedTokens[_token] = true;
+        
+        // Add to list if not already present
+        if (!tokenInList[_token]) {
+            supportedTokensList.push(_token);
+            tokenInList[_token] = true;
+        }
+        
         tokenToStrategy[_token] = _strategyType;
         emit StrategyUpdated(_token, _strategyType);
     }
@@ -330,6 +349,38 @@ contract StrategyCoordinator is Ownable, ReentrancyGuard {
         }
 
         return total;
+    }
+
+    /**
+     * @notice Gets the total USD value of all tokens across all strategies
+     * @dev Uses PriceFeedManager to calculate USD values
+     * @param _priceFeedManager Address of the PriceFeedManager contract
+     * @param _supportedTokens Array of token addresses to check
+     * @return totalUsdValue Total USD value with 18 decimals
+     */
+    function getTotalUsdValue(address _priceFeedManager, address[] memory _supportedTokens) external view returns (uint256 totalUsdValue) {
+        IPriceFeedManager priceFeedManager = IPriceFeedManager(_priceFeedManager);
+        
+        for (uint256 i = 0; i < _supportedTokens.length; i++) {
+            address token = _supportedTokens[i];
+            if (priceFeedManager.hasPriceFeed(token)) {
+                uint256 tokenBalance = this.getTotalTokenBalance(token);
+                if (tokenBalance > 0) {
+                    totalUsdValue += priceFeedManager.getTokenValueInUSD(token, tokenBalance);
+                }
+            }
+        }
+        
+        return totalUsdValue;
+    }
+
+    /**
+     * @notice Gets all supported tokens that have been configured
+     * @dev Returns tokens that have been assigned to strategies via setStrategyForToken
+     * @return Array of supported token addresses
+     */
+    function getSupportedTokens() external view returns (address[] memory) {
+        return supportedTokensList;
     }
 
     /**

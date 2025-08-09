@@ -137,21 +137,73 @@ contract BriqVault is Ownable, ReentrancyGuard {
         uint256 userShares = briqShares.balanceOf(msg.sender);
         if (_shares > userShares) revert Errors.InvalidShares();
 
-        // Calculate proportion to withdraw
+        // Calculate user's USD share of the vault
         uint256 totalShares = briqShares.totalSupply();
-        uint256 totalTokenBalance = strategyCoordinator.getTotalTokenBalance(_token);
-        uint256 amountToWithdraw = (_shares * totalTokenBalance) / totalShares;
+        uint256 totalVaultUsdValue = getTotalVaultValueInUSD();
+        if (totalVaultUsdValue == 0) revert Errors.InsufficientLiquidity();
+        
+        uint256 userUsdValue = (_shares * totalVaultUsdValue) / totalShares;
 
-        // Burn shares first
-        briqShares.burn(msg.sender, _shares);
+        // Convert USD value to token amount using current Chainlink price
+        uint256 idealAmount = priceFeedManager.convertUsdToToken(_token, userUsdValue);
+        
+        // Check available balance and handle graceful partial withdrawal
+        uint256 availableBalance = strategyCoordinator.getTotalTokenBalance(_token);
+        uint256 actualAmount = idealAmount;
+        uint256 actualShares = _shares;
+        
+        if (idealAmount > availableBalance) {
+            // Graceful partial withdrawal: give user what's available
+            actualAmount = availableBalance;
+            // Calculate proportional shares to burn based on actual amount
+            uint256 actualUsdValue = priceFeedManager.getTokenValueInUSD(_token, actualAmount);
+            actualShares = (actualUsdValue * totalShares) / totalVaultUsdValue;
+            
+            // Ensure we don't burn more shares than user requested
+            if (actualShares > _shares) {
+                actualShares = _shares;
+                actualAmount = idealAmount; // This should not happen, but safety check
+            }
+        }
+
+        // Burn the actual shares (might be less than requested)
+        briqShares.burn(msg.sender, actualShares);
 
         // Withdraw from StrategyCoordinator
-        strategyCoordinator.withdraw(_token, amountToWithdraw);
+        strategyCoordinator.withdraw(_token, actualAmount);
 
         // Transfer tokens to user
-        IERC20(_token).transfer(msg.sender, amountToWithdraw);
+        IERC20(_token).transfer(msg.sender, actualAmount);
 
-        emit UserWithdrew(msg.sender, _token, amountToWithdraw, _shares);
+        emit UserWithdrew(msg.sender, _token, actualAmount, actualShares);
+    }
+
+    /**
+     * @notice Check withdrawal availability for a specific token
+     * @param _token Address of the token to check
+     * @param _shares Amount of shares to potentially withdraw
+     * @return canWithdrawFull Whether full withdrawal is possible
+     * @return availableAmount Maximum token amount available for withdrawal
+     * @return idealAmount Ideal token amount for the shares
+     */
+    function checkWithdrawalAvailability(address _token, uint256 _shares) 
+        external 
+        view 
+        returns (bool canWithdrawFull, uint256 availableAmount, uint256 idealAmount) 
+    {
+        if (_shares == 0) return (false, 0, 0);
+        
+        uint256 totalShares = briqShares.totalSupply();
+        uint256 totalVaultUsdValue = getTotalVaultValueInUSD();
+        
+        if (totalShares == 0 || totalVaultUsdValue == 0) {
+            return (false, 0, 0);
+        }
+        
+        uint256 userUsdValue = (_shares * totalVaultUsdValue) / totalShares;
+        idealAmount = priceFeedManager.convertUsdToToken(_token, userUsdValue);
+        availableAmount = strategyCoordinator.getTotalTokenBalance(_token);
+        canWithdrawFull = availableAmount >= idealAmount;
     }
 
     /**
@@ -160,35 +212,17 @@ contract BriqVault is Ownable, ReentrancyGuard {
      * @return totalUsdValue Total vault value in USD with 18 decimals
      */
     function getTotalVaultValueInUSD() public view returns (uint256 totalUsdValue) {
-        // For simplicity, we'll check common tokens (USDC, WETH)
-        // In production, you might want to track supported tokens dynamically
-        
+        // Use StrategyCoordinator to get USD value across all strategies
         address[] memory supportedTokens = getSupportedTokens();
-        
-        for (uint256 i = 0; i < supportedTokens.length; i++) {
-            address token = supportedTokens[i];
-            if (priceFeedManager.hasPriceFeed(token)) {
-                uint256 tokenBalance = strategyCoordinator.getTotalTokenBalance(token);
-                if (tokenBalance > 0) {
-                    totalUsdValue += priceFeedManager.getTokenValueInUSD(token, tokenBalance);
-                }
-            }
-        }
-        
-        return totalUsdValue;
+        return strategyCoordinator.getTotalUsdValue(address(priceFeedManager), supportedTokens);
     }
 
     /**
      * @notice Returns array of supported token addresses
-     * @dev This is a simple implementation. In production, you might want to
-     *      make this dynamic or fetch from the strategy coordinator
+     * @dev Delegates to StrategyCoordinator which maintains the authoritative list
      */
-    function getSupportedTokens() public pure returns (address[] memory) {
-        address[] memory tokens = new address[](2);
-        // Arbitrum mainnet token addresses
-        tokens[0] = 0xaf88d065e77c8cC2239327C5EDb3A432268e5831; // USDC on Arbitrum
-        tokens[1] = 0x82aF49447D8a07e3bd95BD0d56f35241523fBab1; // WETH on Arbitrum
-        return tokens;
+    function getSupportedTokens() public view returns (address[] memory) {
+        return strategyCoordinator.getSupportedTokens();
     }
 
     /**

@@ -118,4 +118,10 @@ library Errors {
      * @dev Used in PriceFeedManager when price data exceeds staleness threshold
      */
     error StalePrice();
+    
+    /**
+     * @notice Thrown when vault has insufficient liquidity for operations
+     * @dev Used in vault when total USD value is zero or insufficient for withdrawals
+     */
+    error InsufficientLiquidity();
 }
