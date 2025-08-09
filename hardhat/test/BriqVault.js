@@ -41,10 +41,16 @@ describe("BriqVault", function () {
     );
     await strategyCoordinator.waitForDeployment();
 
+    // Deploy PriceFeedManager for the updated BriqVault constructor
+    const PriceFeedManager = await ethers.getContractFactory("PriceFeedManager");
+    const priceFeedManager = await PriceFeedManager.deploy();
+    await priceFeedManager.waitForDeployment();
+
     const BriqVault = await ethers.getContractFactory("BriqVault");
     const briqVault = await BriqVault.deploy(
       await strategyCoordinator.getAddress(),
-      await briqShares.getAddress()
+      await briqShares.getAddress(),
+      await priceFeedManager.getAddress()
     );
     await briqVault.waitForDeployment();
 
@@ -52,6 +58,12 @@ describe("BriqVault", function () {
     await (await strategyAave.setCoordinator(await strategyCoordinator.getAddress())).wait();
     await (await strategyCompound.setCoordinator(await strategyCoordinator.getAddress())).wait();
     await (await strategyCoordinator.updateVaultAddress(await briqVault.getAddress())).wait();
+
+    // Set up price feeds for USDC and WETH
+    const USDC_USD_FEED = "0x8fFfFfd4AfB6115b954Bd326cbe7B4BA576818f6"; // USDC/USD
+    const ETH_USD_FEED = "0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419";  // ETH/USD
+    await (await priceFeedManager.setPriceFeed(USDC_ADDRESS, USDC_USD_FEED, 6)).wait();
+    await (await priceFeedManager.setPriceFeed(chainConfig.wethAddress, ETH_USD_FEED, 18)).wait();
 
     await (await strategyAave.setAavePool(AAVE_POOL_V3)).wait();
     await (await strategyAave.addSupportedToken(USDC_ADDRESS)).wait();
@@ -82,6 +94,7 @@ describe("BriqVault", function () {
       strategyCoordinator, 
       strategyAave, 
       strategyCompound, 
+      priceFeedManager,
       owner, 
       user1, 
       user2, 
@@ -171,7 +184,7 @@ describe("BriqVault", function () {
     });
 
     it("should calculate shares correctly for first deposit", async function () {
-      const { briqVault, briqShares, user1, usdc } = await loadFixture(deployBriqVaultFixture);
+      const { briqVault, briqShares, user1, usdc, priceFeedManager } = await loadFixture(deployBriqVaultFixture);
       
       const depositAmount = ethers.parseUnits("100", 6);
       
@@ -179,10 +192,11 @@ describe("BriqVault", function () {
       
       await (await briqVault.connect(user1).deposit(USDC_ADDRESS, depositAmount)).wait();
       
-      const expectedShares = depositAmount * 1000000000000n;
+      // With USD-normalized shares, shares should equal USD value of deposit
+      const usdValue = await priceFeedManager.getTokenValueInUSD(USDC_ADDRESS, depositAmount);
       const actualShares = await briqShares.balanceOf(user1.address);
       
-      expect(actualShares).to.equal(expectedShares);
+      expect(actualShares).to.equal(usdValue);
     });
 
     it("should calculate shares correctly for subsequent deposits", async function () {
@@ -400,10 +414,16 @@ describe("BriqVault", function () {
       );
       await strategyCoordinator.waitForDeployment();
 
+      // Deploy PriceFeedManager for the updated BriqVault constructor
+      const PriceFeedManager = await ethers.getContractFactory("PriceFeedManager");
+      const priceFeedManager = await PriceFeedManager.deploy();
+      await priceFeedManager.waitForDeployment();
+
       const BriqVault = await ethers.getContractFactory("BriqVault");
       const briqVault = await BriqVault.deploy(
         await strategyCoordinator.getAddress(),
-        await briqShares.getAddress()
+        await briqShares.getAddress(),
+        await priceFeedManager.getAddress()
       );
       await briqVault.waitForDeployment();
 
@@ -412,6 +432,12 @@ describe("BriqVault", function () {
       await (await strategyAave.setCoordinator(await strategyCoordinator.getAddress())).wait();
       await (await strategyCompound.setCoordinator(await strategyCoordinator.getAddress())).wait();
       await (await strategyCoordinator.updateVaultAddress(await briqVault.getAddress())).wait();
+
+      // Set up price feeds for USDC and WETH
+      const USDC_USD_FEED = "0x8fFfFfd4AfB6115b954Bd326cbe7B4BA576818f6"; // USDC/USD
+      const ETH_USD_FEED = "0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419";  // ETH/USD
+      await (await priceFeedManager.setPriceFeed(USDC_ADDRESS, USDC_USD_FEED, 6)).wait();
+      await (await priceFeedManager.setPriceFeed(WETH_ADDRESS, ETH_USD_FEED, 18)).wait();
 
       // Configure Aave strategy for both tokens
       await (await strategyAave.setAavePool(AAVE_POOL_V3)).wait();
