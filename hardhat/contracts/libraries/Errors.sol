@@ -100,4 +100,22 @@ library Errors {
      * @dev Reserved for future multi-strategy coordination features
      */
     error InvalidStrategyPair();
+    
+    /**
+     * @notice Thrown when a price feed is not found for a token
+     * @dev Used in PriceFeedManager when requesting price for unsupported token
+     */
+    error PriceFeedNotFound();
+    
+    /**
+     * @notice Thrown when price feed returns invalid price (zero or negative)
+     * @dev Used in PriceFeedManager when Chainlink returns invalid price data
+     */
+    error InvalidPrice();
+    
+    /**
+     * @notice Thrown when price feed data is too old/stale
+     * @dev Used in PriceFeedManager when price data exceeds staleness threshold
+     */
+    error StalePrice();
 }

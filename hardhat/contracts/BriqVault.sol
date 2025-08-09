@@ -3,6 +3,7 @@ pragma solidity ^0.8.28;
 
 import "./StrategyCoordinator.sol";
 import "./BriqShares.sol";
+import "./PriceFeedManager.sol";
 import { Errors } from "./libraries/Errors.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
@@ -11,21 +12,21 @@ import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 /**
  * @title BriqVault
  * @author Briq Protocol
- * @notice Main vault contract that handles user deposits and withdrawals for yield optimization
+ * @notice Main vault contract with USD-normalized share distribution using Chainlink price feeds
  * @dev This contract serves as the primary entry point for users to deposit tokens and receive
- *      yield-bearing shares. It coordinates with StrategyCoordinator to deploy funds across
- *      different DeFi protocols for optimal yield generation.
+ *      yield-bearing shares. Uses Chainlink price feeds to ensure fair share distribution
+ *      regardless of which supported token (USDC/WETH) is deposited.
  * 
  * Key Features:
- * - Accepts user deposits in supported tokens
- * - Issues proportional shares (BriqShares) representing vault ownership
+ * - Accepts user deposits in supported tokens (USDC, WETH)
+ * - Issues USD-normalized shares using Chainlink price feeds
  * - Handles withdrawals by burning shares and returning underlying tokens
  * - Integrates with StrategyCoordinator for automated yield optimization
  * 
  * Security Features:
  * - ReentrancyGuard protection on deposit/withdraw functions
  * - Owner-only administrative functions
- * - Custom error handling for gas efficiency
+ * - USD-normalized share calculations prevent token-specific advantages
  */
 contract BriqVault is Ownable, ReentrancyGuard {
     
@@ -34,15 +35,19 @@ contract BriqVault is Ownable, ReentrancyGuard {
     
     /// @notice Shares token contract representing vault ownership
     BriqShares public briqShares;
+    
+    /// @notice Price feed manager for USD conversions
+    PriceFeedManager public priceFeedManager;
 
     /**
      * @notice Emitted when a user deposits tokens into the vault
      * @param user Address of the depositing user
      * @param token Address of the deposited token
      * @param amount Amount of tokens deposited
+     * @param usdValue USD value of the deposit
      * @param sharesMinted Amount of shares minted to the user
      */
-    event UserDeposited(address indexed user, address indexed token, uint256 amount, uint256 sharesMinted);
+    event UserDeposited(address indexed user, address indexed token, uint256 amount, uint256 usdValue, uint256 sharesMinted);
     
     /**
      * @notice Emitted when a user withdraws tokens from the vault
@@ -55,105 +60,89 @@ contract BriqVault is Ownable, ReentrancyGuard {
 
     /**
      * @notice Initializes the BriqVault contract
-     * @dev Sets up the vault with strategy coordinator and shares token contracts
      * @param _coordinator Address of the StrategyCoordinator contract
      * @param _briqShares Address of the BriqShares token contract
-     * 
-     * Requirements:
-     * - Neither address can be zero address
-     * - Caller becomes the owner of the contract
+     * @param _priceFeedManager Address of the PriceFeedManager contract
      */
-    constructor(address _coordinator, address _briqShares) Ownable(msg.sender) {
-        if (_coordinator == address(0) || _briqShares == address(0)) revert Errors.InvalidAddress();
+    constructor(address _coordinator, address _briqShares, address _priceFeedManager) Ownable(msg.sender) {
+        if (_coordinator == address(0) || _briqShares == address(0) || _priceFeedManager == address(0)) {
+            revert Errors.InvalidAddress();
+        }
 
         strategyCoordinator = StrategyCoordinator(_coordinator);
         briqShares = BriqShares(_briqShares);
+        priceFeedManager = PriceFeedManager(_priceFeedManager);
     }
 
     /**
-     * @notice Deposits tokens into the vault and mints shares to the user
-     * @dev Calculates shares based on the user's proportion of the total vault value.
-     *      For the first deposit, uses a fixed ratio. For subsequent deposits, uses
-     *      the pre-deposit balance to prevent share dilution attacks.
+     * @notice Deposits tokens into the vault and mints USD-normalized shares
+     * @dev Calculates shares based on USD value of deposit using Chainlink price feeds.
+     *      This ensures fair share distribution regardless of which token is deposited.
      * 
-     * @param _token Address of the token to deposit
+     * @param _token Address of the token to deposit (must have price feed configured)
      * @param _amount Amount of tokens to deposit
      * 
      * Requirements:
      * - Amount must be greater than 0
+     * - Token must have a configured price feed
      * - User must have approved the vault to spend the tokens
      * - Token must be supported by the strategy coordinator
-     * 
-     * Effects:
-     * - Transfers tokens from user to vault
-     * - Deposits tokens to strategy coordinator for yield generation
-     * - Mints proportional shares to the user
-     * - Emits UserDeposited event
-     * 
-     * Security:
-     * - Protected by nonReentrant modifier
-     * - Uses pre-deposit balance for share calculation to prevent manipulation
      */
     function deposit(address _token, uint256 _amount) external nonReentrant {
         if (_amount == 0) revert Errors.InvalidAmount();
+        if (!priceFeedManager.hasPriceFeed(_token)) revert Errors.PriceFeedNotFound();
 
         // Transfer tokens from user to vault
         IERC20(_token).transferFrom(msg.sender, address(this), _amount);
 
-        // Get balance BEFORE depositing to strategy
-        uint256 totalBalanceBefore = strategyCoordinator.getTotalTokenBalance(_token);
+        // Get USD value of deposit using Chainlink price feeds
+        uint256 depositUsdValue = priceFeedManager.getTokenValueInUSD(_token, _amount);
+        
+        // Get total vault value in USD before this deposit
+        uint256 totalVaultUsdValue = getTotalVaultValueInUSD();
         uint256 totalShares = briqShares.totalSupply();
 
-        // Approve and deposit tokens to StrategyCoordinator.sol
+        // Approve and deposit tokens to StrategyCoordinator
         IERC20(_token).approve(address(strategyCoordinator), _amount);
         strategyCoordinator.deposit(_token, _amount);
 
-        // Calculate shares to mint based on pre-deposit state
-        uint256 sharesToMint = (totalShares == 0 || totalBalanceBefore == 0)
-            ? _amount * 1e12  // First deposit gets fixed ratio
-            : (_amount * totalShares) / totalBalanceBefore;  // Subsequent deposits use pre-deposit balance
+        // Calculate shares based on USD value
+        uint256 sharesToMint;
+        if (totalShares == 0 || totalVaultUsdValue == 0) {
+            // First deposit: 1 USD = 1e18 shares
+            sharesToMint = depositUsdValue;
+        } else {
+            // Subsequent deposits: maintain proportional ownership
+            sharesToMint = (depositUsdValue * totalShares) / totalVaultUsdValue;
+        }
 
         // Mint shares to user
         briqShares.mint(msg.sender, sharesToMint);
 
-        emit UserDeposited(msg.sender, _token, _amount, sharesToMint);
+        emit UserDeposited(msg.sender, _token, _amount, depositUsdValue, sharesToMint);
     }
 
     /**
      * @notice Withdraws tokens from the vault by burning user shares
-     * @dev Calculates the user's proportional share of the vault and withdraws
-     *      the corresponding amount of tokens from the strategy coordinator.
+     * @dev Calculates the user's proportional share of the specific token
+     *      and withdraws the corresponding amount.
      * 
      * @param _token Address of the token to withdraw
      * @param _shares Amount of shares to burn for withdrawal
-     * 
-     * Requirements:
-     * - Shares amount must be greater than 0
-     * - User must have sufficient shares to burn
-     * - Vault must have sufficient liquidity in the requested token
-     * 
-     * Effects:
-     * - Burns the specified shares from the user
-     * - Withdraws proportional tokens from strategy coordinator
-     * - Transfers tokens to the user
-     * - Emits UserWithdrew event
-     * 
-     * Security:
-     * - Protected by nonReentrant modifier
-     * - Validates user has sufficient shares before proceeding
      */
     function withdraw(address _token, uint256 _shares) external nonReentrant {
         if (_shares == 0) revert Errors.InvalidAmount();
 
-        // Calculate msg.sender shares
+        // Validate user has sufficient shares
         uint256 userShares = briqShares.balanceOf(msg.sender);
         if (_shares > userShares) revert Errors.InvalidShares();
 
         // Calculate proportion to withdraw
         uint256 totalShares = briqShares.totalSupply();
-        uint256 totalBalance = strategyCoordinator.getTotalTokenBalance(_token);
-        uint256 amountToWithdraw = (_shares * totalBalance) / totalShares;
+        uint256 totalTokenBalance = strategyCoordinator.getTotalTokenBalance(_token);
+        uint256 amountToWithdraw = (_shares * totalTokenBalance) / totalShares;
 
+        // Burn shares first
         briqShares.burn(msg.sender, _shares);
 
         // Withdraw from StrategyCoordinator
@@ -163,5 +152,51 @@ contract BriqVault is Ownable, ReentrancyGuard {
         IERC20(_token).transfer(msg.sender, amountToWithdraw);
 
         emit UserWithdrew(msg.sender, _token, amountToWithdraw, _shares);
+    }
+
+    /**
+     * @notice Gets the total vault value in USD across all supported tokens
+     * @dev Sums up the USD value of all token balances in the vault
+     * @return totalUsdValue Total vault value in USD with 18 decimals
+     */
+    function getTotalVaultValueInUSD() public view returns (uint256 totalUsdValue) {
+        // For simplicity, we'll check common tokens (USDC, WETH)
+        // In production, you might want to track supported tokens dynamically
+        
+        address[] memory supportedTokens = getSupportedTokens();
+        
+        for (uint256 i = 0; i < supportedTokens.length; i++) {
+            address token = supportedTokens[i];
+            if (priceFeedManager.hasPriceFeed(token)) {
+                uint256 tokenBalance = strategyCoordinator.getTotalTokenBalance(token);
+                if (tokenBalance > 0) {
+                    totalUsdValue += priceFeedManager.getTokenValueInUSD(token, tokenBalance);
+                }
+            }
+        }
+        
+        return totalUsdValue;
+    }
+
+    /**
+     * @notice Returns array of supported token addresses
+     * @dev This is a simple implementation. In production, you might want to
+     *      make this dynamic or fetch from the strategy coordinator
+     */
+    function getSupportedTokens() public pure returns (address[] memory) {
+        address[] memory tokens = new address[](2);
+        // Arbitrum mainnet token addresses
+        tokens[0] = 0xaf88d065e77c8cC2239327C5EDb3A432268e5831; // USDC on Arbitrum
+        tokens[1] = 0x82aF49447D8a07e3bd95BD0d56f35241523fBab1; // WETH on Arbitrum
+        return tokens;
+    }
+
+    /**
+     * @notice Updates the price feed manager (owner only)
+     * @param _newPriceFeedManager Address of the new price feed manager
+     */
+    function updatePriceFeedManager(address _newPriceFeedManager) external onlyOwner {
+        if (_newPriceFeedManager == address(0)) revert Errors.InvalidAddress();
+        priceFeedManager = PriceFeedManager(_newPriceFeedManager);
     }
 }

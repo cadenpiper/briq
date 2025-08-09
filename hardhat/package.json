@@ -24,13 +24,15 @@
     "setup-fork": "npm run deploy && npm run configure && npm run fund && npm run balance"
   },
   "devDependencies": {
-    "@nomicfoundation/hardhat-toolbox": "^5.0.0",
+    "@nomicfoundation/hardhat-ethers": "^3.1.0",
     "dotenv": "^17.2.0",
+    "ethers": "^6.15.0",
     "hardhat": "^2.22.19",
-    "hardhat-gas-reporter": "^2.3.0"
+    "hardhat-gas-reporter": "^1.0.10"
   },
   "dependencies": {
     "@aave/core-v3": "^1.19.3",
+    "@chainlink/contracts": "^1.4.0",
     "@openzeppelin/contracts": "^5.4.0"
   }
 }
