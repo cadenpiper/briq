@@ -1,12 +1,26 @@
+/**
+ * Update Frontend Addresses - Briq Protocol
+ * 
+ * This utility updates the frontend forkAddresses.js file with deployed contract addresses.
+ * Used by the configure script to sync contract addresses with the frontend for testing.
+ * 
+ * For production deployments, addresses should be manually updated in the frontend.
+ */
+
 const fs = require('fs');
 const path = require('path');
 
-/**
- * Updates the frontend forkAddresses.js file with deployed contract addresses
- * Call this after running setupFork.js to sync addresses
- */
 function updateFrontendAddresses(addresses) {
-  const frontendPath = path.join(__dirname, '../../src/app/utils/forkAddresses.js');
+  // Path from hardhat/scripts/forking/ to src/app/utils/forkAddresses.js
+  const frontendPath = path.join(__dirname, '../../../src/app/utils/forkAddresses.js');
+  
+  // Check if frontend directory exists
+  const frontendDir = path.dirname(frontendPath);
+  if (!fs.existsSync(frontendDir)) {
+    console.log(`⚠️  Frontend directory not found: ${frontendDir}`);
+    console.log(`   Skipping frontend address update (hardhat-only repository)`);
+    return;
+  }
   
   const fileContent = `/**
  * Fork Contract Addresses
@@ -39,8 +53,13 @@ export function areContractsConfigured() {
          FORK_ADDRESSES.SHARES !== "0x0000000000000000000000000000000000000000";
 }`;
 
-  fs.writeFileSync(frontendPath, fileContent);
-  console.log(`✅ Frontend addresses updated at ${frontendPath}`);
+  try {
+    fs.writeFileSync(frontendPath, fileContent);
+    console.log(`✅ Frontend addresses updated at ${frontendPath}`);
+  } catch (error) {
+    console.log(`⚠️  Could not update frontend addresses: ${error.message}`);
+    console.log(`   This is normal for hardhat-only repositories`);
+  }
 }
 
 // If called directly, update with current addresses from deployment

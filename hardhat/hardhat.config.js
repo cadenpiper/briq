@@ -1,4 +1,4 @@
-require("dotenv").config();
+require("dotenv").config({ quiet: true });
 require("@nomicfoundation/hardhat-toolbox");
 require("hardhat-gas-reporter");
 

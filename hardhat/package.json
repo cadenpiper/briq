@@ -17,7 +17,11 @@
   "scripts": {
     "test": "npx hardhat test",
     "node": "npx hardhat node",
-    "setup-fork": "npx hardhat run scripts/setupFork.js"
+    "deploy": "npx hardhat run scripts/forking/deploy.js --network localhost",
+    "configure": "npx hardhat run scripts/forking/configure.js --network localhost",
+    "fund": "npx hardhat run scripts/forking/fundAccount.js --network localhost",
+    "balance": "npx hardhat run scripts/forking/checkBalance.js --network localhost",
+    "setup-fork": "npm run deploy && npm run configure && npm run fund && npm run balance"
   },
   "devDependencies": {
     "@nomicfoundation/hardhat-toolbox": "^5.0.0",
