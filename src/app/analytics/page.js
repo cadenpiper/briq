@@ -106,21 +106,6 @@ export default function Analytics() {
               </div>
             </div>
 
-            {/* Markets Card */}
-            <div className="bg-cream-50 dark:bg-zen-800 rounded-lg p-6 border border-zen-300 dark:border-zen-600 shadow-sm">
-              <div className="flex flex-col">
-                <h2 className="text-lg font-semibold text-zen-600 dark:text-cream-400 mb-3">
-                  Active Markets
-                </h2>
-                <div className="text-4xl font-bold text-zen-900 dark:text-cream-100 font-jetbrains-mono">
-                  {marketsLoading ? '--.--' : marketsError ? 'Error' : markets.length}
-                </div>
-                <div className="text-xs text-zen-500 dark:text-cream-500 mt-2">
-                  Strategies Deployed
-                </div>
-              </div>
-            </div>
-
             {/* Average APY Card */}
             <div className="bg-cream-50 dark:bg-zen-800 rounded-lg p-6 border border-zen-300 dark:border-zen-600 shadow-sm">
               <div className="flex flex-col">
@@ -132,25 +117,6 @@ export default function Analytics() {
                 </div>
                 <div className="text-xs text-zen-500 dark:text-cream-500 mt-2">
                   Weighted by TVL
-                </div>
-              </div>
-            </div>
-
-            {/* Largest Market Card */}
-            <div className="bg-cream-50 dark:bg-zen-800 rounded-lg p-6 border border-zen-300 dark:border-zen-600 shadow-sm">
-              <div className="flex flex-col">
-                <h2 className="text-lg font-semibold text-zen-600 dark:text-cream-400 mb-3">
-                  Largest Market
-                </h2>
-                <div className="text-4xl font-bold text-zen-900 dark:text-cream-100 font-jetbrains-mono">
-                  {marketsLoading ? '--.--' : marketsError ? 'Error' : 
-                    markets.length > 0 ? 
-                      markets.reduce((max, market) => market.usdValueFormatted > max.usdValueFormatted ? market : max, markets[0]).strategyName 
-                      : '--'
-                  }
-                </div>
-                <div className="text-xs text-zen-500 dark:text-cream-500 mt-2">
-                  Highest TVL Strategy
                 </div>
               </div>
             </div>
@@ -169,7 +135,7 @@ export default function Analytics() {
                     <div key={index} className="space-y-3">
                       {/* Market Info Row */}
                       <div className="flex justify-between items-center">
-                        <div className="flex items-center space-x-4">
+                        <div className="flex items-center space-x-3">
                           <div className="flex flex-col">
                             <span className="font-semibold text-lg text-zen-900 dark:text-cream-100">
                               {market.tokenSymbol}
@@ -178,22 +144,16 @@ export default function Analytics() {
                               via {market.strategyName}
                             </span>
                           </div>
-                          {/* APY Badge */}
-                          <div className="flex flex-col items-center">
-                            <span className="text-xs text-zen-500 dark:text-cream-500 uppercase tracking-wide">
-                              APY
-                            </span>
-                            <span className="text-lg font-bold text-green-600 dark:text-green-400">
-                              {marketsLoading ? '--.--' : `${market.apyFormatted}%`}
-                            </span>
-                          </div>
                         </div>
-                        <div className="text-right">
+                        <div className="text-right space-y-1">
                           <div className="font-jetbrains-mono text-xl font-bold text-zen-900 dark:text-cream-100">
                             ${market.usdValueFormatted.toFixed(2)}
                           </div>
                           <div className="text-sm text-zen-500 dark:text-cream-500">
                             {market.balanceFormatted.toFixed(4)} {market.tokenSymbol}
+                          </div>
+                          <div className="text-sm font-bold text-green-600 dark:text-green-400">
+                            {marketsLoading ? '--.--' : `${market.apyFormatted}%`} APY
                           </div>
                         </div>
                       </div>
@@ -202,10 +162,7 @@ export default function Analytics() {
                       <div className="space-y-2">
                         <div className="flex justify-between items-center">
                           <span className="text-sm font-medium text-zen-600 dark:text-cream-400">
-                            Allocation
-                          </span>
-                          <span className="text-lg font-bold text-briq-orange">
-                            {allocation.toFixed(1)}%
+                            Allocation ({allocation.toFixed(1)}%)
                           </span>
                         </div>
                         <div className="w-full h-4 bg-zen-200 dark:bg-zen-600 rounded-lg overflow-hidden shadow-inner">

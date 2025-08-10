@@ -35,8 +35,9 @@ export const FORK_ADDRESSES = {
   VAULT: "${addresses.VAULT}",                    // BriqVault address (with USD-normalized shares)
   SHARES: "${addresses.SHARES}",                  // BriqShares address
   PRICE_FEED_MANAGER: "${addresses.PRICE_FEED_MANAGER}", // PriceFeedManager address
-  USDC: "${addresses.USDC}",                     // Mainnet USDC (forked)
-  WETH: "${addresses.WETH}"                      // Mainnet WETH (forked)
+  STRATEGY_COORDINATOR: "${addresses.STRATEGY_COORDINATOR}", // StrategyCoordinator address
+  USDC: "${addresses.USDC}",                     // Native USDC (Arbitrum One)
+  WETH: "${addresses.WETH}"                      // WETH (Arbitrum One)
 };
 
 /**
@@ -52,7 +53,8 @@ export function getContractAddresses() {
 export function areContractsConfigured() {
   return FORK_ADDRESSES.VAULT !== "0x0000000000000000000000000000000000000000" &&
          FORK_ADDRESSES.SHARES !== "0x0000000000000000000000000000000000000000" &&
-         FORK_ADDRESSES.PRICE_FEED_MANAGER !== "0x0000000000000000000000000000000000000000";
+         FORK_ADDRESSES.PRICE_FEED_MANAGER !== "0x0000000000000000000000000000000000000000" &&
+         FORK_ADDRESSES.STRATEGY_COORDINATOR !== "0x0000000000000000000000000000000000000000";
 }
 
 /**
@@ -60,6 +62,13 @@ export function areContractsConfigured() {
  */
 export function arePriceFeedsConfigured() {
   return FORK_ADDRESSES.PRICE_FEED_MANAGER !== "0x0000000000000000000000000000000000000000";
+}
+
+/**
+ * Check if APY functionality is available
+ */
+export function isAPYAvailable() {
+  return FORK_ADDRESSES.STRATEGY_COORDINATOR !== "0x0000000000000000000000000000000000000000";
 }`;
 
   try {
