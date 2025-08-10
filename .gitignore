@@ -39,3 +39,12 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Hardhat/deployment artifacts
+/hardhat/deployments/
+/hardhat/cache/
+/hardhat/artifacts/
+hardhat/deployment.json
+
+# Fork addresses (changes frequently during development)
+src/app/utils/forkAddresses.js

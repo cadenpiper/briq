@@ -10,39 +10,13 @@ import CopyButton from '../components/CopyButton';
 // Import ABIs
 import BriqVaultArtifact from '../abis/BriqVault.json';
 import BriqSharesArtifact from '../abis/BriqShares.json';
+import PriceFeedManagerArtifact from '../abis/PriceFeedManager.json';
 import ERC20ABI from '../abis/ERC20.json';
 
 // Extract ABIs from artifacts
 const BriqVaultABI = BriqVaultArtifact.abi;
 const BriqSharesABI = BriqSharesArtifact.abi;
-
-// PriceFeedManager ABI (only the function we need)
-const PRICE_FEED_MANAGER_ABI = [
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "token",
-        "type": "address"
-      },
-      {
-        "internalType": "uint256",
-        "name": "amount",
-        "type": "uint256"
-      }
-    ],
-    "name": "getTokenValueInUSD",
-    "outputs": [
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  }
-];
+const PriceFeedManagerABI = PriceFeedManagerArtifact.abi;
 
 // Import fork addresses for development
 import { getContractAddresses } from '../utils/forkAddresses';
@@ -53,8 +27,10 @@ export default function Portfolio() {
   const { isLoading: isConfirming, isSuccess: isConfirmed } = useWaitForTransactionReceipt({ hash });
 
   const [depositAmount, setDepositAmount] = useState('');
+  const [withdrawShares, setWithdrawShares] = useState('');
   const [selectedToken, setSelectedToken] = useState('USDC');
-  const [transactionStep, setTransactionStep] = useState('idle'); // 'idle', 'approving', 'depositing'
+  const [transactionStep, setTransactionStep] = useState('idle'); // 'idle', 'approving', 'depositing', 'withdrawing'
+  const [vaultMode, setVaultMode] = useState('deposit'); // 'deposit' or 'withdraw'
 
   // Get contract addresses from fork deployment
   const CONTRACTS = getContractAddresses();
@@ -74,7 +50,7 @@ export default function Portfolio() {
   // Get USD value from PriceFeedManager contract
   const { data: usdValueRaw, isLoading: priceLoading } = useReadContract({
     address: CONTRACTS.PRICE_FEED_MANAGER,
-    abi: PRICE_FEED_MANAGER_ABI,
+    abi: PriceFeedManagerABI,
     functionName: 'getTokenValueInUSD',
     args: [
       selectedToken === 'USDC' ? CONTRACTS.USDC : CONTRACTS.WETH,
@@ -170,8 +146,16 @@ export default function Portfolio() {
       refetchSharesBalance();
       refetchUsdcAllowance();
       refetchWethAllowance();
+    } else if (isConfirmed && transactionStep === 'withdrawing') {
+      setTransactionStep('idle');
+      setWithdrawShares(''); // Clear the form
+      
+      // Refresh all balances after successful withdrawal
+      refetchUsdcBalance();
+      refetchWethBalance();
+      refetchSharesBalance();
     }
-  }, [isConfirmed, transactionStep, selectedToken, depositAmount, CONTRACTS, refetchUsdcBalance, refetchWethBalance, refetchSharesBalance, refetchUsdcAllowance, refetchWethAllowance, writeContract]);
+  }, [isConfirmed, transactionStep, selectedToken, depositAmount, withdrawShares, CONTRACTS, refetchUsdcBalance, refetchWethBalance, refetchSharesBalance, refetchUsdcAllowance, refetchWethAllowance, writeContract]);
 
   const handleDeposit = async () => {
     if (!depositAmount || !isConnected) return;
@@ -205,6 +189,57 @@ export default function Portfolio() {
         args: [tokenAddress, amount]
       });
     }
+  };
+
+  // Check withdrawal availability
+  const { data: withdrawalAvailability } = useReadContract({
+    address: CONTRACTS.VAULT,
+    abi: BriqVaultABI,
+    functionName: 'checkWithdrawalAvailability',
+    args: [
+      selectedToken === 'USDC' ? CONTRACTS.USDC : CONTRACTS.WETH,
+      withdrawShares ? parseUnits(withdrawShares, 18) : BigInt(0)
+    ],
+    query: { 
+      enabled: !!withdrawShares && withdrawShares !== '0' && vaultMode === 'withdraw',
+      refetchInterval: 10000 // Refetch every 10 seconds
+    }
+  });
+
+  // Get USD value for withdrawal using PriceFeedManager
+  const { data: withdrawalUsdValueRaw } = useReadContract({
+    address: CONTRACTS.PRICE_FEED_MANAGER,
+    abi: PriceFeedManagerABI,
+    functionName: 'getTokenValueInUSD',
+    args: [
+      selectedToken === 'USDC' ? CONTRACTS.USDC : CONTRACTS.WETH,
+      withdrawalAvailability ? withdrawalAvailability[2] : BigInt(0)
+    ],
+    query: { 
+      enabled: !!withdrawalAvailability && !!withdrawShares && vaultMode === 'withdraw',
+      refetchInterval: 30000
+    }
+  });
+
+  // Format USD value from 18 decimals
+  const withdrawalUsdValue = withdrawalUsdValueRaw 
+    ? parseFloat(formatUnits(withdrawalUsdValueRaw, 18)).toFixed(2)
+    : '0.00';
+
+  const handleWithdraw = async () => {
+    if (!withdrawShares || !isConnected) return;
+    
+    const tokenAddress = selectedToken === 'USDC' ? CONTRACTS.USDC : CONTRACTS.WETH;
+    const sharesAmount = parseUnits(withdrawShares, 18);
+    
+    setTransactionStep('withdrawing');
+    
+    writeContract({
+      address: CONTRACTS.VAULT,
+      abi: BriqVaultABI,
+      functionName: 'withdraw',
+      args: [tokenAddress, sharesAmount]
+    });
   };
 
   const formatBalance = (balance, decimals) => {
@@ -317,6 +352,48 @@ export default function Portfolio() {
                 Vault Interface
               </h3>
               
+              {/* Deposit/Withdraw Sliding Toggle Switch */}
+              <div className="mb-6">
+                <div className="relative bg-cream-50 dark:bg-zen-600 rounded-lg border border-zen-300 dark:border-zen-500 overflow-hidden p-1">
+                  {/* Sliding Background - Matches Button Hover Theme */}
+                  <div 
+                    className="absolute bg-briq-orange/10 border-briq-orange/20 rounded-md transition-all duration-300 ease-out"
+                    style={{
+                      transform: vaultMode === 'withdraw' ? 'translateX(calc(100% + 8px))' : 'translateX(0%)',
+                      borderWidth: '1px',
+                      top: '4px',
+                      bottom: '4px',
+                      left: '4px',
+                      width: 'calc(50% - 8px)'
+                    }}
+                  />
+                  
+                  {/* Toggle Options */}
+                  <div className="relative flex">
+                    <button
+                      onClick={() => setVaultMode('deposit')}
+                      className={`flex-1 py-3 px-4 text-sm font-medium transition-all duration-300 relative z-10 rounded-md ${
+                        vaultMode === 'deposit'
+                          ? 'text-briq-orange font-semibold'
+                          : 'text-zen-500 dark:text-cream-500 hover:text-zen-700 dark:hover:text-cream-300'
+                      }`}
+                    >
+                      Deposit
+                    </button>
+                    <button
+                      onClick={() => setVaultMode('withdraw')}
+                      className={`flex-1 py-3 px-4 text-sm font-medium transition-all duration-300 relative z-10 rounded-md ${
+                        vaultMode === 'withdraw'
+                          ? 'text-briq-orange font-semibold'
+                          : 'text-zen-500 dark:text-cream-500 hover:text-zen-700 dark:hover:text-cream-300'
+                      }`}
+                    >
+                      Withdraw
+                    </button>
+                  </div>
+                </div>
+              </div>
+              
               <div className="space-y-6">
                 {/* Token Selection */}
                 <div>
@@ -343,51 +420,124 @@ export default function Portfolio() {
                     </div>
                   </div>
                   <p className="text-sm text-zen-600 dark:text-cream-400 mt-2 font-lato">
-                    Balance: {getCurrentBalance()} {selectedToken}
+                    {vaultMode === 'deposit' ? `Balance: ${getCurrentBalance()} ${selectedToken}` : `Shares: ${formatBalance(sharesBalance, 18)} BRIQ`}
                   </p>
                 </div>
 
-                {/* Amount Input with USD Display */}
-                <div>
-                  <label 
-                    htmlFor="amount-input"
-                    className="block text-sm font-medium text-zen-900 dark:text-cream-100 mb-3 font-lato"
-                  >
-                    Amount to Deposit
-                  </label>
-                  <div className="relative">
-                    <input
-                      id="amount-input"
-                      type="number"
-                      value={depositAmount}
-                      onChange={(e) => setDepositAmount(e.target.value)}
-                      placeholder="0.0"
-                      className="w-full p-4 pr-24 border border-zen-300 dark:border-zen-500 rounded-lg bg-cream-50 dark:bg-zen-600 text-zen-900 dark:text-cream-100 transition-colors duration-300 font-lato focus:outline-none focus:ring-2 focus:ring-briq-orange focus:border-transparent [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                    />
-                    {/* USD Value Display */}
-                    <div className="absolute inset-y-0 right-0 flex items-center pr-4">
-                      {priceLoading ? (
-                        <div className="w-4 h-4 border-2 border-briq-orange border-t-transparent rounded-full animate-spin"></div>
-                      ) : (
-                        <span className="text-sm font-medium text-briq-orange font-jetbrains-mono">
-                          ${usdValue}
-                        </span>
-                      )}
+                {/* Conditional Input Based on Mode */}
+                {vaultMode === 'deposit' ? (
+                  /* Deposit Amount Input */
+                  <div>
+                    <label 
+                      htmlFor="amount-input"
+                      className="block text-sm font-medium text-zen-900 dark:text-cream-100 mb-3 font-lato"
+                    >
+                      Amount to Deposit
+                    </label>
+                    <div className="relative">
+                      <input
+                        id="amount-input"
+                        type="number"
+                        value={depositAmount}
+                        onChange={(e) => setDepositAmount(e.target.value)}
+                        placeholder="0.0"
+                        className="w-full p-4 pr-24 border border-zen-300 dark:border-zen-500 rounded-lg bg-cream-50 dark:bg-zen-600 text-zen-900 dark:text-cream-100 transition-colors duration-300 font-lato focus:outline-none focus:ring-2 focus:ring-briq-orange focus:border-transparent [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                      />
+                      {/* USD Value Display */}
+                      <div className="absolute inset-y-0 right-0 flex items-center pr-4">
+                        {priceLoading ? (
+                          <div className="w-4 h-4 border-2 border-briq-orange border-t-transparent rounded-full animate-spin"></div>
+                        ) : (
+                          <span className="text-sm font-medium text-briq-orange font-jetbrains-mono">
+                            ${usdValue}
+                          </span>
+                        )}
+                      </div>
                     </div>
                   </div>
-                </div>
+                ) : (
+                  /* Withdraw Shares Input */
+                  <div>
+                    <label 
+                      htmlFor="shares-input"
+                      className="block text-sm font-medium text-zen-900 dark:text-cream-100 mb-3 font-lato"
+                    >
+                      Shares to Withdraw
+                    </label>
+                    <div className="relative">
+                      <input
+                        id="shares-input"
+                        type="number"
+                        value={withdrawShares}
+                        onChange={(e) => setWithdrawShares(e.target.value)}
+                        placeholder="0.0"
+                        className="w-full p-4 pr-20 border border-zen-300 dark:border-zen-500 rounded-lg bg-cream-50 dark:bg-zen-600 text-zen-900 dark:text-cream-100 transition-colors duration-300 font-lato focus:outline-none focus:ring-2 focus:ring-briq-orange focus:border-transparent [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                      />
+                      <div className="absolute inset-y-0 right-0 flex items-center pr-4">
+                        <span className="text-sm font-medium text-zen-600 dark:text-cream-400 font-jetbrains-mono">
+                          BRIQ
+                        </span>
+                      </div>
+                    </div>
+                    
+                    {/* Withdrawal Availability Info */}
+                    {withdrawalAvailability && withdrawShares && (
+                      <div className="mt-3 p-3 bg-briq-orange/10 border border-briq-orange/20 rounded-lg">
+                        <div className="text-sm space-y-1">
+                          {/* Full amount available */}
+                          <div className="flex justify-between">
+                            <span className="text-zen-600 dark:text-cream-400">Full amount available:</span>
+                            <span className={`font-medium ${withdrawalAvailability[0] ? 'text-green-600 dark:text-green-400' : 'text-yellow-600 dark:text-yellow-400'}`}>
+                              {withdrawalAvailability[0] ? 'Yes' : 'No'}
+                            </span>
+                          </div>
+                          
+                          {/* Amount requested */}
+                          <div className="flex justify-between">
+                            <span className="text-zen-600 dark:text-cream-400">Amount requested:</span>
+                            <span className="font-medium text-zen-900 dark:text-cream-100 font-jetbrains-mono">
+                              {parseFloat(formatUnits(withdrawalAvailability[2], selectedToken === 'USDC' ? 6 : 18)).toFixed(selectedToken === 'USDC' ? 6 : 8)} {selectedToken}
+                            </span>
+                          </div>
+                          
+                          {/* Amount available (only show if can't withdraw full amount) */}
+                          {!withdrawalAvailability[0] && (
+                            <div className="flex justify-between">
+                              <span className="text-zen-600 dark:text-cream-400">Amount available:</span>
+                              <span className="font-medium text-zen-900 dark:text-cream-100 font-jetbrains-mono">
+                                {parseFloat(formatUnits(withdrawalAvailability[1], selectedToken === 'USDC' ? 6 : 18)).toFixed(selectedToken === 'USDC' ? 6 : 8)} {selectedToken}
+                              </span>
+                            </div>
+                          )}
+                          
+                          {/* USD value */}
+                          <div className="flex justify-between">
+                            <span className="text-zen-600 dark:text-cream-400">USD value:</span>
+                            <span className="font-medium text-briq-orange font-jetbrains-mono">
+                              ${withdrawalUsdValue}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
 
-                {/* Deposit Button */}
+                {/* Action Button */}
                 <button
-                  onClick={handleDeposit}
-                  disabled={isPending || isConfirming || !depositAmount}
+                  onClick={vaultMode === 'deposit' ? handleDeposit : handleWithdraw}
+                  disabled={
+                    isPending || isConfirming || 
+                    (vaultMode === 'deposit' ? !depositAmount : !withdrawShares)
+                  }
                   className="w-full border border-briq-orange text-briq-orange bg-transparent hover:bg-briq-orange/10 hover:shadow-highlight disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:hover:shadow-none px-8 py-4 rounded-lg transition-all duration-300 font-medium font-lato relative overflow-hidden hover-highlight-effect"
                 >
                   {isPending || isConfirming ? (
                     transactionStep === 'approving' ? 'Approving...' :
                     transactionStep === 'depositing' ? 'Depositing...' :
+                    transactionStep === 'withdrawing' ? 'Withdrawing...' :
                     'Processing...'
-                  ) : 'Deposit'}
+                  ) : (vaultMode === 'deposit' ? 'Deposit' : 'Withdraw')}
                 </button>
 
                 {/* Transaction Status */}
