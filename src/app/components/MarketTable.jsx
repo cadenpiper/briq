@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useEffect } from 'react';
 import { formatAPY, formatTVL, formatUtilization } from '../utils/formatters';
-import { useMarketData } from '../hooks/useMarketData';
+import { useSubgraphMarketData } from '../hooks/useSubgraphMarketData';
 import { ProtocolIcon, TokenIcon, NetworkIcon } from './icons';
 
 export default function MarketTable() {
@@ -11,7 +11,7 @@ export default function MarketTable() {
   const [sortConfig, setSortConfig] = useState({ key: 'apy', direction: 'desc' });
 
   // Fetch real market data from subgraphs
-  const { data: subgraphData, loading: subgraphLoading, error: subgraphError, refetch } = useMarketData();
+  const { data: subgraphData, loading: subgraphLoading, error: subgraphError, refetch } = useSubgraphMarketData();
 
   const networks = ['Ethereum', 'Arbitrum One'];
   const tokens = ['USDC', 'WETH'];

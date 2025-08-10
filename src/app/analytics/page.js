@@ -3,7 +3,7 @@
 import { formatUnits } from 'viem';
 import { getContractAddresses } from '../utils/forkAddresses';
 import { usePublicContract } from '../hooks/usePublicContract';
-import { useMarketData } from '../hooks/useMarketData';
+import { useContractMarketData } from '../hooks/useContractMarketData';
 import BriqVaultArtifact from '../abis/BriqVault.json';
 import StrategyCoordinatorArtifact from '../abis/StrategyCoordinator.json';
 import PriceFeedManagerArtifact from '../abis/PriceFeedManager.json';
@@ -29,7 +29,7 @@ export default function Analytics() {
   });
 
   // Get market-specific data
-  const { markets, isLoading: marketsLoading, error: marketsError } = useMarketData({
+  const { markets, isLoading: marketsLoading, error: marketsError } = useContractMarketData({
     contracts: CONTRACTS,
     vaultAbi: BriqVaultABI,
     coordinatorAbi: StrategyCoordinatorABI,

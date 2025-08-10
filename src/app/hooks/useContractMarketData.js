@@ -9,11 +9,12 @@ const publicClient = createPublicClient({
 });
 
 /**
- * Custom hook for getting market-specific data (strategy balances, allocations, APY, etc.)
+ * Custom hook for getting market-specific data from contracts (strategy balances, allocations, APY, etc.)
+ * Used by the Analytics page to show protocol-specific metrics
  * @param {Object} contracts - Contract addresses
  * @param {Array} abis - Contract ABIs needed
  */
-export function useMarketData({ contracts, vaultAbi, coordinatorAbi, priceFeedAbi }) {
+export function useContractMarketData({ contracts, vaultAbi, coordinatorAbi, priceFeedAbi }) {
   const [marketData, setMarketData] = useState({
     markets: [],
     isLoading: true,
@@ -21,8 +22,14 @@ export function useMarketData({ contracts, vaultAbi, coordinatorAbi, priceFeedAb
   });
 
   const fetchMarketData = async () => {
-    if (!contracts.VAULT || !contracts.STRATEGY_COORDINATOR || !contracts.PRICE_FEED_MANAGER) {
-      setMarketData(prev => ({ ...prev, isLoading: false }));
+    // Check if contracts object exists and has required properties
+    if (!contracts || !contracts.VAULT || !contracts.STRATEGY_COORDINATOR || !contracts.PRICE_FEED_MANAGER) {
+      console.log('Missing contracts:', contracts);
+      setMarketData(prev => ({ 
+        ...prev, 
+        isLoading: false,
+        error: 'Contract addresses not available'
+      }));
       return;
     }
 
@@ -120,7 +127,7 @@ export function useMarketData({ contracts, vaultAbi, coordinatorAbi, priceFeedAb
     // Refetch every 30 seconds
     const interval = setInterval(fetchMarketData, 30000);
     return () => clearInterval(interval);
-  }, [contracts.VAULT, contracts.STRATEGY_COORDINATOR, contracts.PRICE_FEED_MANAGER]);
+  }, [contracts?.VAULT, contracts?.STRATEGY_COORDINATOR, contracts?.PRICE_FEED_MANAGER]);
 
   return { ...marketData, refetch: fetchMarketData };
 }
