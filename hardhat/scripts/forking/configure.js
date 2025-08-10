@@ -56,13 +56,14 @@ async function main() {
     compoundMarketUSDC: COMPOUND_COMET_USDC,
     compoundMarketWETH: COMPOUND_COMET_WETH,
     usdcAddress: USDC_ADDRESS,
-    wethAddress: WETH_ADDRESS
+    wethAddress: WETH_ADDRESS,
+    priceFeeds: PRICE_FEEDS
   } = chainConfig;
 
-  // Chainlink Price Feed addresses (Ethereum mainnet)
+  // Use price feeds from config.json
   const CHAINLINK_FEEDS = {
-    USDC_USD: "0x8fFfFfd4AfB6115b954Bd326cbe7B4BA576818f6", // USDC/USD
-    ETH_USD: "0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419"   // ETH/USD
+    USDC_USD: PRICE_FEEDS.USDC, // USDC/USD
+    ETH_USD: PRICE_FEEDS.WETH   // ETH/USD
   };
 
   console.log("📊 Setting up Chainlink price feeds...");

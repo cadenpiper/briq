@@ -16,7 +16,7 @@ module.exports = {
     }
   },
   networks: {
-    /* Eth mainnet forking */
+    /* Eth mainnet forking
     hardhat: {
       chainId: 31337, // Use localhost chain ID for safe testing
       forking: {
@@ -24,15 +24,15 @@ module.exports = {
         // blockNumber: 21100000,
       },
     },
-    /* Arbitrum mainnet forking
+    */
+    /* Arbitrum mainnet forking */
     hardhat: {
-      chainId: 42161,
+      chainId: 31337, // Use localhost chain ID for safe testing
       forking: {
         url: `https://arb-mainnet.g.alchemy.com/v2/${process.env.ALCHEMY_API_KEY}`,
         // blockNumber: 275000000,
       },
     },
-    */
     /* Base mainnet forking
     hardhat: {
       chainId: 8453,

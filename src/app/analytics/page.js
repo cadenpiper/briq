@@ -62,6 +62,18 @@ export default function Analytics() {
   // Calculate total TVL from markets for allocation percentages
   const totalMarketValue = markets.reduce((sum, market) => sum + market.usdValueFormatted, 0);
 
+  // Calculate weighted average APY
+  const weightedAverageAPY = (() => {
+    if (marketsLoading || markets.length === 0 || totalMarketValue === 0) return '--.--';
+    
+    const totalWeightedAPY = markets.reduce((sum, market) => {
+      const weight = market.usdValueFormatted / totalMarketValue;
+      return sum + (parseFloat(market.apyFormatted) * weight);
+    }, 0);
+    
+    return totalWeightedAPY.toFixed(2) + '%';
+  })();
+
   return (
     <>
       <Header />
@@ -109,6 +121,21 @@ export default function Analytics() {
               </div>
             </div>
 
+            {/* Average APY Card */}
+            <div className="bg-cream-50 dark:bg-zen-800 rounded-lg p-6 border border-zen-300 dark:border-zen-600 shadow-sm">
+              <div className="flex flex-col">
+                <h2 className="text-lg font-semibold text-zen-600 dark:text-cream-400 mb-3">
+                  Average APY
+                </h2>
+                <div className="text-4xl font-bold text-green-600 dark:text-green-400 font-jetbrains-mono">
+                  {weightedAverageAPY}
+                </div>
+                <div className="text-xs text-zen-500 dark:text-cream-500 mt-2">
+                  Weighted by TVL
+                </div>
+              </div>
+            </div>
+
             {/* Largest Market Card */}
             <div className="bg-cream-50 dark:bg-zen-800 rounded-lg p-6 border border-zen-300 dark:border-zen-600 shadow-sm">
               <div className="flex flex-col">
@@ -142,13 +169,24 @@ export default function Analytics() {
                     <div key={index} className="space-y-3">
                       {/* Market Info Row */}
                       <div className="flex justify-between items-center">
-                        <div className="flex items-center space-x-3">
-                          <span className="font-semibold text-lg text-zen-900 dark:text-cream-100">
-                            {market.tokenSymbol}
-                          </span>
-                          <span className="text-sm text-zen-500 dark:text-cream-500 bg-zen-100 dark:bg-zen-700 px-2 py-1 rounded">
-                            via {market.strategyName}
-                          </span>
+                        <div className="flex items-center space-x-4">
+                          <div className="flex flex-col">
+                            <span className="font-semibold text-lg text-zen-900 dark:text-cream-100">
+                              {market.tokenSymbol}
+                            </span>
+                            <span className="text-sm text-zen-500 dark:text-cream-500 bg-zen-100 dark:bg-zen-700 px-2 py-1 rounded w-fit">
+                              via {market.strategyName}
+                            </span>
+                          </div>
+                          {/* APY Badge */}
+                          <div className="flex flex-col items-center">
+                            <span className="text-xs text-zen-500 dark:text-cream-500 uppercase tracking-wide">
+                              APY
+                            </span>
+                            <span className="text-lg font-bold text-green-600 dark:text-green-400">
+                              {marketsLoading ? '--.--' : `${market.apyFormatted}%`}
+                            </span>
+                          </div>
                         </div>
                         <div className="text-right">
                           <div className="font-jetbrains-mono text-xl font-bold text-zen-900 dark:text-cream-100">

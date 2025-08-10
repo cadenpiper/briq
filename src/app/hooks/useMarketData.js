@@ -9,7 +9,7 @@ const publicClient = createPublicClient({
 });
 
 /**
- * Custom hook for getting market-specific data (strategy balances, allocations, etc.)
+ * Custom hook for getting market-specific data (strategy balances, allocations, APY, etc.)
  * @param {Object} contracts - Contract addresses
  * @param {Array} abis - Contract ABIs needed
  */
@@ -36,9 +36,7 @@ export function useMarketData({ contracts, vaultAbi, coordinatorAbi, priceFeedAb
         functionName: 'getSupportedTokens'
       });
 
-      console.log('Supported tokens:', supportedTokens);
-
-      // 2. For each token, get strategy balance and USD value
+      // 2. For each token, get strategy balance, USD value, and APY
       const marketPromises = supportedTokens.map(async (tokenAddress) => {
         try {
           // Get strategy balance for this token
@@ -57,7 +55,15 @@ export function useMarketData({ contracts, vaultAbi, coordinatorAbi, priceFeedAb
             args: [tokenAddress, balance]
           }) : 0n;
 
-          // Determine token symbol (USDC vs WETH)
+          // Get APY for this token
+          const apyBasisPoints = await publicClient.readContract({
+            address: contracts.STRATEGY_COORDINATOR,
+            abi: coordinatorAbi,
+            functionName: 'getStrategyAPY',
+            args: [tokenAddress]
+          });
+
+          // Determine token symbol and strategy name
           const isUSDC = tokenAddress.toLowerCase() === contracts.USDC.toLowerCase();
           const isWETH = tokenAddress.toLowerCase() === contracts.WETH.toLowerCase();
           
@@ -66,10 +72,10 @@ export function useMarketData({ contracts, vaultAbi, coordinatorAbi, priceFeedAb
           
           if (isUSDC) {
             tokenSymbol = 'USDC';
-            strategyName = 'Aave'; // USDC goes to Aave
+            strategyName = 'Aave';
           } else if (isWETH) {
             tokenSymbol = 'WETH';
-            strategyName = 'Compound'; // WETH goes to Compound
+            strategyName = 'Compound';
           }
 
           return {
@@ -79,7 +85,9 @@ export function useMarketData({ contracts, vaultAbi, coordinatorAbi, priceFeedAb
             balance: balance.toString(),
             balanceFormatted: parseFloat(formatUnits(balance, isUSDC ? 6 : 18)),
             usdValue: usdValue.toString(),
-            usdValueFormatted: parseFloat(formatUnits(usdValue, 18))
+            usdValueFormatted: parseFloat(formatUnits(usdValue, 18)),
+            apyBasisPoints: Number(apyBasisPoints),
+            apyFormatted: (Number(apyBasisPoints) / 100).toFixed(2) // Convert basis points to percentage
           };
 
         } catch (error) {

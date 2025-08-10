@@ -69,8 +69,8 @@ describe("BriqVault - Complete Protocol", function () {
     await (await strategyCoordinator.updateVaultAddress(await briqVault.getAddress())).wait();
 
     // Configure price feeds (core protocol setup)
-    const USDC_USD_FEED = "0x8fFfFfd4AfB6115b954Bd326cbe7B4BA576818f6"; // USDC/USD Chainlink
-    const ETH_USD_FEED = "0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419";  // ETH/USD Chainlink
+    const USDC_USD_FEED = chainConfig.priceFeeds.USDC; // USDC/USD Chainlink from config
+    const ETH_USD_FEED = chainConfig.priceFeeds.WETH;  // ETH/USD Chainlink from config
     await (await priceFeedManager.setPriceFeed(USDC_ADDRESS, USDC_USD_FEED, 6)).wait();
     await (await priceFeedManager.setPriceFeed(WETH_ADDRESS, ETH_USD_FEED, 18)).wait();
 
