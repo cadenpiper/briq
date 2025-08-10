@@ -441,4 +441,53 @@ describe("StrategyAave", function () {
       ).to.be.revertedWithCustomError(strategyAave, "TokenSupportUnchanged");
     });
   });
+
+  describe("APY Functionality", function () {
+    it("should return current APY for supported token", async function () {
+      const { strategyAave, owner } = await loadFixture(deployStrategyAaveFixture);
+      
+      // Set up Aave pool and add USDC support
+      await (await strategyAave.connect(owner).setAavePool(AAVE_POOL_V3)).wait();
+      await (await strategyAave.connect(owner).addSupportedToken(USDC_ADDRESS)).wait();
+      
+      // Get current APY from the live Aave pool
+      const apy = await strategyAave.getCurrentAPY(USDC_ADDRESS);
+      
+      // APY should be a reasonable value (between 0 and 50% = 5000 basis points)
+      expect(apy).to.be.gte(0);
+      expect(apy).to.be.lte(5000);
+    });
+
+    it("should return zero APY for unsupported token", async function () {
+      const { strategyAave, owner } = await loadFixture(deployStrategyAaveFixture);
+      
+      // Set up Aave pool and add USDC support
+      await (await strategyAave.connect(owner).setAavePool(AAVE_POOL_V3)).wait();
+      await (await strategyAave.connect(owner).addSupportedToken(USDC_ADDRESS)).wait();
+      
+      const apy = await strategyAave.getCurrentAPY(WETH_ADDRESS);
+      expect(apy).to.equal(0);
+    });
+
+    it("should return zero APY when no Aave pool is set", async function () {
+      const { strategyAave } = await loadFixture(deployStrategyAaveFixture);
+      
+      const apy = await strategyAave.getCurrentAPY(USDC_ADDRESS);
+      expect(apy).to.equal(0);
+    });
+
+    it("should return consistent APY values", async function () {
+      const { strategyAave, owner } = await loadFixture(deployStrategyAaveFixture);
+      
+      // Set up Aave pool and add USDC support
+      await (await strategyAave.connect(owner).setAavePool(AAVE_POOL_V3)).wait();
+      await (await strategyAave.connect(owner).addSupportedToken(USDC_ADDRESS)).wait();
+      
+      // Call APY function multiple times and ensure consistency
+      const apy1 = await strategyAave.getCurrentAPY(USDC_ADDRESS);
+      const apy2 = await strategyAave.getCurrentAPY(USDC_ADDRESS);
+      
+      expect(apy1).to.equal(apy2);
+    });
+  });
 });

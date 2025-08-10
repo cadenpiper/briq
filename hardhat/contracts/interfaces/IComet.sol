@@ -82,15 +82,23 @@ interface IComet {
     
     /**
      * @notice Returns the base asset address for this Comet market
-     * @dev Each Comet market has one base asset that can be supplied and borrowed.
-     *      This function returns the address of that base asset token.
-     * 
+     * @dev Each Comet market has one base asset that can be supplied and borrowed
      * @return Address of the base asset token for this market
-     * 
-     * Use Cases:
-     * - Validating token compatibility with the market
-     * - Ensuring correct asset is being supplied/withdrawn
-     * - Market identification and configuration
      */
     function baseToken() external view returns (address);
+
+    /**
+     * @notice Returns the current protocol utilization of the base asset
+     * @dev Utilization = TotalBorrows / TotalSupply
+     * @return The current utilization percentage scaled up by 10^18 (e.g. 1e17 = 10%)
+     */
+    function getUtilization() external view returns (uint256);
+
+    /**
+     * @notice Returns the per second supply rate for a given utilization
+     * @dev Rate is per second and scaled up by 10^18
+     * @param utilization The utilization at which to calculate the rate (scaled by 10^18)
+     * @return The per second supply rate scaled up by 10^18
+     */
+    function getSupplyRate(uint256 utilization) external view returns (uint64);
 }

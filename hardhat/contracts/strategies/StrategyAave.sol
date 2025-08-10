@@ -102,4 +102,25 @@ contract StrategyAave is StrategyBase, ReentrancyGuard, Ownable {
         if (aToken == address(0)) return 0;
         return IERC20(aToken).balanceOf(address(this));
     }
+
+    /**
+     * @notice Returns the current APY for a supported token
+     * @dev Fetches the current liquidity rate from Aave and converts to basis points
+     * 
+     * @param _token Address of the token to get APY for
+     * @return apy Current annual percentage yield in basis points (e.g., 500 = 5.00%)
+     */
+    function getCurrentAPY(address _token) external view override returns (uint256 apy) {
+        if (!isTokenSupported[_token] || aavePool == address(0)) return 0;
+        
+        // Get current liquidity rate from Aave
+        DataTypes.ReserveData memory reserveData = IPool(aavePool).getReserveData(_token);
+        
+        // Convert from ray (1e27) to basis points (1e4)
+        // Aave rate is already annualized
+        uint256 liquidityRate = uint256(reserveData.currentLiquidityRate);
+        apy = liquidityRate / 1e23;
+        
+        return apy;
+    }
 }

@@ -254,4 +254,42 @@ describe("StrategyCoordinator", function () {
       expect(balanceAfter).to.be.gt(balanceBefore);
     });
   });
+
+  describe("APY Functionality", function () {
+    it("should return APY for USDC from Aave strategy", async function () {
+      const { strategyCoordinator, owner } = await loadFixture(deployStrategyCoordinatorFixture);
+      
+      // Set up strategies for USDC
+      await (await strategyCoordinator.connect(owner).setStrategyForToken(USDC_ADDRESS, 0)).wait(); // AAVE
+      
+      const apy = await strategyCoordinator.getStrategyAPY(USDC_ADDRESS);
+      
+      // APY should be a reasonable value (between 0 and 50% = 5000 basis points)
+      expect(apy).to.be.gte(0);
+      expect(apy).to.be.lte(5000);
+    });
+
+    it("should return zero APY for unsupported token", async function () {
+      const { strategyCoordinator } = await loadFixture(deployStrategyCoordinatorFixture);
+      
+      // Use a random address as unsupported token
+      const randomToken = "0x1234567890123456789012345678901234567890";
+      const apy = await strategyCoordinator.getStrategyAPY(randomToken);
+      expect(apy).to.equal(0);
+    });
+
+    it("should delegate APY calls to correct strategies", async function () {
+      const { strategyCoordinator, owner } = await loadFixture(deployStrategyCoordinatorFixture);
+      
+      // Set up strategy for USDC
+      await (await strategyCoordinator.connect(owner).setStrategyForToken(USDC_ADDRESS, 0)).wait(); // AAVE
+      
+      // Get APY for USDC
+      const usdcAPY = await strategyCoordinator.getStrategyAPY(USDC_ADDRESS);
+      
+      // Should return valid APY value
+      expect(usdcAPY).to.be.gte(0);
+      expect(usdcAPY).to.be.lte(5000);
+    });
+  });
 });

@@ -184,6 +184,6 @@ export async function getAllMarketData() {
     results.push(compoundEthWETH);
   }
 
-  console.log(`Fetched ${results.length} markets from Ethereum and Arbitrum`);
+  // console.log(`Fetched ${results.length} markets from Ethereum and Arbitrum`);
   return results;
 }

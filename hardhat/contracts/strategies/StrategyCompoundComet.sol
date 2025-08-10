@@ -285,4 +285,30 @@ contract StrategyCompoundComet is StrategyBase, ReentrancyGuard, Ownable {
         IComet comet = tokenToComet[_token];
         return comet.balanceOf(address(this));
     }
+
+    /**
+     * @notice Returns the current APY for a supported token
+     * @dev Fetches the current supply rate from Compound Comet and converts to basis points
+     * 
+     * @param _token Address of the token to get APY for
+     * @return apy Current annual percentage yield in basis points (e.g., 500 = 5.00%)
+     */
+    function getCurrentAPY(address _token) external view override returns (uint256 apy) {
+        if (!supportedTokens[_token]) return 0;
+        
+        IComet comet = tokenToComet[_token];
+        if (address(comet) == address(0)) return 0;
+        
+        // Get current utilization and supply rate from Compound V3
+        uint256 utilization = comet.getUtilization();
+        uint64 supplyRate = comet.getSupplyRate(utilization);
+        
+        // Convert to APY in basis points
+        // Formula: APR = (supplyRate / 10^18) * (seconds per year) * 100
+        // APY in basis points = APR * 100
+        uint256 secondsPerYear = 365 * 24 * 60 * 60;
+        uint256 aprBasisPoints = (uint256(supplyRate) * secondsPerYear * 10000) / 1e18;
+        
+        return aprBasisPoints;
+    }
 }

@@ -422,4 +422,25 @@ contract StrategyCoordinator is Ownable, ReentrancyGuard {
             IERC20(_token).transfer(vault, tokenBalance);
         }
     }
+
+    /**
+     * @notice Returns the current APY for a token in its assigned strategy
+     * @dev Delegates to the appropriate strategy contract to get real-time APY data
+     * 
+     * @param _token Address of the token to get APY for
+     * @return apy Current annual percentage yield in basis points (e.g., 500 = 5.00%)
+     */
+    function getStrategyAPY(address _token) external view returns (uint256 apy) {
+        if (!supportedTokens[_token]) return 0;
+        
+        StrategyType strategyType = tokenToStrategy[_token];
+        
+        if (strategyType == StrategyType.AAVE) {
+            return strategyAave.getCurrentAPY(_token);
+        } else if (strategyType == StrategyType.COMPOUND) {
+            return strategyCompound.getCurrentAPY(_token);
+        }
+        
+        return 0;
+    }
 }

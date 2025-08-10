@@ -3,12 +3,17 @@
 import { formatUnits } from 'viem';
 import { getContractAddresses } from '../utils/forkAddresses';
 import { usePublicContract } from '../hooks/usePublicContract';
+import { useMarketData } from '../hooks/useMarketData';
 import BriqVaultArtifact from '../abis/BriqVault.json';
+import StrategyCoordinatorArtifact from '../abis/StrategyCoordinator.json';
+import PriceFeedManagerArtifact from '../abis/PriceFeedManager.json';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
 
-// Extract ABI from artifact
+// Extract ABIs from artifacts
 const BriqVaultABI = BriqVaultArtifact.abi;
+const StrategyCoordinatorABI = StrategyCoordinatorArtifact.abi;
+const PriceFeedManagerABI = PriceFeedManagerArtifact.abi;
 
 export default function Analytics() {
   // Get contract addresses from fork deployment
@@ -23,9 +28,17 @@ export default function Analytics() {
     enabled: !!CONTRACTS.VAULT
   });
 
+  // Get market-specific data
+  const { markets, isLoading: marketsLoading, error: marketsError } = useMarketData({
+    contracts: CONTRACTS,
+    vaultAbi: BriqVaultABI,
+    coordinatorAbi: StrategyCoordinatorABI,
+    priceFeedAbi: PriceFeedManagerABI
+  });
+
   // Format the TVL value with abbreviations
   const tvl = (() => {
-    if (isLoading) return '$--.--';
+    if (isLoading) return '--.--';
     if (error) return 'Contract Error';
     if (totalVaultValueRaw !== null) {
       const value = parseFloat(formatUnits(totalVaultValueRaw, 18));
@@ -46,6 +59,9 @@ export default function Analytics() {
     return '$0.00';
   })();
 
+  // Calculate total TVL from markets for allocation percentages
+  const totalMarketValue = markets.reduce((sum, market) => sum + market.usdValueFormatted, 0);
+
   return (
     <>
       <Header />
@@ -61,8 +77,9 @@ export default function Analytics() {
             </p>
           </div>
 
-          {/* TVL Card - Top Left */}
-          <div className="w-fit">
+          {/* Metrics Row */}
+          <div className="flex gap-6 mb-8">
+            {/* TVL Card */}
             <div className="bg-cream-50 dark:bg-zen-800 rounded-lg p-6 border border-zen-300 dark:border-zen-600 shadow-sm">
               <div className="flex flex-col">
                 <h2 className="text-lg font-semibold text-zen-600 dark:text-cream-400 mb-3">
@@ -76,7 +93,101 @@ export default function Analytics() {
                 </div>
               </div>
             </div>
+
+            {/* Markets Card */}
+            <div className="bg-cream-50 dark:bg-zen-800 rounded-lg p-6 border border-zen-300 dark:border-zen-600 shadow-sm">
+              <div className="flex flex-col">
+                <h2 className="text-lg font-semibold text-zen-600 dark:text-cream-400 mb-3">
+                  Active Markets
+                </h2>
+                <div className="text-4xl font-bold text-zen-900 dark:text-cream-100 font-jetbrains-mono">
+                  {marketsLoading ? '--.--' : marketsError ? 'Error' : markets.length}
+                </div>
+                <div className="text-xs text-zen-500 dark:text-cream-500 mt-2">
+                  Strategies Deployed
+                </div>
+              </div>
+            </div>
+
+            {/* Largest Market Card */}
+            <div className="bg-cream-50 dark:bg-zen-800 rounded-lg p-6 border border-zen-300 dark:border-zen-600 shadow-sm">
+              <div className="flex flex-col">
+                <h2 className="text-lg font-semibold text-zen-600 dark:text-cream-400 mb-3">
+                  Largest Market
+                </h2>
+                <div className="text-4xl font-bold text-zen-900 dark:text-cream-100 font-jetbrains-mono">
+                  {marketsLoading ? '--.--' : marketsError ? 'Error' : 
+                    markets.length > 0 ? 
+                      markets.reduce((max, market) => market.usdValueFormatted > max.usdValueFormatted ? market : max, markets[0]).strategyName 
+                      : '--'
+                  }
+                </div>
+                <div className="text-xs text-zen-500 dark:text-cream-500 mt-2">
+                  Highest TVL Strategy
+                </div>
+              </div>
+            </div>
           </div>
+
+          {/* Market Details */}
+          {markets.length > 0 && (
+            <div className="bg-cream-50 dark:bg-zen-800 rounded-lg p-6 border border-zen-300 dark:border-zen-600 shadow-sm">
+              <h3 className="text-lg font-semibold text-zen-600 dark:text-cream-400 mb-6">
+                Market Breakdown
+              </h3>
+              <div className="space-y-6">
+                {markets.map((market, index) => {
+                  const allocation = totalMarketValue > 0 ? (market.usdValueFormatted / totalMarketValue * 100) : 0;
+                  return (
+                    <div key={index} className="space-y-3">
+                      {/* Market Info Row */}
+                      <div className="flex justify-between items-center">
+                        <div className="flex items-center space-x-3">
+                          <span className="font-semibold text-lg text-zen-900 dark:text-cream-100">
+                            {market.tokenSymbol}
+                          </span>
+                          <span className="text-sm text-zen-500 dark:text-cream-500 bg-zen-100 dark:bg-zen-700 px-2 py-1 rounded">
+                            via {market.strategyName}
+                          </span>
+                        </div>
+                        <div className="text-right">
+                          <div className="font-jetbrains-mono text-xl font-bold text-zen-900 dark:text-cream-100">
+                            ${market.usdValueFormatted.toFixed(2)}
+                          </div>
+                          <div className="text-sm text-zen-500 dark:text-cream-500">
+                            {market.balanceFormatted.toFixed(4)} {market.tokenSymbol}
+                          </div>
+                        </div>
+                      </div>
+                      
+                      {/* Allocation Bar */}
+                      <div className="space-y-2">
+                        <div className="flex justify-between items-center">
+                          <span className="text-sm font-medium text-zen-600 dark:text-cream-400">
+                            Allocation
+                          </span>
+                          <span className="text-lg font-bold text-briq-orange">
+                            {allocation.toFixed(1)}%
+                          </span>
+                        </div>
+                        <div className="w-full h-4 bg-zen-200 dark:bg-zen-600 rounded-lg overflow-hidden shadow-inner">
+                          <div 
+                            className="h-full bg-gradient-to-r from-briq-orange to-orange-400 rounded-lg transition-all duration-700 ease-out shadow-sm"
+                            style={{ width: `${allocation}%` }}
+                          />
+                        </div>
+                      </div>
+                      
+                      {/* Divider */}
+                      {index < markets.length - 1 && (
+                        <div className="border-b border-zen-200 dark:border-zen-700 pt-3" />
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
         </div>
       </div>
       <Footer />

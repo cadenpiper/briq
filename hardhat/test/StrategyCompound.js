@@ -440,4 +440,65 @@ describe("StrategyCompoundComet", function () {
       expect(await strategyCompound.supportedMarkets(COMPOUND_MARKET_WETH)).to.be.true;
     });
   });
+
+  describe("APY Functionality", function () {
+    it("should return current APY for supported USDC token", async function () {
+      const { strategyCompound, owner } = await loadFixture(deployStrategyCompoundFixture);
+      
+      // Set up Compound markets for USDC
+      await (await strategyCompound.connect(owner).updateMarketSupport(COMPOUND_MARKET_USDC, USDC_ADDRESS, true)).wait();
+      await (await strategyCompound.connect(owner).updateTokenSupport(USDC_ADDRESS, true)).wait();
+      
+      const apy = await strategyCompound.getCurrentAPY(USDC_ADDRESS);
+      
+      // APY should be a reasonable value (between 0 and 50% = 5000 basis points)
+      expect(apy).to.be.gte(0);
+      expect(apy).to.be.lte(5000);
+    });
+
+    it("should return current APY for supported WETH token", async function () {
+      const { strategyCompound, owner } = await loadFixture(deployStrategyCompoundFixture);
+      
+      // Set up Compound markets for WETH
+      await (await strategyCompound.connect(owner).updateMarketSupport(COMPOUND_MARKET_WETH, WETH_ADDRESS, true)).wait();
+      await (await strategyCompound.connect(owner).updateTokenSupport(WETH_ADDRESS, true)).wait();
+      
+      const apy = await strategyCompound.getCurrentAPY(WETH_ADDRESS);
+      
+      // APY should be a reasonable value (between 0 and 50% = 5000 basis points)
+      expect(apy).to.be.gte(0);
+      expect(apy).to.be.lte(5000);
+    });
+
+    it("should return zero APY for unsupported token", async function () {
+      const { strategyCompound } = await loadFixture(deployStrategyCompoundFixture);
+      
+      // Use a random address as unsupported token
+      const randomToken = "0x1234567890123456789012345678901234567890";
+      const apy = await strategyCompound.getCurrentAPY(randomToken);
+      expect(apy).to.equal(0);
+    });
+
+    it("should return zero APY when token has no market configured", async function () {
+      const { strategyCompound } = await loadFixture(deployStrategyCompoundFixture);
+      
+      // Don't set up any market or token support - just test with unsupported token
+      const apy = await strategyCompound.getCurrentAPY(USDC_ADDRESS);
+      expect(apy).to.equal(0);
+    });
+
+    it("should return consistent APY values", async function () {
+      const { strategyCompound, owner } = await loadFixture(deployStrategyCompoundFixture);
+      
+      // Set up Compound markets for USDC
+      await (await strategyCompound.connect(owner).updateMarketSupport(COMPOUND_MARKET_USDC, USDC_ADDRESS, true)).wait();
+      await (await strategyCompound.connect(owner).updateTokenSupport(USDC_ADDRESS, true)).wait();
+      
+      // Call APY function multiple times and ensure consistency
+      const apy1 = await strategyCompound.getCurrentAPY(USDC_ADDRESS);
+      const apy2 = await strategyCompound.getCurrentAPY(USDC_ADDRESS);
+      
+      expect(apy1).to.equal(apy2);
+    });
+  });
 });

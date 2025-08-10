@@ -98,4 +98,21 @@ abstract contract StrategyBase {
      * - Should return 0 for unsupported tokens
      */
     function balanceOf(address _token) external view virtual returns (uint256);
+
+    /**
+     * @notice Returns the current APY for a supported token
+     * @dev This function must be implemented by derived contracts to return
+     *      the current annual percentage yield for tokens in their respective protocols.
+     *      Used by the frontend to display real-time yield information to users.
+     * 
+     * @param _token Address of the token to get APY for
+     * @return apy Current annual percentage yield in basis points (e.g., 500 = 5.00%)
+     * 
+     * Implementation Notes:
+     * - Should return APY in basis points for consistency (1% = 100 basis points)
+     * - Should fetch real-time rates from the underlying protocol
+     * - Should return 0 for unsupported tokens
+     * - Should handle rate conversions from protocol-specific formats
+     */
+    function getCurrentAPY(address _token) external view virtual returns (uint256 apy);
 }
