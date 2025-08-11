@@ -4,9 +4,11 @@ import { formatUnits } from 'viem';
 import { getContractAddresses } from '../utils/forkAddresses';
 import { usePublicContract } from '../hooks/usePublicContract';
 import { useContractMarketData } from '../hooks/useContractMarketData';
+import { useAaveRewardsAnalytics } from '../hooks/useAaveRewardsAnalytics';
 import BriqVaultArtifact from '../abis/BriqVault.json';
 import StrategyCoordinatorArtifact from '../abis/StrategyCoordinator.json';
 import PriceFeedManagerArtifact from '../abis/PriceFeedManager.json';
+import StrategyAaveArtifact from '../abis/StrategyAave.json';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
 
@@ -14,6 +16,7 @@ import Footer from '../components/Footer';
 const BriqVaultABI = BriqVaultArtifact.abi;
 const StrategyCoordinatorABI = StrategyCoordinatorArtifact.abi;
 const PriceFeedManagerABI = PriceFeedManagerArtifact.abi;
+const StrategyAaveABI = StrategyAaveArtifact.abi;
 
 export default function Analytics() {
   // Get contract addresses from fork deployment
@@ -33,6 +36,18 @@ export default function Analytics() {
     contracts: CONTRACTS,
     vaultAbi: BriqVaultABI,
     coordinatorAbi: StrategyCoordinatorABI,
+    priceFeedAbi: PriceFeedManagerABI
+  });
+
+  // Get Aave rewards data
+  const { 
+    totalRewardsUSD, 
+    tokenRewards, 
+    isLoading: rewardsLoading, 
+    error: rewardsError 
+  } = useAaveRewardsAnalytics({
+    contracts: CONTRACTS,
+    strategyAaveAbi: StrategyAaveABI,
     priceFeedAbi: PriceFeedManagerABI
   });
 
@@ -57,6 +72,24 @@ export default function Analytics() {
       }
     }
     return '$0.00';
+  })();
+
+  // Format total rewards
+  const totalRewards = (() => {
+    if (rewardsLoading) return '--.--';
+    if (rewardsError) return 'Error';
+    if (totalRewardsUSD >= 1000000) {
+      return `$${(totalRewardsUSD / 1000000).toFixed(2)}M`;
+    } else if (totalRewardsUSD >= 1000) {
+      return `$${(totalRewardsUSD / 1000).toFixed(2)}K`;
+    } else {
+      return totalRewardsUSD.toLocaleString('en-US', {
+        style: 'currency',
+        currency: 'USD',
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+      });
+    }
   })();
 
   // Calculate total TVL from markets for allocation percentages
@@ -120,11 +153,26 @@ export default function Analytics() {
                 </div>
               </div>
             </div>
+
+            {/* Total Rewards Card */}
+            <div className="bg-cream-50 dark:bg-zen-800 rounded-lg p-6 border border-zen-300 dark:border-zen-600 shadow-sm">
+              <div className="flex flex-col">
+                <h2 className="text-lg font-semibold text-zen-600 dark:text-cream-400 mb-3">
+                  Aave Rewards
+                </h2>
+                <div className="text-4xl font-bold text-briq-orange dark:text-orange-400 font-jetbrains-mono">
+                  {totalRewards}
+                </div>
+                <div className="text-xs text-zen-500 dark:text-cream-500 mt-2">
+                  Total Accrued
+                </div>
+              </div>
+            </div>
           </div>
 
           {/* Market Details */}
           {markets.length > 0 && (
-            <div className="bg-cream-50 dark:bg-zen-800 rounded-lg p-6 border border-zen-300 dark:border-zen-600 shadow-sm">
+            <div className="bg-cream-50 dark:bg-zen-800 rounded-lg p-6 border border-zen-300 dark:border-zen-600 shadow-sm mb-8">
               <h3 className="text-lg font-semibold text-zen-600 dark:text-cream-400 mb-6">
                 Market Breakdown
               </h3>
@@ -180,6 +228,69 @@ export default function Analytics() {
                     </div>
                   );
                 })}
+              </div>
+            </div>
+          )}
+
+          {/* Aave Rewards Details */}
+          {tokenRewards.length > 0 && (
+            <div className="bg-cream-50 dark:bg-zen-800 rounded-lg p-6 border border-zen-300 dark:border-zen-600 shadow-sm">
+              <h3 className="text-lg font-semibold text-zen-600 dark:text-cream-400 mb-6">
+                Aave Strategy Rewards
+              </h3>
+              <div className="space-y-6">
+                {tokenRewards.map((token, index) => (
+                  <div key={index} className="space-y-3">
+                    {/* Token Info Row */}
+                    <div className="flex justify-between items-center">
+                      <div className="flex items-center space-x-3">
+                        <div className="flex flex-col">
+                          <span className="font-semibold text-lg text-zen-900 dark:text-cream-100">
+                            {token.tokenSymbol} Rewards
+                          </span>
+                          <span className="text-sm text-zen-500 dark:text-cream-500">
+                            Current APY: {token.currentAPYFormatted}%
+                          </span>
+                        </div>
+                      </div>
+                      <div className="text-right space-y-1">
+                        <div className="font-jetbrains-mono text-xl font-bold text-briq-orange dark:text-orange-400">
+                          {token.accruedRewardsFormatted.toFixed(6)} {token.tokenSymbol}
+                        </div>
+                        <div className="text-sm text-zen-500 dark:text-cream-500">
+                          ${token.rewardsUSD.toFixed(2)} USD
+                        </div>
+                      </div>
+                    </div>
+                    
+                    {/* Analytics Details */}
+                    <div className="grid grid-cols-3 gap-4 text-sm">
+                      <div className="bg-zen-100 dark:bg-zen-700 p-3 rounded">
+                        <div className="text-zen-500 dark:text-cream-500">Total Deposits</div>
+                        <div className="font-semibold text-zen-900 dark:text-cream-100">
+                          {token.totalDepositsFormatted.toFixed(4)} {token.tokenSymbol}
+                        </div>
+                      </div>
+                      <div className="bg-zen-100 dark:bg-zen-700 p-3 rounded">
+                        <div className="text-zen-500 dark:text-cream-500">Total Withdrawals</div>
+                        <div className="font-semibold text-zen-900 dark:text-cream-100">
+                          {token.totalWithdrawalsFormatted.toFixed(4)} {token.tokenSymbol}
+                        </div>
+                      </div>
+                      <div className="bg-zen-100 dark:bg-zen-700 p-3 rounded">
+                        <div className="text-zen-500 dark:text-cream-500">Current Balance</div>
+                        <div className="font-semibold text-zen-900 dark:text-cream-100">
+                          {token.currentBalanceFormatted.toFixed(4)} {token.tokenSymbol}
+                        </div>
+                      </div>
+                    </div>
+                    
+                    {/* Divider */}
+                    {index < tokenRewards.length - 1 && (
+                      <div className="border-b border-zen-200 dark:border-zen-700 pt-3" />
+                    )}
+                  </div>
+                ))}
               </div>
             </div>
           )}

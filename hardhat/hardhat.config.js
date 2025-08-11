@@ -30,7 +30,7 @@ module.exports = {
       chainId: 31337, // Use localhost chain ID for safe testing
       forking: {
         url: `https://arb-mainnet.g.alchemy.com/v2/${process.env.ALCHEMY_API_KEY}`,
-        // blockNumber: 275000000,
+        blockNumber: 340000000,
       },
     },
     /* Base mainnet forking

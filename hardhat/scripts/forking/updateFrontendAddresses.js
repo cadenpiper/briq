@@ -36,6 +36,8 @@ export const FORK_ADDRESSES = {
   SHARES: "${addresses.SHARES}",                  // BriqShares address
   PRICE_FEED_MANAGER: "${addresses.PRICE_FEED_MANAGER}", // PriceFeedManager address
   STRATEGY_COORDINATOR: "${addresses.STRATEGY_COORDINATOR}", // StrategyCoordinator address
+  STRATEGY_AAVE: "${addresses.STRATEGY_AAVE}",        // StrategyAave address
+  STRATEGY_COMPOUND: "${addresses.STRATEGY_COMPOUND}",    // StrategyCompoundComet address
   USDC: "${addresses.USDC}",                     // Native USDC (Arbitrum One)
   WETH: "${addresses.WETH}"                      // WETH (Arbitrum One)
 };
@@ -69,6 +71,14 @@ export function arePriceFeedsConfigured() {
  */
 export function isAPYAvailable() {
   return FORK_ADDRESSES.STRATEGY_COORDINATOR !== "0x0000000000000000000000000000000000000000";
+}
+
+/**
+ * Check if strategy contracts are available
+ */
+export function areStrategiesAvailable() {
+  return FORK_ADDRESSES.STRATEGY_AAVE !== "0x0000000000000000000000000000000000000000" &&
+         FORK_ADDRESSES.STRATEGY_COMPOUND !== "0x0000000000000000000000000000000000000000";
 }`;
 
   try {

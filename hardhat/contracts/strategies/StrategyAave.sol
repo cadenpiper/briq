@@ -17,10 +17,16 @@ contract StrategyAave is StrategyBase, ReentrancyGuard, Ownable {
     address[] public supportedTokens;
     mapping(address => bool) public isTokenSupported;
     mapping(address => address) public tokenToAToken; // token => aToken
+    
+    // Rewards tracking for analytics
+    mapping(address => uint256) public totalDeposited;
+    mapping(address => uint256) public totalWithdrawn;
 
     event AavePoolUpdated(address indexed pool);
     event TokenSupportUpdated(address indexed token, bool status);
     event CoordinatorUpdated(address indexed coordinator);
+    event Deposited(address indexed token, uint256 amount, uint256 totalDeposited);
+    event Withdrawn(address indexed token, uint256 amount, uint256 totalWithdrawn);
 
     constructor() StrategyBase() Ownable(msg.sender) {}
 
@@ -86,6 +92,11 @@ contract StrategyAave is StrategyBase, ReentrancyGuard, Ownable {
         IERC20(_token).safeTransferFrom(coordinator, address(this), _amount);
         IERC20(_token).approve(aavePool, _amount);
         IPool(aavePool).supply(_token, _amount, address(this), 0); // aTokens go to StrategyAave
+        
+        // Track total deposited for rewards calculation
+        totalDeposited[_token] += _amount;
+        
+        emit Deposited(_token, _amount, totalDeposited[_token]);
     }
 
     function withdraw(address _token, uint256 _amount) external override onlyCoordinator nonReentrant {
@@ -95,6 +106,11 @@ contract StrategyAave is StrategyBase, ReentrancyGuard, Ownable {
 
         uint256 withdrawn = IPool(aavePool).withdraw(_token, _amount, coordinator); // Sends tokens back to coordinator
         if (withdrawn < _amount) revert("Insufficient withdrawal");
+        
+        // Track total withdrawn for rewards calculation
+        totalWithdrawn[_token] += withdrawn;
+        
+        emit Withdrawn(_token, withdrawn, totalWithdrawn[_token]);
     }
 
     function balanceOf(address _token) external view override returns (uint256) {
@@ -122,5 +138,83 @@ contract StrategyAave is StrategyBase, ReentrancyGuard, Ownable {
         apy = liquidityRate / 1e23;
         
         return apy;
+    }
+
+    /**
+     * @notice Returns the total accrued rewards for a token
+     * @dev Calculates rewards as: current aToken balance - (total deposited - total withdrawn)
+     * 
+     * @param _token Address of the token to get rewards for
+     * @return rewards Total accrued rewards in token units
+     */
+    function getAccruedRewards(address _token) external view returns (uint256 rewards) {
+        if (!isTokenSupported[_token]) return 0;
+        
+        uint256 currentBalance = this.balanceOf(_token);
+        uint256 netDeposits = totalDeposited[_token] - totalWithdrawn[_token];
+        
+        return currentBalance > netDeposits ? currentBalance - netDeposits : 0;
+    }
+
+    /**
+     * @notice Returns detailed analytics for a token
+     * @dev Provides comprehensive data for frontend display
+     * 
+     * @param _token Address of the token to get analytics for
+     * @return currentBalance Current aToken balance (principal + rewards)
+     * @return totalDeposits Total amount ever deposited
+     * @return totalWithdrawals Total amount ever withdrawn
+     * @return netDeposits Current net deposits (deposits - withdrawals)
+     * @return accruedRewards Total rewards earned
+     * @return currentAPY Current APY in basis points
+     */
+    function getTokenAnalytics(address _token) external view returns (
+        uint256 currentBalance,
+        uint256 totalDeposits,
+        uint256 totalWithdrawals,
+        uint256 netDeposits,
+        uint256 accruedRewards,
+        uint256 currentAPY
+    ) {
+        if (!isTokenSupported[_token]) {
+            return (0, 0, 0, 0, 0, 0);
+        }
+        
+        currentBalance = this.balanceOf(_token);
+        totalDeposits = totalDeposited[_token];
+        totalWithdrawals = totalWithdrawn[_token];
+        netDeposits = totalDeposits - totalWithdrawals;
+        accruedRewards = currentBalance > netDeposits ? currentBalance - netDeposits : 0;
+        currentAPY = this.getCurrentAPY(_token);
+        
+        return (currentBalance, totalDeposits, totalWithdrawals, netDeposits, accruedRewards, currentAPY);
+    }
+
+    /**
+     * @notice Returns analytics for all supported tokens
+     * @dev Batch function to get analytics for all tokens at once
+     * 
+     * @return tokens Array of supported token addresses
+     * @return analytics Array of analytics data for each token
+     */
+    function getAllTokenAnalytics() external view returns (
+        address[] memory tokens,
+        uint256[6][] memory analytics
+    ) {
+        tokens = supportedTokens;
+        analytics = new uint256[6][](tokens.length);
+        
+        for (uint256 i = 0; i < tokens.length; i++) {
+            (
+                analytics[i][0], // currentBalance
+                analytics[i][1], // totalDeposits
+                analytics[i][2], // totalWithdrawals
+                analytics[i][3], // netDeposits
+                analytics[i][4], // accruedRewards
+                analytics[i][5]  // currentAPY
+            ) = this.getTokenAnalytics(tokens[i]);
+        }
+        
+        return (tokens, analytics);
     }
 }

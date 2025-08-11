@@ -143,6 +143,8 @@ async function main() {
     SHARES: contracts.BriqShares,
     PRICE_FEED_MANAGER: contracts.PriceFeedManager,
     STRATEGY_COORDINATOR: contracts.StrategyCoordinator,
+    STRATEGY_AAVE: contracts.StrategyAave,
+    STRATEGY_COMPOUND: contracts.StrategyCompoundComet,
     USDC: USDC_ADDRESS,
     WETH: WETH_ADDRESS
   };

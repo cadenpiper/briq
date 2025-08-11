@@ -490,4 +490,265 @@ describe("StrategyAave", function () {
       expect(apy1).to.equal(apy2);
     });
   });
+
+  describe("Rewards Tracking", function () {
+    it("should track total deposited amounts correctly", async function () {
+      const { strategyAave, owner, coordinator, usdc, usdcTestAmount, usdcWhale } = await loadFixture(deployStrategyAaveFixture);
+      
+      // Set up the strategy
+      await (await strategyAave.connect(owner).setCoordinator(coordinator.address)).wait();
+      await (await strategyAave.connect(owner).setAavePool(AAVE_POOL_V3)).wait();
+      await (await strategyAave.connect(owner).addSupportedToken(USDC_ADDRESS)).wait();
+      
+      // Check initial state
+      expect(await strategyAave.totalDeposited(USDC_ADDRESS)).to.equal(0);
+      
+      // Make first deposit
+      await (await usdc.connect(coordinator).approve(await strategyAave.getAddress(), usdcTestAmount)).wait();
+      await (await strategyAave.connect(coordinator).deposit(USDC_ADDRESS, usdcTestAmount)).wait();
+      
+      expect(await strategyAave.totalDeposited(USDC_ADDRESS)).to.equal(usdcTestAmount);
+      
+      // Get more USDC for second deposit
+      const secondDeposit = ethers.parseUnits("500", 6);
+      await usdc.connect(usdcWhale).transfer(coordinator.address, secondDeposit);
+      
+      // Make second deposit
+      await (await usdc.connect(coordinator).approve(await strategyAave.getAddress(), secondDeposit)).wait();
+      await (await strategyAave.connect(coordinator).deposit(USDC_ADDRESS, secondDeposit)).wait();
+      
+      expect(await strategyAave.totalDeposited(USDC_ADDRESS)).to.equal(usdcTestAmount + secondDeposit);
+    });
+
+    it("should track total withdrawn amounts correctly", async function () {
+      const { strategyAave, owner, coordinator, usdc, usdcTestAmount } = await loadFixture(deployStrategyAaveFixture);
+      
+      // Set up and deposit
+      await (await strategyAave.connect(owner).setCoordinator(coordinator.address)).wait();
+      await (await strategyAave.connect(owner).setAavePool(AAVE_POOL_V3)).wait();
+      await (await strategyAave.connect(owner).addSupportedToken(USDC_ADDRESS)).wait();
+      
+      await (await usdc.connect(coordinator).approve(await strategyAave.getAddress(), usdcTestAmount)).wait();
+      await (await strategyAave.connect(coordinator).deposit(USDC_ADDRESS, usdcTestAmount)).wait();
+      
+      // Check initial withdrawn amount
+      expect(await strategyAave.totalWithdrawn(USDC_ADDRESS)).to.equal(0);
+      
+      // Make first withdrawal
+      const firstWithdrawal = ethers.parseUnits("300", 6);
+      await (await strategyAave.connect(coordinator).withdraw(USDC_ADDRESS, firstWithdrawal)).wait();
+      
+      expect(await strategyAave.totalWithdrawn(USDC_ADDRESS)).to.equal(firstWithdrawal);
+      
+      // Make second withdrawal
+      const secondWithdrawal = ethers.parseUnits("200", 6);
+      await (await strategyAave.connect(coordinator).withdraw(USDC_ADDRESS, secondWithdrawal)).wait();
+      
+      expect(await strategyAave.totalWithdrawn(USDC_ADDRESS)).to.equal(firstWithdrawal + secondWithdrawal);
+    });
+
+    it("should emit Deposited events with correct data", async function () {
+      const { strategyAave, owner, coordinator, usdc, usdcTestAmount } = await loadFixture(deployStrategyAaveFixture);
+      
+      // Set up the strategy
+      await (await strategyAave.connect(owner).setCoordinator(coordinator.address)).wait();
+      await (await strategyAave.connect(owner).setAavePool(AAVE_POOL_V3)).wait();
+      await (await strategyAave.connect(owner).addSupportedToken(USDC_ADDRESS)).wait();
+      
+      await (await usdc.connect(coordinator).approve(await strategyAave.getAddress(), usdcTestAmount)).wait();
+      
+      // Check that deposit emits correct event
+      await expect(strategyAave.connect(coordinator).deposit(USDC_ADDRESS, usdcTestAmount))
+        .to.emit(strategyAave, "Deposited")
+        .withArgs(USDC_ADDRESS, usdcTestAmount, usdcTestAmount);
+    });
+
+    it("should emit Withdrawn events with correct data", async function () {
+      const { strategyAave, owner, coordinator, usdc, usdcTestAmount } = await loadFixture(deployStrategyAaveFixture);
+      
+      // Set up and deposit
+      await (await strategyAave.connect(owner).setCoordinator(coordinator.address)).wait();
+      await (await strategyAave.connect(owner).setAavePool(AAVE_POOL_V3)).wait();
+      await (await strategyAave.connect(owner).addSupportedToken(USDC_ADDRESS)).wait();
+      
+      await (await usdc.connect(coordinator).approve(await strategyAave.getAddress(), usdcTestAmount)).wait();
+      await (await strategyAave.connect(coordinator).deposit(USDC_ADDRESS, usdcTestAmount)).wait();
+      
+      const withdrawAmount = ethers.parseUnits("500", 6);
+      
+      // Check that withdrawal emits correct event
+      await expect(strategyAave.connect(coordinator).withdraw(USDC_ADDRESS, withdrawAmount))
+        .to.emit(strategyAave, "Withdrawn")
+        .withArgs(USDC_ADDRESS, withdrawAmount, withdrawAmount);
+    });
+
+    it("should calculate accrued rewards correctly", async function () {
+      const { strategyAave, owner, coordinator, usdc, usdcTestAmount } = await loadFixture(deployStrategyAaveFixture);
+      
+      // Set up and deposit
+      await (await strategyAave.connect(owner).setCoordinator(coordinator.address)).wait();
+      await (await strategyAave.connect(owner).setAavePool(AAVE_POOL_V3)).wait();
+      await (await strategyAave.connect(owner).addSupportedToken(USDC_ADDRESS)).wait();
+      
+      await (await usdc.connect(coordinator).approve(await strategyAave.getAddress(), usdcTestAmount)).wait();
+      await (await strategyAave.connect(coordinator).deposit(USDC_ADDRESS, usdcTestAmount)).wait();
+      
+      // Initially, rewards should be minimal (just deposited)
+      const initialRewards = await strategyAave.getAccruedRewards(USDC_ADDRESS);
+      expect(initialRewards).to.be.lte(ethers.parseUnits("1", 6)); // Allow for small rounding
+      
+      // Fast forward time to accrue some interest (simulate time passing)
+      await ethers.provider.send("evm_increaseTime", [86400]); // 1 day
+      await ethers.provider.send("evm_mine");
+      
+      // After time passes, there might be some rewards (though minimal on testnets)
+      const laterRewards = await strategyAave.getAccruedRewards(USDC_ADDRESS);
+      expect(laterRewards).to.be.gte(initialRewards);
+    });
+
+    it("should return comprehensive token analytics", async function () {
+      const { strategyAave, owner, coordinator, usdc, usdcTestAmount } = await loadFixture(deployStrategyAaveFixture);
+      
+      // Set up and deposit
+      await (await strategyAave.connect(owner).setCoordinator(coordinator.address)).wait();
+      await (await strategyAave.connect(owner).setAavePool(AAVE_POOL_V3)).wait();
+      await (await strategyAave.connect(owner).addSupportedToken(USDC_ADDRESS)).wait();
+      
+      await (await usdc.connect(coordinator).approve(await strategyAave.getAddress(), usdcTestAmount)).wait();
+      await (await strategyAave.connect(coordinator).deposit(USDC_ADDRESS, usdcTestAmount)).wait();
+      
+      // Make a partial withdrawal
+      const withdrawAmount = ethers.parseUnits("300", 6);
+      await (await strategyAave.connect(coordinator).withdraw(USDC_ADDRESS, withdrawAmount)).wait();
+      
+      // Get analytics
+      const [currentBalance, totalDeposits, totalWithdrawals, netDeposits, accruedRewards, currentAPY] = 
+        await strategyAave.getTokenAnalytics(USDC_ADDRESS);
+      
+      expect(totalDeposits).to.equal(usdcTestAmount);
+      expect(totalWithdrawals).to.equal(withdrawAmount);
+      expect(netDeposits).to.equal(usdcTestAmount - withdrawAmount);
+      expect(currentBalance).to.be.gt(0);
+      expect(currentAPY).to.be.gte(0);
+      expect(accruedRewards).to.be.gte(0);
+    });
+
+    it("should return zero analytics for unsupported token", async function () {
+      const { strategyAave, owner } = await loadFixture(deployStrategyAaveFixture);
+      
+      // Set up strategy but don't add WETH support
+      await (await strategyAave.connect(owner).setAavePool(AAVE_POOL_V3)).wait();
+      await (await strategyAave.connect(owner).addSupportedToken(USDC_ADDRESS)).wait();
+      
+      const [currentBalance, totalDeposits, totalWithdrawals, netDeposits, accruedRewards, currentAPY] = 
+        await strategyAave.getTokenAnalytics(WETH_ADDRESS);
+      
+      expect(currentBalance).to.equal(0);
+      expect(totalDeposits).to.equal(0);
+      expect(totalWithdrawals).to.equal(0);
+      expect(netDeposits).to.equal(0);
+      expect(accruedRewards).to.equal(0);
+      expect(currentAPY).to.equal(0);
+    });
+
+    it("should return analytics for all supported tokens", async function () {
+      const { strategyAave, owner, coordinator, usdc, weth, usdcTestAmount, wethTestAmount } = await loadFixture(deployStrategyAaveFixture);
+      
+      // Set up strategy with both tokens
+      await (await strategyAave.connect(owner).setCoordinator(coordinator.address)).wait();
+      await (await strategyAave.connect(owner).setAavePool(AAVE_POOL_V3)).wait();
+      await (await strategyAave.connect(owner).addSupportedToken(USDC_ADDRESS)).wait();
+      await (await strategyAave.connect(owner).addSupportedToken(WETH_ADDRESS)).wait();
+      
+      // Deposit both tokens
+      await (await usdc.connect(coordinator).approve(await strategyAave.getAddress(), usdcTestAmount)).wait();
+      await (await weth.connect(coordinator).approve(await strategyAave.getAddress(), wethTestAmount)).wait();
+      
+      await (await strategyAave.connect(coordinator).deposit(USDC_ADDRESS, usdcTestAmount)).wait();
+      await (await strategyAave.connect(coordinator).deposit(WETH_ADDRESS, wethTestAmount)).wait();
+      
+      // Get all analytics
+      const [tokens, analytics] = await strategyAave.getAllTokenAnalytics();
+      
+      expect(tokens.length).to.equal(2);
+      expect(analytics.length).to.equal(2);
+      
+      // Check that we have data for both tokens
+      expect(tokens).to.include(USDC_ADDRESS);
+      expect(tokens).to.include(WETH_ADDRESS);
+      
+      // Each analytics entry should have 6 values
+      expect(analytics[0].length).to.equal(6);
+      expect(analytics[1].length).to.equal(6);
+      
+      // Both tokens should have deposits recorded
+      const usdcIndex = tokens.indexOf(USDC_ADDRESS);
+      const wethIndex = tokens.indexOf(WETH_ADDRESS);
+      
+      expect(analytics[usdcIndex][1]).to.equal(usdcTestAmount); // totalDeposits
+      expect(analytics[wethIndex][1]).to.equal(wethTestAmount); // totalDeposits
+    });
+
+    it("should handle multiple deposits and withdrawals correctly", async function () {
+      const { strategyAave, owner, coordinator, usdc, usdcTestAmount, usdcWhale } = await loadFixture(deployStrategyAaveFixture);
+      
+      // Set up the strategy
+      await (await strategyAave.connect(owner).setCoordinator(coordinator.address)).wait();
+      await (await strategyAave.connect(owner).setAavePool(AAVE_POOL_V3)).wait();
+      await (await strategyAave.connect(owner).addSupportedToken(USDC_ADDRESS)).wait();
+      
+      // Get additional USDC for multiple deposits (we already have 1000 USDC)
+      const additionalAmount = ethers.parseUnits("500", 6);
+      await usdc.connect(usdcWhale).transfer(coordinator.address, additionalAmount);
+      
+      // Multiple deposits
+      const deposit1 = ethers.parseUnits("400", 6);
+      const deposit2 = ethers.parseUnits("300", 6);
+      const deposit3 = ethers.parseUnits("300", 6);
+      
+      const totalNeeded = deposit1 + deposit2 + deposit3;
+      await (await usdc.connect(coordinator).approve(await strategyAave.getAddress(), totalNeeded)).wait();
+      
+      await (await strategyAave.connect(coordinator).deposit(USDC_ADDRESS, deposit1)).wait();
+      await (await strategyAave.connect(coordinator).deposit(USDC_ADDRESS, deposit2)).wait();
+      await (await strategyAave.connect(coordinator).deposit(USDC_ADDRESS, deposit3)).wait();
+      
+      expect(await strategyAave.totalDeposited(USDC_ADDRESS)).to.equal(deposit1 + deposit2 + deposit3);
+      
+      // Multiple withdrawals
+      const withdraw1 = ethers.parseUnits("200", 6);
+      const withdraw2 = ethers.parseUnits("150", 6);
+      
+      await (await strategyAave.connect(coordinator).withdraw(USDC_ADDRESS, withdraw1)).wait();
+      await (await strategyAave.connect(coordinator).withdraw(USDC_ADDRESS, withdraw2)).wait();
+      
+      expect(await strategyAave.totalWithdrawn(USDC_ADDRESS)).to.equal(withdraw1 + withdraw2);
+      
+      // Check final analytics
+      const [currentBalance, totalDeposits, totalWithdrawals, netDeposits, accruedRewards, currentAPY] = 
+        await strategyAave.getTokenAnalytics(USDC_ADDRESS);
+      
+      expect(totalDeposits).to.equal(deposit1 + deposit2 + deposit3);
+      expect(totalWithdrawals).to.equal(withdraw1 + withdraw2);
+      expect(netDeposits).to.equal(totalDeposits - totalWithdrawals);
+    });
+
+    it("should handle rewards calculation when balance equals net deposits", async function () {
+      const { strategyAave, owner, coordinator, usdc } = await loadFixture(deployStrategyAaveFixture);
+      
+      // Set up the strategy
+      await (await strategyAave.connect(owner).setCoordinator(coordinator.address)).wait();
+      await (await strategyAave.connect(owner).setAavePool(AAVE_POOL_V3)).wait();
+      await (await strategyAave.connect(owner).addSupportedToken(USDC_ADDRESS)).wait();
+      
+      const depositAmount = ethers.parseUnits("1000", 6);
+      
+      await (await usdc.connect(coordinator).approve(await strategyAave.getAddress(), depositAmount)).wait();
+      await (await strategyAave.connect(coordinator).deposit(USDC_ADDRESS, depositAmount)).wait();
+      
+      // Immediately check rewards (should be 0 or very small)
+      const rewards = await strategyAave.getAccruedRewards(USDC_ADDRESS);
+      expect(rewards).to.be.lte(ethers.parseUnits("1", 6)); // Allow for minimal rounding differences
+    });
+  });
 });
