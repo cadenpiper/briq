@@ -165,7 +165,7 @@ export default function Analytics() {
                 <h2 className="text-lg font-semibold text-zen-600 dark:text-cream-400 mb-3">
                   Average APY
                 </h2>
-                <div className="text-4xl font-bold text-green-600 dark:text-green-400 font-jetbrains-mono">
+                <div className="text-4xl font-bold text-green-600 font-jetbrains-mono">
                   {weightedAverageAPY}
                 </div>
                 <div className="text-xs text-zen-500 dark:text-cream-500 mt-2">
@@ -220,7 +220,7 @@ export default function Analytics() {
                           <div className="text-sm text-zen-500 dark:text-cream-500">
                             {market.balanceFormatted.toFixed(4)} {market.tokenSymbol}
                           </div>
-                          <div className="text-sm font-bold text-green-600 dark:text-green-400">
+                          <div className="text-sm font-bold text-green-600">
                             {marketsLoading ? '--.--' : `${market.apyFormatted}%`} APY
                           </div>
                         </div>
@@ -274,7 +274,7 @@ export default function Analytics() {
                         </div>
                       </div>
                       <div className="text-right space-y-1">
-                        <div className="font-jetbrains-mono text-xl font-bold text-briq-orange dark:text-orange-400">
+                        <div className="font-jetbrains-mono text-xl font-bold text-blue-200 dark:text-blue-800">
                           {token.accruedRewardsFormatted.toFixed(6)} {token.tokenSymbol}
                         </div>
                         <div className="text-sm text-zen-500 dark:text-cream-500">
@@ -284,19 +284,7 @@ export default function Analytics() {
                     </div>
                     
                     {/* Analytics Details */}
-                    <div className="grid grid-cols-3 gap-4 text-sm">
-                      <div className="bg-zen-100 dark:bg-zen-700 p-3 rounded">
-                        <div className="text-zen-500 dark:text-cream-500">Total Deposits</div>
-                        <div className="font-semibold text-zen-900 dark:text-cream-100">
-                          {token.totalDepositsFormatted.toFixed(4)} {token.tokenSymbol}
-                        </div>
-                      </div>
-                      <div className="bg-zen-100 dark:bg-zen-700 p-3 rounded">
-                        <div className="text-zen-500 dark:text-cream-500">Total Withdrawals</div>
-                        <div className="font-semibold text-zen-900 dark:text-cream-100">
-                          {token.totalWithdrawalsFormatted.toFixed(4)} {token.tokenSymbol}
-                        </div>
-                      </div>
+                    <div className="grid grid-cols-1 gap-4 text-sm">
                       <div className="bg-zen-100 dark:bg-zen-700 p-3 rounded">
                         <div className="text-zen-500 dark:text-cream-500">Current Balance</div>
                         <div className="font-semibold text-zen-900 dark:text-cream-100">
@@ -307,11 +295,11 @@ export default function Analytics() {
                     
                     {/* Reward Type - Single colored box for Aave */}
                     <div className="grid grid-cols-1 gap-4 text-sm">
-                      <div className="bg-orange-50 dark:bg-orange-900/20 p-4 rounded border border-orange-200 dark:border-orange-800">
+                      <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded border border-blue-200 dark:border-blue-800">
                         <div className="flex justify-between items-center">
                           <div>
-                            <div className="text-orange-600 dark:text-orange-400 font-medium text-base">aToken Interest Rewards</div>
-                            <div className="text-xs text-orange-500 dark:text-orange-500 mt-1">
+                            <div className="text-zen-900 dark:text-cream-100 font-medium text-base">aToken Interest Rewards</div>
+                            <div className="text-xs text-zen-500 dark:text-cream-500 mt-1">
                               Automatic rebasing rewards from Aave lending
                             </div>
                           </div>
@@ -359,34 +347,22 @@ export default function Analytics() {
                         </div>
                       </div>
                       <div className="text-right space-y-1">
-                        <div className="font-jetbrains-mono text-xl font-bold text-blue-600 dark:text-blue-400">
+                        <div className="font-jetbrains-mono text-xl font-bold text-green-200 dark:text-green-800">
                           {token.interestRewardsFormatted.toFixed(6)} {token.tokenSymbol}
                         </div>
-                        <div className="text-sm text-zen-500 dark:text-cream-500">
-                          ${token.interestRewardsUSD.toFixed(2)} USD (Interest)
-                        </div>
                         {token.protocolRewardsFormatted > 0 && (
-                          <div className="text-sm text-purple-600 dark:text-purple-400">
+                          <div className="font-jetbrains-mono text-xl font-bold text-green-300 dark:text-green-700">
                             {token.protocolRewardsFormatted.toFixed(6)} COMP
                           </div>
                         )}
+                        <div className="text-sm text-zen-500 dark:text-cream-500">
+                          ${token.interestRewardsUSD.toFixed(2)} USD (Interest)
+                        </div>
                       </div>
                     </div>
                     
                     {/* Analytics Details */}
-                    <div className="grid grid-cols-3 gap-4 text-sm">
-                      <div className="bg-zen-100 dark:bg-zen-700 p-3 rounded">
-                        <div className="text-zen-500 dark:text-cream-500">Total Deposits</div>
-                        <div className="font-semibold text-zen-900 dark:text-cream-100">
-                          {token.totalDepositsFormatted.toFixed(4)} {token.tokenSymbol}
-                        </div>
-                      </div>
-                      <div className="bg-zen-100 dark:bg-zen-700 p-3 rounded">
-                        <div className="text-zen-500 dark:text-cream-500">Total Withdrawals</div>
-                        <div className="font-semibold text-zen-900 dark:text-cream-100">
-                          {token.totalWithdrawalsFormatted.toFixed(4)} {token.tokenSymbol}
-                        </div>
-                      </div>
+                    <div className="grid grid-cols-1 gap-4 text-sm">
                       <div className="bg-zen-100 dark:bg-zen-700 p-3 rounded">
                         <div className="text-zen-500 dark:text-cream-500">Current Balance</div>
                         <div className="font-semibold text-zen-900 dark:text-cream-100">
@@ -397,14 +373,14 @@ export default function Analytics() {
                     
                     {/* Reward Types Breakdown */}
                     <div className="grid grid-cols-2 gap-4 text-sm">
-                      <div className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded border border-blue-200 dark:border-blue-800">
-                        <div className="text-blue-600 dark:text-blue-400 font-medium">Interest Rewards</div>
+                      <div className="bg-green-50 dark:bg-green-900/20 p-3 rounded border border-green-200 dark:border-green-800">
+                        <div className="text-zen-900 dark:text-cream-100 font-medium">Interest Rewards</div>
                         <div className="font-semibold text-zen-900 dark:text-cream-100">
                           {token.interestRewardsFormatted.toFixed(6)} {token.tokenSymbol}
                         </div>
                       </div>
-                      <div className="bg-purple-50 dark:bg-purple-900/20 p-3 rounded border border-purple-200 dark:border-purple-800">
-                        <div className="text-purple-600 dark:text-purple-400 font-medium">Protocol Rewards</div>
+                      <div className="bg-green-100 dark:bg-green-800/20 p-3 rounded border border-green-300 dark:border-green-700">
+                        <div className="text-zen-900 dark:text-cream-100 font-medium">Protocol Rewards</div>
                         <div className="font-semibold text-zen-900 dark:text-cream-100">
                           {token.protocolRewardsFormatted.toFixed(6)} COMP
                         </div>
