@@ -101,4 +101,20 @@ interface IComet {
      * @return The per second supply rate scaled up by 10^18
      */
     function getSupplyRate(uint256 utilization) external view returns (uint64);
+
+    /**
+     * @notice Returns the amount of reward token accrued for an account
+     * @dev Returns the amount of protocol reward tokens (like COMP) that have
+     *      accrued based on the account's usage of the base asset within the protocol.
+     *      The returned value is scaled up by 10^6 for precision.
+     * 
+     * @param account Address of the account to check rewards for
+     * @return Amount of reward token accrued, scaled up by 10^6
+     * 
+     * Notes:
+     * - Rewards accrue based on supply and borrow activity
+     * - Value is scaled by 10^6 for precision (divide by 1e6 for actual amount)
+     * - Used in conjunction with CometRewards contract for claiming
+     */
+    function baseTrackingAccrued(address account) external view returns (uint64);
 }

@@ -5,10 +5,12 @@ import { getContractAddresses } from '../utils/forkAddresses';
 import { usePublicContract } from '../hooks/usePublicContract';
 import { useContractMarketData } from '../hooks/useContractMarketData';
 import { useAaveRewardsAnalytics } from '../hooks/useAaveRewardsAnalytics';
+import { useCompoundRewardsAnalytics } from '../hooks/useCompoundRewardsAnalytics';
 import BriqVaultArtifact from '../abis/BriqVault.json';
 import StrategyCoordinatorArtifact from '../abis/StrategyCoordinator.json';
 import PriceFeedManagerArtifact from '../abis/PriceFeedManager.json';
 import StrategyAaveArtifact from '../abis/StrategyAave.json';
+import StrategyCompoundArtifact from '../abis/StrategyCompoundComet.json';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
 
@@ -17,6 +19,7 @@ const BriqVaultABI = BriqVaultArtifact.abi;
 const StrategyCoordinatorABI = StrategyCoordinatorArtifact.abi;
 const PriceFeedManagerABI = PriceFeedManagerArtifact.abi;
 const StrategyAaveABI = StrategyAaveArtifact.abi;
+const StrategyCompoundABI = StrategyCompoundArtifact.abi;
 
 export default function Analytics() {
   // Get contract addresses from fork deployment
@@ -41,13 +44,27 @@ export default function Analytics() {
 
   // Get Aave rewards data
   const { 
-    totalRewardsUSD, 
-    tokenRewards, 
-    isLoading: rewardsLoading, 
-    error: rewardsError 
+    totalRewardsUSD: aaveTotalRewardsUSD, 
+    tokenRewards: aaveTokenRewards, 
+    isLoading: aaveRewardsLoading, 
+    error: aaveRewardsError 
   } = useAaveRewardsAnalytics({
     contracts: CONTRACTS,
     strategyAaveAbi: StrategyAaveABI,
+    priceFeedAbi: PriceFeedManagerABI
+  });
+
+  // Get Compound rewards data
+  const { 
+    totalRewardsUSD: compoundTotalRewardsUSD,
+    totalInterestRewards: compoundInterestRewards,
+    totalProtocolRewards: compoundProtocolRewards,
+    tokenRewards: compoundTokenRewards, 
+    isLoading: compoundRewardsLoading, 
+    error: compoundRewardsError 
+  } = useCompoundRewardsAnalytics({
+    contracts: CONTRACTS,
+    strategyCompoundAbi: StrategyCompoundABI,
     priceFeedAbi: PriceFeedManagerABI
   });
 
@@ -74,10 +91,13 @@ export default function Analytics() {
     return '$0.00';
   })();
 
-  // Format total rewards
+  // Format total rewards (combine Aave and Compound)
   const totalRewards = (() => {
-    if (rewardsLoading) return '--.--';
-    if (rewardsError) return 'Error';
+    if (aaveRewardsLoading || compoundRewardsLoading) return '--.--';
+    if (aaveRewardsError && compoundRewardsError) return 'Error';
+    
+    const totalRewardsUSD = aaveTotalRewardsUSD + compoundTotalRewardsUSD;
+    
     if (totalRewardsUSD >= 1000000) {
       return `$${(totalRewardsUSD / 1000000).toFixed(2)}M`;
     } else if (totalRewardsUSD >= 1000) {
@@ -158,13 +178,13 @@ export default function Analytics() {
             <div className="bg-cream-50 dark:bg-zen-800 rounded-lg p-6 border border-zen-300 dark:border-zen-600 shadow-sm">
               <div className="flex flex-col">
                 <h2 className="text-lg font-semibold text-zen-600 dark:text-cream-400 mb-3">
-                  Aave Rewards
+                  Total Rewards
                 </h2>
                 <div className="text-4xl font-bold text-briq-orange dark:text-orange-400 font-jetbrains-mono">
                   {totalRewards}
                 </div>
                 <div className="text-xs text-zen-500 dark:text-cream-500 mt-2">
-                  Total Accrued
+                  Aave + Compound
                 </div>
               </div>
             </div>
@@ -233,13 +253,13 @@ export default function Analytics() {
           )}
 
           {/* Aave Rewards Details */}
-          {tokenRewards.length > 0 && (
-            <div className="bg-cream-50 dark:bg-zen-800 rounded-lg p-6 border border-zen-300 dark:border-zen-600 shadow-sm">
+          {aaveTokenRewards.length > 0 && (
+            <div className="bg-cream-50 dark:bg-zen-800 rounded-lg p-6 border border-zen-300 dark:border-zen-600 shadow-sm mb-8">
               <h3 className="text-lg font-semibold text-zen-600 dark:text-cream-400 mb-6">
                 Aave Strategy Rewards
               </h3>
               <div className="space-y-6">
-                {tokenRewards.map((token, index) => (
+                {aaveTokenRewards.map((token, index) => (
                   <div key={index} className="space-y-3">
                     {/* Token Info Row */}
                     <div className="flex justify-between items-center">
@@ -258,7 +278,7 @@ export default function Analytics() {
                           {token.accruedRewardsFormatted.toFixed(6)} {token.tokenSymbol}
                         </div>
                         <div className="text-sm text-zen-500 dark:text-cream-500">
-                          ${token.rewardsUSD.toFixed(2)} USD
+                          ${token.rewardsUSD.toFixed(2)} USD (Interest)
                         </div>
                       </div>
                     </div>
@@ -285,8 +305,114 @@ export default function Analytics() {
                       </div>
                     </div>
                     
+                    {/* Reward Type - Single colored box for Aave */}
+                    <div className="grid grid-cols-1 gap-4 text-sm">
+                      <div className="bg-orange-50 dark:bg-orange-900/20 p-4 rounded border border-orange-200 dark:border-orange-800">
+                        <div className="flex justify-between items-center">
+                          <div>
+                            <div className="text-orange-600 dark:text-orange-400 font-medium text-base">aToken Interest Rewards</div>
+                            <div className="text-xs text-orange-500 dark:text-orange-500 mt-1">
+                              Automatic rebasing rewards from Aave lending
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <div className="font-semibold text-zen-900 dark:text-cream-100 text-lg">
+                              {token.accruedRewardsFormatted.toFixed(6)} {token.tokenSymbol}
+                            </div>
+                            <div className="text-xs text-zen-500 dark:text-cream-500">
+                              ${token.rewardsUSD.toFixed(2)} USD
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    
                     {/* Divider */}
-                    {index < tokenRewards.length - 1 && (
+                    {index < aaveTokenRewards.length - 1 && (
+                      <div className="border-b border-zen-200 dark:border-zen-700 pt-3" />
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Compound Rewards Details */}
+          {compoundTokenRewards.length > 0 && (
+            <div className="bg-cream-50 dark:bg-zen-800 rounded-lg p-6 border border-zen-300 dark:border-zen-600 shadow-sm">
+              <h3 className="text-lg font-semibold text-zen-600 dark:text-cream-400 mb-6">
+                Compound Strategy Rewards
+              </h3>
+              <div className="space-y-6">
+                {compoundTokenRewards.map((token, index) => (
+                  <div key={index} className="space-y-3">
+                    {/* Token Info Row */}
+                    <div className="flex justify-between items-center">
+                      <div className="flex items-center space-x-3">
+                        <div className="flex flex-col">
+                          <span className="font-semibold text-lg text-zen-900 dark:text-cream-100">
+                            {token.tokenSymbol} Rewards
+                          </span>
+                          <span className="text-sm text-zen-500 dark:text-cream-500">
+                            Current APY: {token.currentAPYFormatted}%
+                          </span>
+                        </div>
+                      </div>
+                      <div className="text-right space-y-1">
+                        <div className="font-jetbrains-mono text-xl font-bold text-blue-600 dark:text-blue-400">
+                          {token.interestRewardsFormatted.toFixed(6)} {token.tokenSymbol}
+                        </div>
+                        <div className="text-sm text-zen-500 dark:text-cream-500">
+                          ${token.interestRewardsUSD.toFixed(2)} USD (Interest)
+                        </div>
+                        {token.protocolRewardsFormatted > 0 && (
+                          <div className="text-sm text-purple-600 dark:text-purple-400">
+                            {token.protocolRewardsFormatted.toFixed(6)} COMP
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                    
+                    {/* Analytics Details */}
+                    <div className="grid grid-cols-3 gap-4 text-sm">
+                      <div className="bg-zen-100 dark:bg-zen-700 p-3 rounded">
+                        <div className="text-zen-500 dark:text-cream-500">Total Deposits</div>
+                        <div className="font-semibold text-zen-900 dark:text-cream-100">
+                          {token.totalDepositsFormatted.toFixed(4)} {token.tokenSymbol}
+                        </div>
+                      </div>
+                      <div className="bg-zen-100 dark:bg-zen-700 p-3 rounded">
+                        <div className="text-zen-500 dark:text-cream-500">Total Withdrawals</div>
+                        <div className="font-semibold text-zen-900 dark:text-cream-100">
+                          {token.totalWithdrawalsFormatted.toFixed(4)} {token.tokenSymbol}
+                        </div>
+                      </div>
+                      <div className="bg-zen-100 dark:bg-zen-700 p-3 rounded">
+                        <div className="text-zen-500 dark:text-cream-500">Current Balance</div>
+                        <div className="font-semibold text-zen-900 dark:text-cream-100">
+                          {token.currentBalanceFormatted.toFixed(4)} {token.tokenSymbol}
+                        </div>
+                      </div>
+                    </div>
+                    
+                    {/* Reward Types Breakdown */}
+                    <div className="grid grid-cols-2 gap-4 text-sm">
+                      <div className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded border border-blue-200 dark:border-blue-800">
+                        <div className="text-blue-600 dark:text-blue-400 font-medium">Interest Rewards</div>
+                        <div className="font-semibold text-zen-900 dark:text-cream-100">
+                          {token.interestRewardsFormatted.toFixed(6)} {token.tokenSymbol}
+                        </div>
+                      </div>
+                      <div className="bg-purple-50 dark:bg-purple-900/20 p-3 rounded border border-purple-200 dark:border-purple-800">
+                        <div className="text-purple-600 dark:text-purple-400 font-medium">Protocol Rewards</div>
+                        <div className="font-semibold text-zen-900 dark:text-cream-100">
+                          {token.protocolRewardsFormatted.toFixed(6)} COMP
+                        </div>
+                      </div>
+                    </div>
+                    
+                    {/* Divider */}
+                    {index < compoundTokenRewards.length - 1 && (
                       <div className="border-b border-zen-200 dark:border-zen-700 pt-3" />
                     )}
                   </div>

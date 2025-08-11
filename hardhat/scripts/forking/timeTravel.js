@@ -2,8 +2,8 @@
  * Time Travel Script - Fast Forward Time for Rewards Testing
  * 
  * This script allows you to fast-forward time on the forked network to see
- * rewards accrual in action. It also updates price feeds to prevent stale
- * price errors after time travel.
+ * rewards accrual in action. It focuses on testing rewards functionality
+ * without worrying about price feed staleness (development-only issue).
  */
 
 const { ethers } = require("hardhat");
@@ -62,148 +62,155 @@ async function main() {
     console.log(`⏱️  New timestamp: ${newTimestamp}`);
     console.log(`⏰ Time advanced: ${timeToAdd} seconds (${description})\n`);
 
-    // Update price feeds to prevent stale price errors
-    console.log("📊 Updating price feeds after time travel...");
-    
-    // Load deployment and config data
-    if (!fs.existsSync('./deployment.json')) {
-      throw new Error("deployment.json not found. Run deploy script first.");
-    }
-    
-    const deploymentData = JSON.parse(fs.readFileSync('./deployment.json', 'utf8'));
-    const contracts = deploymentData.contracts;
-    
-    const configData = JSON.parse(fs.readFileSync('./config.json', 'utf8'));
-    const chainConfig = configData.CHAIN_CONFIG["31337"]; // Hardhat fork config
-    
-    const {
-      usdcAddress: USDC_ADDRESS,
-      wethAddress: WETH_ADDRESS,
-      priceFeeds: PRICE_FEEDS
-    } = chainConfig;
-
-    // Get price feed manager
-    const priceFeedManager = await ethers.getContractAt("PriceFeedManager", contracts.PriceFeedManager);
-
-    try {
-      // Try to get current prices - this will tell us if feeds are working
-      const usdcPrice = await priceFeedManager.getTokenPrice(USDC_ADDRESS);
-      const wethPrice = await priceFeedManager.getTokenPrice(WETH_ADDRESS);
-      
-      console.log(`✅ USDC price feed working: $${ethers.formatUnits(usdcPrice, 8)}`);
-      console.log(`✅ WETH price feed working: $${ethers.formatUnits(wethPrice, 8)}`);
-      
-      // Test USD value conversion
-      const testAmount = ethers.parseUnits("100", 6); // 100 USDC
-      const usdValue = await priceFeedManager.getTokenValueInUSD(USDC_ADDRESS, testAmount);
-      console.log(`✅ USD conversion working: 100 USDC = $${ethers.formatUnits(usdValue, 18)}`);
-      
-    } catch (priceError) {
-      console.log(`⚠️  Price feeds became stale after time travel: ${priceError.message}`);
-      console.log("🔧 Attempting to refresh price feeds...\n");
-      
-      // Mine additional blocks to try to refresh the feeds
-      console.log("⛏️  Mining additional blocks to refresh price data...");
-      for (let i = 0; i < 20; i++) {
-        await ethers.provider.send("evm_mine");
-      }
-      
-      // Try again after mining blocks
-      try {
-        const usdcPrice = await priceFeedManager.getTokenPrice(USDC_ADDRESS);
-        const wethPrice = await priceFeedManager.getTokenPrice(WETH_ADDRESS);
-        
-        console.log(`✅ USDC price feed restored: $${ethers.formatUnits(usdcPrice, 8)}`);
-        console.log(`✅ WETH price feed restored: $${ethers.formatUnits(wethPrice, 8)}`);
-        
-      } catch (retryError) {
-        console.log(`❌ Price feeds still stale: ${retryError.message}`);
-        console.log("💡 This is expected when time traveling far into the future.");
-        console.log("🎯 Rewards tracking still works - just USD values may not display.");
-        console.log("📊 You can still see token amounts in the analytics!\n");
-      }
-    }
-
-    // Check rewards regardless of price feed status
-    if (contracts.StrategyAave) {
+    // Check rewards from both strategies
+    if (fs.existsSync('./deployment.json')) {
       console.log("💰 Checking rewards after time travel...");
       
-      try {
-        const strategyAave = await ethers.getContractAt("StrategyAave", contracts.StrategyAave);
-        
-        // Get supported tokens
-        const supportedTokens = await strategyAave.getSupportedTokens();
-        
-        console.log("📊 Aave Strategy Rewards Summary:");
-        
-        for (const tokenAddress of supportedTokens) {
-          try {
-            // Get token analytics
-            const [
-              currentBalance,
-              totalDeposits,
-              totalWithdrawals,
-              netDeposits,
-              accruedRewards,
-              currentAPY
-            ] = await strategyAave.getTokenAnalytics(tokenAddress);
-            
-            // Determine token symbol and decimals
-            const isUSDC = tokenAddress.toLowerCase() === USDC_ADDRESS.toLowerCase();
-            const isWETH = tokenAddress.toLowerCase() === WETH_ADDRESS.toLowerCase();
-            
-            let tokenSymbol = 'UNKNOWN';
-            let decimals = 18;
-            
-            if (isUSDC) {
-              tokenSymbol = 'USDC';
-              decimals = 6;
-            } else if (isWETH) {
-              tokenSymbol = 'WETH';
-              decimals = 18;
-            }
-            
-            const rewardsFormatted = parseFloat(ethers.formatUnits(accruedRewards, decimals));
-            const depositsFormatted = parseFloat(ethers.formatUnits(totalDeposits, decimals));
-            const balanceFormatted = parseFloat(ethers.formatUnits(currentBalance, decimals));
-            const apyFormatted = (Number(currentAPY) / 100).toFixed(2);
-            
-            if (depositsFormatted > 0) {
-              console.log(`\n   ${tokenSymbol}:`);
-              console.log(`   💰 Total Deposits: ${depositsFormatted.toFixed(6)} ${tokenSymbol}`);
-              console.log(`   💎 Current Balance: ${balanceFormatted.toFixed(6)} ${tokenSymbol}`);
-              console.log(`   🎁 Accrued Rewards: ${rewardsFormatted.toFixed(6)} ${tokenSymbol}`);
-              console.log(`   📈 Current APY: ${apyFormatted}%`);
-              
-              if (rewardsFormatted > 0) {
-                const rewardPercentage = (rewardsFormatted / depositsFormatted * 100).toFixed(4);
-                console.log(`   📊 Reward Rate: ${rewardPercentage}% of deposits`);
-                
-                // Calculate annualized return if we know the time period
-                const timeInYears = timeToAdd / (365 * 24 * 3600);
-                const annualizedReturn = (rewardPercentage / timeInYears).toFixed(2);
-                console.log(`   🚀 Annualized Return: ${annualizedReturn}%`);
-              }
-            }
-            
-          } catch (error) {
-            console.log(`   ⚠️  Could not get analytics for token: ${error.message}`);
-          }
-        }
-        
-      } catch (error) {
-        console.log(`⚠️  Could not access Aave strategy: ${error.message}`);
+      const deploymentData = JSON.parse(fs.readFileSync('./deployment.json', 'utf8'));
+      const contracts = deploymentData.contracts;
+      
+      const configData = JSON.parse(fs.readFileSync('./config.json', 'utf8'));
+      const chainConfig = configData.CHAIN_CONFIG["31337"];
+      const { usdcAddress: USDC_ADDRESS, wethAddress: WETH_ADDRESS } = chainConfig;
+
+      // Check Aave Strategy Rewards
+      if (contracts.StrategyAave) {
+        console.log("📊 Aave Strategy Rewards:");
+        await checkStrategyRewards(contracts.StrategyAave, "StrategyAave", USDC_ADDRESS, WETH_ADDRESS);
+      }
+
+      // Check Compound Strategy Rewards
+      if (contracts.StrategyCompoundComet) {
+        console.log("\n📊 Compound Strategy Rewards:");
+        await checkCompoundStrategyRewards(contracts.StrategyCompoundComet, USDC_ADDRESS, WETH_ADDRESS);
       }
     }
 
     console.log("\n🎉 Time travel complete!");
     console.log("💡 Refresh your frontend to see updated rewards!");
     console.log("🔄 You can run this script again to travel further in time.");
-    console.log("📊 If USD values don't show, the token amounts are still accurate!");
+    console.log("📊 Note: USD values may not display due to stale price feeds (development only)");
 
   } catch (error) {
     console.error("❌ Time travel failed:", error.message);
     process.exit(1);
+  }
+}
+
+async function checkStrategyRewards(strategyAddress, strategyName, USDC_ADDRESS, WETH_ADDRESS) {
+  try {
+    const strategy = await ethers.getContractAt(strategyName, strategyAddress);
+    const supportedTokens = await strategy.getSupportedTokens();
+    
+    for (const tokenAddress of supportedTokens) {
+      try {
+        const [
+          currentBalance,
+          totalDeposits,
+          totalWithdrawals,
+          netDeposits,
+          accruedRewards,
+          currentAPY
+        ] = await strategy.getTokenAnalytics(tokenAddress);
+        
+        const isUSDC = tokenAddress.toLowerCase() === USDC_ADDRESS.toLowerCase();
+        const isWETH = tokenAddress.toLowerCase() === WETH_ADDRESS.toLowerCase();
+        
+        let tokenSymbol = 'UNKNOWN';
+        let decimals = 18;
+        
+        if (isUSDC) {
+          tokenSymbol = 'USDC';
+          decimals = 6;
+        } else if (isWETH) {
+          tokenSymbol = 'WETH';
+          decimals = 18;
+        }
+        
+        const rewardsFormatted = parseFloat(ethers.formatUnits(accruedRewards, decimals));
+        const depositsFormatted = parseFloat(ethers.formatUnits(totalDeposits, decimals));
+        const balanceFormatted = parseFloat(ethers.formatUnits(currentBalance, decimals));
+        const apyFormatted = (Number(currentAPY) / 100).toFixed(2);
+        
+        if (depositsFormatted > 0) {
+          console.log(`\n   ${tokenSymbol}:`);
+          console.log(`   💰 Total Deposits: ${depositsFormatted.toFixed(6)} ${tokenSymbol}`);
+          console.log(`   💎 Current Balance: ${balanceFormatted.toFixed(6)} ${tokenSymbol}`);
+          console.log(`   🎁 Accrued Rewards: ${rewardsFormatted.toFixed(6)} ${tokenSymbol}`);
+          console.log(`   📈 Current APY: ${apyFormatted}%`);
+          
+          if (rewardsFormatted > 0) {
+            const rewardPercentage = (rewardsFormatted / depositsFormatted * 100).toFixed(4);
+            console.log(`   📊 Reward Rate: ${rewardPercentage}% of deposits`);
+          }
+        }
+        
+      } catch (error) {
+        console.log(`   ⚠️  Could not get analytics for token: ${error.message}`);
+      }
+    }
+    
+  } catch (error) {
+    console.log(`⚠️  Could not access ${strategyName}: ${error.message}`);
+  }
+}
+
+async function checkCompoundStrategyRewards(strategyAddress, USDC_ADDRESS, WETH_ADDRESS) {
+  try {
+    const strategy = await ethers.getContractAt("StrategyCompoundComet", strategyAddress);
+    const [supportedTokens, analyticsArray] = await strategy.getAllTokenAnalytics();
+    
+    for (let i = 0; i < supportedTokens.length; i++) {
+      const tokenAddress = supportedTokens[i];
+      const analytics = analyticsArray[i];
+      
+      const [
+        currentBalance,
+        totalDeposits,
+        totalWithdrawals,
+        netDeposits,
+        interestRewards,
+        protocolRewards,
+        currentAPY
+      ] = analytics;
+      
+      const isUSDC = tokenAddress.toLowerCase() === USDC_ADDRESS.toLowerCase();
+      const isWETH = tokenAddress.toLowerCase() === WETH_ADDRESS.toLowerCase();
+      
+      let tokenSymbol = 'UNKNOWN';
+      let decimals = 18;
+      
+      if (isUSDC) {
+        tokenSymbol = 'USDC';
+        decimals = 6;
+      } else if (isWETH) {
+        tokenSymbol = 'WETH';
+        decimals = 18;
+      }
+      
+      const interestRewardsFormatted = parseFloat(ethers.formatUnits(interestRewards, decimals));
+      const protocolRewardsFormatted = parseFloat(ethers.formatUnits(protocolRewards, 6)); // Protocol rewards scaled by 10^6
+      const depositsFormatted = parseFloat(ethers.formatUnits(totalDeposits, decimals));
+      const balanceFormatted = parseFloat(ethers.formatUnits(currentBalance, decimals));
+      const apyFormatted = (Number(currentAPY) / 100).toFixed(2);
+      
+      if (depositsFormatted > 0) {
+        console.log(`\n   ${tokenSymbol}:`);
+        console.log(`   💰 Total Deposits: ${depositsFormatted.toFixed(6)} ${tokenSymbol}`);
+        console.log(`   💎 Current Balance: ${balanceFormatted.toFixed(6)} ${tokenSymbol}`);
+        console.log(`   🎁 Interest Rewards: ${interestRewardsFormatted.toFixed(6)} ${tokenSymbol}`);
+        console.log(`   🏆 Protocol Rewards: ${protocolRewardsFormatted.toFixed(6)} COMP`);
+        console.log(`   📈 Current APY: ${apyFormatted}%`);
+        
+        if (interestRewardsFormatted > 0) {
+          const rewardPercentage = (interestRewardsFormatted / depositsFormatted * 100).toFixed(4);
+          console.log(`   📊 Interest Rate: ${rewardPercentage}% of deposits`);
+        }
+      }
+    }
+    
+  } catch (error) {
+    console.log(`⚠️  Could not access Compound strategy: ${error.message}`);
   }
 }
 

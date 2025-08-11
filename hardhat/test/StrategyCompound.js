@@ -501,4 +501,125 @@ describe("StrategyCompoundComet", function () {
       expect(apy1).to.equal(apy2);
     });
   });
+
+  describe("Rewards Tracking", function () {
+    it("should track total deposited amounts correctly", async function () {
+      const { strategyCompound, owner, coordinator, usdc, usdcTestAmount, usdcWhale } = await loadFixture(deployStrategyCompoundFixture);
+      
+      // Set up the strategy
+      await (await strategyCompound.connect(owner).setCoordinator(coordinator.address)).wait();
+      await (await strategyCompound.connect(owner).updateMarketSupport(COMPOUND_MARKET_USDC, USDC_ADDRESS, true)).wait();
+      await (await strategyCompound.connect(owner).updateTokenSupport(USDC_ADDRESS, true)).wait();
+      
+      // Check initial state
+      expect(await strategyCompound.totalDeposited(USDC_ADDRESS)).to.equal(0);
+      
+      // Make first deposit
+      await (await usdc.connect(coordinator).approve(await strategyCompound.getAddress(), usdcTestAmount)).wait();
+      await (await strategyCompound.connect(coordinator).deposit(USDC_ADDRESS, usdcTestAmount)).wait();
+      
+      expect(await strategyCompound.totalDeposited(USDC_ADDRESS)).to.equal(usdcTestAmount);
+      
+      // Get more USDC for second deposit
+      const secondDeposit = ethers.parseUnits("500", 6);
+      await usdc.connect(usdcWhale).transfer(coordinator.address, secondDeposit);
+      
+      // Make second deposit
+      await (await usdc.connect(coordinator).approve(await strategyCompound.getAddress(), secondDeposit)).wait();
+      await (await strategyCompound.connect(coordinator).deposit(USDC_ADDRESS, secondDeposit)).wait();
+      
+      expect(await strategyCompound.totalDeposited(USDC_ADDRESS)).to.equal(usdcTestAmount + secondDeposit);
+    });
+
+    it("should emit Deposited events with correct data", async function () {
+      const { strategyCompound, owner, coordinator, usdc, usdcTestAmount } = await loadFixture(deployStrategyCompoundFixture);
+      
+      // Set up the strategy
+      await (await strategyCompound.connect(owner).setCoordinator(coordinator.address)).wait();
+      await (await strategyCompound.connect(owner).updateMarketSupport(COMPOUND_MARKET_USDC, USDC_ADDRESS, true)).wait();
+      await (await strategyCompound.connect(owner).updateTokenSupport(USDC_ADDRESS, true)).wait();
+      
+      await (await usdc.connect(coordinator).approve(await strategyCompound.getAddress(), usdcTestAmount)).wait();
+      
+      // Check that deposit emits correct event
+      await expect(strategyCompound.connect(coordinator).deposit(USDC_ADDRESS, usdcTestAmount))
+        .to.emit(strategyCompound, "Deposited")
+        .withArgs(USDC_ADDRESS, usdcTestAmount, usdcTestAmount);
+    });
+
+    it("should calculate accrued interest rewards correctly", async function () {
+      const { strategyCompound, owner, coordinator, usdc, usdcTestAmount } = await loadFixture(deployStrategyCompoundFixture);
+      
+      // Set up and deposit
+      await (await strategyCompound.connect(owner).setCoordinator(coordinator.address)).wait();
+      await (await strategyCompound.connect(owner).updateMarketSupport(COMPOUND_MARKET_USDC, USDC_ADDRESS, true)).wait();
+      await (await strategyCompound.connect(owner).updateTokenSupport(USDC_ADDRESS, true)).wait();
+      
+      await (await usdc.connect(coordinator).approve(await strategyCompound.getAddress(), usdcTestAmount)).wait();
+      await (await strategyCompound.connect(coordinator).deposit(USDC_ADDRESS, usdcTestAmount)).wait();
+      
+      // Initially, rewards should be minimal (just deposited)
+      const initialRewards = await strategyCompound.getAccruedInterestRewards(USDC_ADDRESS);
+      expect(initialRewards).to.be.lte(ethers.parseUnits("1", 6)); // Allow for small rounding
+    });
+
+    it("should return comprehensive token analytics", async function () {
+      const { strategyCompound, owner, coordinator, usdc, usdcTestAmount } = await loadFixture(deployStrategyCompoundFixture);
+      
+      // Set up and deposit
+      await (await strategyCompound.connect(owner).setCoordinator(coordinator.address)).wait();
+      await (await strategyCompound.connect(owner).updateMarketSupport(COMPOUND_MARKET_USDC, USDC_ADDRESS, true)).wait();
+      await (await strategyCompound.connect(owner).updateTokenSupport(USDC_ADDRESS, true)).wait();
+      
+      await (await usdc.connect(coordinator).approve(await strategyCompound.getAddress(), usdcTestAmount)).wait();
+      await (await strategyCompound.connect(coordinator).deposit(USDC_ADDRESS, usdcTestAmount)).wait();
+      
+      // Get analytics
+      const [currentBalance, totalDeposits, totalWithdrawals, netDeposits, interestRewards, protocolRewards, currentAPY] = 
+        await strategyCompound.getTokenAnalytics(USDC_ADDRESS);
+      
+      expect(totalDeposits).to.equal(usdcTestAmount);
+      expect(totalWithdrawals).to.equal(0);
+      expect(netDeposits).to.equal(usdcTestAmount);
+      expect(currentBalance).to.be.gt(0);
+      expect(currentAPY).to.be.gte(0);
+      expect(interestRewards).to.be.gte(0);
+      expect(protocolRewards).to.be.gte(0);
+    });
+
+    it("should return zero analytics for unsupported token", async function () {
+      const { strategyCompound, owner } = await loadFixture(deployStrategyCompoundFixture);
+      
+      // Set up strategy but don't add WETH support
+      await (await strategyCompound.connect(owner).updateMarketSupport(COMPOUND_MARKET_USDC, USDC_ADDRESS, true)).wait();
+      await (await strategyCompound.connect(owner).updateTokenSupport(USDC_ADDRESS, true)).wait();
+      
+      const [currentBalance, totalDeposits, totalWithdrawals, netDeposits, interestRewards, protocolRewards, currentAPY] = 
+        await strategyCompound.getTokenAnalytics(WETH_ADDRESS);
+      
+      expect(currentBalance).to.equal(0);
+      expect(totalDeposits).to.equal(0);
+      expect(totalWithdrawals).to.equal(0);
+      expect(netDeposits).to.equal(0);
+      expect(interestRewards).to.equal(0);
+      expect(protocolRewards).to.equal(0);
+      expect(currentAPY).to.equal(0);
+    });
+
+    it("should return protocol rewards (may be zero on testnet)", async function () {
+      const { strategyCompound, owner, coordinator, usdc, usdcTestAmount } = await loadFixture(deployStrategyCompoundFixture);
+      
+      // Set up and deposit
+      await (await strategyCompound.connect(owner).setCoordinator(coordinator.address)).wait();
+      await (await strategyCompound.connect(owner).updateMarketSupport(COMPOUND_MARKET_USDC, USDC_ADDRESS, true)).wait();
+      await (await strategyCompound.connect(owner).updateTokenSupport(USDC_ADDRESS, true)).wait();
+      
+      await (await usdc.connect(coordinator).approve(await strategyCompound.getAddress(), usdcTestAmount)).wait();
+      await (await strategyCompound.connect(coordinator).deposit(USDC_ADDRESS, usdcTestAmount)).wait();
+      
+      // Get protocol rewards (might be 0 on testnet/fork)
+      const protocolRewards = await strategyCompound.getAccruedProtocolRewards(USDC_ADDRESS);
+      expect(protocolRewards).to.be.gte(0); // Should be non-negative
+    });
+  });
 });
