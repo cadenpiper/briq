@@ -9,7 +9,7 @@ export default function Layout({ children }) {
       
       {/* Main content area - full width */}
       <main className="w-full flex-1">
-        <div className="p-6 lg:p-8">
+        <div className="p-4 sm:p-6 lg:p-8">
           {children}
         </div>
       </main>

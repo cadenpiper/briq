@@ -8,12 +8,12 @@ export default function ChainCard({ chain, status = "Active" }) {
   };
 
   return (
-    <div className="bg-cream-100 dark:bg-zen-700 p-6 rounded-lg border border-cream-300 dark:border-zen-600 hover:border-briq-orange dark:hover:border-briq-orange transition-all duration-200 min-w-[140px]">
+    <div className="bg-cream-100 dark:bg-zen-700 p-4 sm:p-6 rounded-lg border border-cream-300 dark:border-zen-600 hover:border-briq-orange dark:hover:border-briq-orange transition-all duration-200 min-w-[120px] sm:min-w-[140px] w-full sm:w-auto max-w-[200px]">
       <div className="text-center">
-        <div className="flex justify-center mb-3">
-          <NetworkIcon network={chain} size={48} />
+        <div className="flex justify-center mb-2 sm:mb-3">
+          <NetworkIcon network={chain} size={40} className="sm:w-12 sm:h-12" />
         </div>
-        <h3 className="text-lg font-medium text-zen-900 dark:text-cream-100 mb-2">
+        <h3 className="text-base sm:text-lg font-medium text-zen-900 dark:text-cream-100 mb-2">
           {chain}
         </h3>
         <div className={`inline-block px-2 py-1 rounded-full text-xs font-medium ${statusColors[status] ?? "bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400"}`}>
