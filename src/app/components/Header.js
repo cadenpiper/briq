@@ -90,17 +90,20 @@ export default function Header() {
               <ThemeToggle />
             </div>
             
-            <ConnectButton
-              label="Connect"
-              accountStatus={{
-                smallScreen: "avatar",
-                largeScreen: "full",
-              }}
-              showBalance={{
-                smallScreen: "false",
-                largeScreen: "true",
-              }}
-            />
+            {/* Desktop Connect Button */}
+            <div className="hidden md:block">
+              <ConnectButton
+                label="Connect"
+                accountStatus={{
+                  smallScreen: "avatar",
+                  largeScreen: "full",
+                }}
+                showBalance={{
+                  smallScreen: "false",
+                  largeScreen: "true",
+                }}
+              />
+            </div>
           </div>
         </div>
 
@@ -136,6 +139,21 @@ export default function Header() {
               >
                 Briq?
               </Link>
+              
+              {/* Mobile Connect Button */}
+              <div className="pt-2">
+                <ConnectButton
+                  label="Connect Wallet"
+                  accountStatus={{
+                    smallScreen: "avatar",
+                    largeScreen: "full",
+                  }}
+                  showBalance={{
+                    smallScreen: "false",
+                    largeScreen: "false",
+                  }}
+                />
+              </div>
               
               {/* Mobile Theme Toggle at bottom */}
               <div className="pt-4 border-t border-cream-300 dark:border-zen-600 flex justify-center">

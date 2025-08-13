@@ -277,14 +277,14 @@ export default function Portfolio() {
           {isConnected && (
             <div className="max-w-4xl mx-auto mb-12">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                {/* BriqShares Balance */}
+                {/* BRIQ Balance */}
                 <div className="bg-cream-100 dark:bg-zen-700 rounded-lg p-6 border border-zen-200 dark:border-zen-600 transition-colors duration-300">
                   <div className="flex items-center justify-center gap-3 mb-4">
                     <div className="w-8 h-8 rounded-full bg-briq-orange flex items-center justify-center flex-shrink-0">
                       <span className="text-white font-bold text-sm">B</span>
                     </div>
                     <h4 className="text-lg font-medium text-zen-900 dark:text-cream-100 font-lato text-center">
-                      BriqShares Balance
+                      BRIQ
                     </h4>
                   </div>
                   <div className="text-center">
@@ -302,7 +302,7 @@ export default function Portfolio() {
                   <div className="flex items-center justify-center gap-3 mb-4">
                     <USDCIcon size={32} className="flex-shrink-0" />
                     <h4 className="text-lg font-medium text-zen-900 dark:text-cream-100 font-lato text-center">
-                      USDC Balance
+                      USDC
                     </h4>
                   </div>
                   <div className="text-center">
@@ -320,7 +320,7 @@ export default function Portfolio() {
                   <div className="flex items-center justify-center gap-3 mb-4">
                     <WETHIcon size={32} className="flex-shrink-0" />
                     <h4 className="text-lg font-medium text-zen-900 dark:text-cream-100 font-lato text-center">
-                      WETH Balance
+                      WETH
                     </h4>
                   </div>
                   <div className="text-center">
