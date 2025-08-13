@@ -6,17 +6,23 @@ import { parseUnits, formatUnits } from 'viem';
 import Layout from '../components/Layout';
 import { USDCIcon, WETHIcon } from '../components/icons';
 import CopyButton from '../components/CopyButton';
+import { useAaveRewardsAnalytics } from '../hooks/useAaveRewardsAnalytics';
+import { useCompoundRewardsAnalytics } from '../hooks/useCompoundRewardsAnalytics';
 
 // Import ABIs
 import BriqVaultArtifact from '../abis/BriqVault.json';
 import BriqSharesArtifact from '../abis/BriqShares.json';
 import PriceFeedManagerArtifact from '../abis/PriceFeedManager.json';
+import StrategyAaveArtifact from '../abis/StrategyAave.json';
+import StrategyCompoundArtifact from '../abis/StrategyCompoundComet.json';
 import ERC20ABI from '../abis/ERC20.json';
 
 // Extract ABIs from artifacts
 const BriqVaultABI = BriqVaultArtifact.abi;
 const BriqSharesABI = BriqSharesArtifact.abi;
 const PriceFeedManagerABI = PriceFeedManagerArtifact.abi;
+const StrategyAaveABI = StrategyAaveArtifact.abi;
+const StrategyCompoundABI = StrategyCompoundArtifact.abi;
 
 // Import fork addresses for development
 import { getContractAddresses } from '../utils/forkAddresses';
@@ -31,6 +37,12 @@ export default function Portfolio() {
   const [selectedToken, setSelectedToken] = useState('USDC');
   const [transactionStep, setTransactionStep] = useState('idle'); // 'idle', 'approving', 'depositing', 'withdrawing'
   const [vaultMode, setVaultMode] = useState('deposit'); // 'deposit' or 'withdraw'
+  const [isPrivacyMode, setIsPrivacyMode] = useState(false);
+
+  // Helper function to hide values with asterisks
+  const hideValue = (value, length = 6) => {
+    return isPrivacyMode ? '*'.repeat(length) : value;
+  };
 
   // Get contract addresses from fork deployment
   const CONTRACTS = getContractAddresses();
@@ -98,6 +110,87 @@ export default function Portfolio() {
     args: [address],
     query: { enabled: !!address }
   });
+
+  // Get total vault value in USD
+  const { data: totalVaultValueUSD } = useReadContract({
+    address: CONTRACTS.VAULT,
+    abi: BriqVaultABI,
+    functionName: 'getTotalVaultValueInUSD',
+    query: { enabled: !!address }
+  });
+
+  // Get total supply of BRIQ shares
+  const { data: totalSharesSupply } = useReadContract({
+    address: CONTRACTS.SHARES,
+    abi: BriqSharesABI,
+    functionName: 'totalSupply',
+    query: { enabled: !!address }
+  });
+
+  // Get rewards analytics data
+  const { 
+    totalRewardsUSD: aaveTotalRewardsUSD, 
+    tokenRewards: aaveTokenRewards, 
+    isLoading: aaveRewardsLoading, 
+    error: aaveRewardsError 
+  } = useAaveRewardsAnalytics({
+    contracts: CONTRACTS,
+    strategyAaveAbi: StrategyAaveABI,
+    priceFeedAbi: PriceFeedManagerABI
+  });
+
+  const { 
+    totalRewardsUSD: compoundTotalRewardsUSD,
+    totalInterestRewards: compoundInterestRewards,
+    totalProtocolRewards: compoundProtocolRewards,
+    tokenRewards: compoundTokenRewards, 
+    isLoading: compoundRewardsLoading, 
+    error: compoundRewardsError 
+  } = useCompoundRewardsAnalytics({
+    contracts: CONTRACTS,
+    strategyCompoundAbi: StrategyCompoundABI,
+    priceFeedAbi: PriceFeedManagerABI
+  });
+
+  // Calculate user's share value in USD
+  const userShareValueUSD = (() => {
+    if (!sharesBalance || !totalVaultValueUSD || !totalSharesSupply || totalSharesSupply === BigInt(0)) {
+      return BigInt(0);
+    }
+    
+    // Calculate: (userShares * totalVaultValueUSD) / totalSharesSupply
+    return (sharesBalance * totalVaultValueUSD) / totalSharesSupply;
+  })();
+
+  // Calculate user's proportional share of rewards
+  const userRewardsData = (() => {
+    if (!sharesBalance || !totalSharesSupply || totalSharesSupply === BigInt(0) || 
+        aaveRewardsLoading || compoundRewardsLoading) {
+      return {
+        userRewardsUSD: 0,
+        userSharePercentage: 0,
+        totalRewardsUSD: 0,
+        isLoading: aaveRewardsLoading || compoundRewardsLoading
+      };
+    }
+
+    // Calculate user's percentage of total shares
+    const userSharePercentage = (parseFloat(formatUnits(sharesBalance, 18)) / 
+                                parseFloat(formatUnits(totalSharesSupply, 18))) * 100;
+
+    // Calculate total rewards USD
+    const totalRewardsUSD = aaveTotalRewardsUSD + compoundTotalRewardsUSD;
+
+    // Calculate user's proportional share of rewards
+    const userRewardsUSD = totalRewardsUSD * (userSharePercentage / 100);
+
+    return {
+      userRewardsUSD,
+      userSharePercentage,
+      totalRewardsUSD,
+      isLoading: false
+    };
+  })();
 
   // Read allowances
   const { data: usdcAllowance, refetch: refetchUsdcAllowance } = useReadContract({
@@ -273,63 +366,141 @@ export default function Portfolio() {
             </p>
           </div>
 
-          {/* Portfolio Overview */}
+          {/* Portfolio Overview - Sleek Horizontal Card */}
           {isConnected && (
-            <div className="max-w-4xl mx-auto mb-12">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                {/* BRIQ Balance */}
-                <div className="bg-cream-100 dark:bg-zen-700 rounded-lg p-6 border border-zen-200 dark:border-zen-600 transition-colors duration-300">
-                  <div className="flex items-center justify-center gap-3 mb-4">
-                    <div className="w-8 h-8 rounded-full bg-briq-orange flex items-center justify-center flex-shrink-0">
-                      <span className="text-white font-bold text-sm">B</span>
+            <div className="max-w-6xl mx-auto mb-12">
+              <div className="bg-cream-50 dark:bg-zen-800 rounded-2xl p-6 sm:p-8 border border-cream-200 dark:border-zen-600 shadow-lg backdrop-blur-sm relative">
+                {/* Privacy Toggle Button - Top Right */}
+                <button
+                  onClick={() => setIsPrivacyMode(!isPrivacyMode)}
+                  className="absolute top-4 right-4 p-2 rounded-lg bg-cream-200 dark:bg-zen-600 hover:bg-cream-300 dark:hover:bg-zen-500 transition-colors duration-200"
+                  title={isPrivacyMode ? "Show values" : "Hide values"}
+                >
+                  {isPrivacyMode ? (
+                    // Eye slash icon (Heroicons - values hidden)
+                    <svg className="w-5 h-5 text-zen-600 dark:text-cream-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3.98 8.223A10.477 10.477 0 001.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.45 10.45 0 0112 4.5c4.756 0 8.773 3.162 10.065 7.498a10.523 10.523 0 01-4.293 5.774M6.228 6.228L3 3m3.228 3.228l3.65 3.65m7.894 7.894L21 21m-3.228-3.228l-3.65-3.65m0 0a3 3 0 11-4.243-4.243m4.242 4.242L9.88 9.88" />
+                    </svg>
+                  ) : (
+                    // Eye icon (Heroicons - values visible)
+                    <svg className="w-5 h-5 text-zen-600 dark:text-cream-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                    </svg>
+                  )}
+                </button>
+
+                {/* Header */}
+                <div className="text-center mb-6">
+                  <h3 className="text-2xl sm:text-3xl font-bold text-zen-900 dark:text-cream-100 mb-4">
+                    Your Portfolio
+                  </h3>
+                  
+                  {/* Portfolio Value - Centered */}
+                  <div className="mb-8">
+                    <h4 className="text-sm font-medium text-zen-600 dark:text-cream-400 uppercase tracking-wider mb-3">
+                      Portfolio Value
+                    </h4>
+                    
+                    <div className="text-4xl sm:text-5xl font-bold text-green-600 font-jetbrains-mono mb-2">
+                      {userShareValueUSD && userShareValueUSD > BigInt(0) ? 
+                        hideValue(`$${parseFloat(formatUnits(userShareValueUSD, 18)).toLocaleString('en-US', {
+                          minimumFractionDigits: 2,
+                          maximumFractionDigits: 2
+                        })}`, 8)
+                        : hideValue('$0.00', 8)
+                      }
                     </div>
-                    <h4 className="text-lg font-medium text-zen-900 dark:text-cream-100 font-lato text-center">
-                      BRIQ
-                    </h4>
-                  </div>
-                  <div className="text-center">
-                    <p className="text-2xl font-semibold text-briq-orange mb-1 font-jetbrains-mono">
-                      {formatBalance(sharesBalance, 18)}
-                    </p>
-                    <p className="text-sm text-zen-600 dark:text-cream-400 font-lato">
-                      BRIQ
+                    <p className="text-sm text-zen-500 dark:text-cream-500">
+                      Including accrued rewards
                     </p>
                   </div>
                 </div>
 
-                {/* USDC Balance */}
-                <div className="bg-cream-100 dark:bg-zen-700 rounded-lg p-6 border border-zen-200 dark:border-zen-600 transition-colors duration-300">
-                  <div className="flex items-center justify-center gap-3 mb-4">
-                    <USDCIcon size={32} className="flex-shrink-0" />
-                    <h4 className="text-lg font-medium text-zen-900 dark:text-cream-100 font-lato text-center">
-                      USDC
+                {/* Three Column Layout */}
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                  {/* Left Side - BRIQ Shares */}
+                  <div className="flex flex-col items-center space-y-4">
+                    <h4 className="text-sm font-medium text-zen-600 dark:text-cream-400 uppercase tracking-wider text-center">
+                      Your Shares
                     </h4>
+                    <div className="flex items-center space-x-4 p-4 bg-cream-100 dark:bg-zen-700 rounded-xl border border-cream-200 dark:border-zen-600 hover:shadow-md transition-all duration-200 w-full max-w-sm">
+                      <div className="w-12 h-12 rounded-full bg-briq-orange flex items-center justify-center flex-shrink-0 shadow-sm">
+                        <span className="text-white font-bold text-lg">B</span>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-baseline space-x-2">
+                          <span className="text-xl font-semibold text-zen-900 dark:text-cream-100 font-jetbrains-mono truncate">
+                            {hideValue(formatBalance(sharesBalance, 18), 8)}
+                          </span>
+                          <span className="text-sm font-medium text-briq-orange">
+                            BRIQ
+                          </span>
+                        </div>
+                      </div>
+                    </div>
                   </div>
-                  <div className="text-center">
-                    <p className="text-2xl font-semibold text-zen-900 dark:text-cream-100 mb-1 font-jetbrains-mono">
-                      {formatBalance(usdcBalance, 6)}
-                    </p>
-                    <p className="text-sm text-zen-600 dark:text-cream-400 font-lato">
-                      USDC
-                    </p>
-                  </div>
-                </div>
 
-                {/* WETH Balance */}
-                <div className="bg-cream-100 dark:bg-zen-700 rounded-lg p-6 border border-zen-200 dark:border-zen-600 transition-colors duration-300">
-                  <div className="flex items-center justify-center gap-3 mb-4">
-                    <WETHIcon size={32} className="flex-shrink-0" />
-                    <h4 className="text-lg font-medium text-zen-900 dark:text-cream-100 font-lato text-center">
-                      WETH
+                  {/* Center - User Rewards */}
+                  <div className="flex flex-col items-center space-y-4">
+                    <h4 className="text-sm font-medium text-zen-600 dark:text-cream-400 uppercase tracking-wider text-center">
+                      Your Rewards
                     </h4>
+                    
+                    <div className="text-center p-4 bg-cream-100 dark:bg-zen-700 rounded-xl border border-cream-200 dark:border-zen-600 w-full max-w-sm">
+                      <div className="text-2xl font-bold text-green-600 font-jetbrains-mono">
+                        {userRewardsData.isLoading ? (
+                          <div className="animate-pulse bg-zen-200 dark:bg-zen-600 h-8 w-24 mx-auto rounded"></div>
+                        ) : (
+                          hideValue(`$${userRewardsData.userRewardsUSD.toLocaleString('en-US', {
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2
+                          })}`, 8)
+                        )}
+                      </div>
+                    </div>
                   </div>
-                  <div className="text-center">
-                    <p className="text-2xl font-semibold text-zen-900 dark:text-cream-100 mb-1 font-jetbrains-mono">
-                      {formatBalance(wethBalance, 18)}
-                    </p>
-                    <p className="text-sm text-zen-600 dark:text-cream-400 font-lato">
-                      WETH
-                    </p>
+
+                  {/* Right Side - Available Wallet Balance */}
+                  <div className="flex flex-col items-center space-y-4">
+                    <h4 className="text-sm font-medium text-zen-600 dark:text-cream-400 uppercase tracking-wider text-center">
+                      Available Balance
+                    </h4>
+                    <div className="space-y-3 w-full max-w-sm">
+                      {/* USDC */}
+                      <div className="flex items-center space-x-3 p-3 bg-cream-100 dark:bg-zen-700 rounded-xl border border-cream-200 dark:border-zen-600 hover:shadow-md transition-all duration-200">
+                        <div className="w-10 h-10 flex items-center justify-center flex-shrink-0">
+                          <USDCIcon size={40} />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-baseline space-x-2">
+                            <span className="text-lg font-semibold text-zen-900 dark:text-cream-100 font-jetbrains-mono truncate">
+                              {hideValue(formatBalance(usdcBalance, 6), 6)}
+                            </span>
+                            <span className="text-xs font-medium text-blue-600 dark:text-blue-400">
+                              USDC
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* WETH */}
+                      <div className="flex items-center space-x-3 p-3 bg-cream-100 dark:bg-zen-700 rounded-xl border border-cream-200 dark:border-zen-600 hover:shadow-md transition-all duration-200">
+                        <div className="w-10 h-10 flex items-center justify-center flex-shrink-0">
+                          <WETHIcon size={40} />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-baseline space-x-2">
+                            <span className="text-lg font-semibold text-zen-900 dark:text-cream-100 font-jetbrains-mono truncate">
+                              {hideValue(formatBalance(wethBalance, 18), 6)}
+                            </span>
+                            <span className="text-xs font-medium text-purple-600 dark:text-purple-400">
+                              WETH
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
