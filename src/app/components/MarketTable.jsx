@@ -10,13 +10,11 @@ export default function MarketTable() {
   const [selectedTokens, setSelectedTokens] = useState([]);
   const [sortConfig, setSortConfig] = useState({ key: 'apy', direction: 'desc' });
 
-  // Fetch real market data from subgraphs
   const { data: subgraphData, loading: subgraphLoading, error: subgraphError, refetch } = useSubgraphMarketData();
 
   const networks = ['Ethereum', 'Arbitrum One'];
   const tokens = ['USDC', 'WETH'];
 
-  // Network abbreviations for chips
   const getNetworkAbbreviation = (network) => {
     switch (network) {
       case 'Ethereum':
@@ -28,36 +26,30 @@ export default function MarketTable() {
     }
   };
 
-  // Calculate pool health based on APY, utilization, and TVL
   const calculatePoolHealth = (apy, utilization, tvl) => {
     let score = 0;
     
-    // APY scoring (40% weight) - Higher APY is better
     if (apy >= 8) score += 40;
     else if (apy >= 5) score += 30;
     else if (apy >= 3) score += 20;
     else score += 10;
     
-    // Utilization scoring (35% weight) - Sweet spot is 70-85%
     if (utilization >= 70 && utilization <= 85) score += 35;
     else if (utilization >= 60 && utilization <= 90) score += 25;
     else if (utilization >= 50 && utilization <= 95) score += 15;
     else score += 5;
     
-    // TVL scoring (25% weight) - Higher TVL indicates more trust/liquidity
-    if (tvl >= 100000000) score += 25; // $100M+
-    else if (tvl >= 50000000) score += 20; // $50M+
-    else if (tvl >= 10000000) score += 15; // $10M+
+    if (tvl >= 100000000) score += 25;
+    else if (tvl >= 50000000) score += 20;
+    else if (tvl >= 10000000) score += 15;
     else score += 10;
     
-    // Convert score to health indicator
     if (score >= 85) return 'Great';
     else if (score >= 70) return 'Good';
     else if (score >= 55) return 'Fair';
     else return 'Poor';
   };
 
-  // Get health indicator styling
   const getHealthStyle = (health) => {
     switch (health) {
       case 'Great':
@@ -73,35 +65,28 @@ export default function MarketTable() {
     }
   };
 
-  // Handle network selection
   const handleNetworkSelect = (network) => {
     if (!selectedNetworks.includes(network)) {
       setSelectedNetworks([...selectedNetworks, network]);
     }
   };
 
-  // Handle token selection
   const handleTokenSelect = (token) => {
     if (!selectedTokens.includes(token)) {
       setSelectedTokens([...selectedTokens, token]);
     }
   };
 
-  // Remove network selection
   const removeNetwork = (network) => {
     setSelectedNetworks(selectedNetworks.filter(n => n !== network));
   };
 
-  // Remove token selection
   const removeToken = (token) => {
     setSelectedTokens(selectedTokens.filter(t => t !== token));
   };
 
-  // Function to get current markets based on selections
   const getCurrentMarkets = () => {
-    // Only use subgraph data - no fallback to static data
     if (subgraphData && subgraphData.length > 0) {
-      // Filter subgraph data based on selections
       const networksToShow = selectedNetworks.length === 0 
         ? ['Ethereum', 'Arbitrum One'] 
         : selectedNetworks;
@@ -116,11 +101,9 @@ export default function MarketTable() {
       );
     }
 
-    // Return empty array if no subgraph data available
     return [];
   };
 
-  // Sorting function
   const sortedMarkets = useMemo(() => {
     const markets = getCurrentMarkets();
     if (!sortConfig.key) return markets;
@@ -153,7 +136,6 @@ export default function MarketTable() {
     });
   }, [selectedNetworks, selectedTokens, sortConfig, subgraphData]);
 
-  // Handle sorting
   const handleSort = (key) => {
     setSortConfig(prevConfig => ({
       key,
@@ -161,7 +143,6 @@ export default function MarketTable() {
     }));
   };
 
-  // Get sort icon
   const getSortIcon = (columnKey) => {
     if (sortConfig.key !== columnKey) {
       return (
@@ -186,30 +167,27 @@ export default function MarketTable() {
     }
   };
 
-  // Always show network and token columns to maintain consistent table size
   const showNetworkColumn = true;
   const showTokenColumn = true;
 
   return (
     <div className="space-y-4">
-      {/* Network and Token Dropdowns */}
-      <div className="flex gap-6 justify-start">
-        {/* Network Dropdown */}
-        <div className="space-y-2 flex-shrink-0">
+      <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 justify-start">
+        <div className="space-y-2 flex-shrink-0 w-full sm:w-auto">
           <label htmlFor="network-select" className="block text-sm font-medium text-zen-900 dark:text-cream-100">
             Network
           </label>
-          <div className="relative inline-block">
+          <div className="relative inline-block w-full sm:w-auto">
             <select
               id="network-select"
               name="network-select"
               onChange={(e) => {
                 if (e.target.value && e.target.value !== 'Select') {
                   handleNetworkSelect(e.target.value);
-                  e.target.value = 'Select'; // Reset dropdown
+                  e.target.value = 'Select';
                 }
               }}
-              className="bg-cream-100 dark:bg-zen-700 border border-cream-300 dark:border-zen-600 text-zen-900 dark:text-cream-100 px-4 py-2 pr-10 rounded-lg focus:outline-none transition-all duration-200 appearance-none cursor-pointer w-[140px] relative z-10"
+              className="bg-cream-100 dark:bg-zen-700 border border-cream-300 dark:border-zen-600 text-zen-900 dark:text-cream-100 px-4 py-3 pr-10 rounded-lg focus:outline-none transition-all duration-200 appearance-none cursor-pointer w-full sm:w-[140px] relative z-10 text-base sm:text-sm"
               style={{ fontWeight: 'normal' }}
               defaultValue="Select"
             >
@@ -220,25 +198,23 @@ export default function MarketTable() {
                 </option>
               ))}
             </select>
-            {/* Custom dropdown arrow */}
             <div className="absolute top-1/2 right-3 transform -translate-y-1/2 pointer-events-none z-20">
               <svg className="w-4 h-4 text-zen-700 dark:text-cream-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
               </svg>
             </div>
           </div>
-          {/* Network Selection Chips */}
           {selectedNetworks.length > 0 && (
-            <div className="flex flex-wrap gap-1 mt-1 justify-center max-w-[140px]">
+            <div className="flex flex-wrap gap-2 mt-2 justify-start sm:justify-center sm:max-w-[140px]">
               {selectedNetworks.map((network) => (
-                <div key={network} className="flex items-center bg-briq-orange/20 text-briq-orange border border-briq-orange/40 px-1.5 py-0.5 rounded text-xs font-medium">
+                <div key={network} className="flex items-center bg-briq-orange/20 text-briq-orange border border-briq-orange/40 px-2 py-1 rounded text-sm font-medium">
                   <button
                     type="button"
                     onClick={() => removeNetwork(network)}
-                    className="mr-0.5 hover:bg-briq-orange/30 rounded-full p-0.5 transition-colors duration-200"
+                    className="mr-1 hover:bg-briq-orange/30 rounded-full p-1 transition-colors duration-200"
                     aria-label={`Remove ${network} network filter`}
                   >
-                    <svg className="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                     </svg>
                   </button>
@@ -249,22 +225,21 @@ export default function MarketTable() {
           )}
         </div>
 
-        {/* Token Dropdown */}
-        <div className="space-y-2 flex-shrink-0">
+        <div className="space-y-2 flex-shrink-0 w-full sm:w-auto">
           <label htmlFor="asset-select" className="block text-sm font-medium text-zen-900 dark:text-cream-100">
             Asset
           </label>
-          <div className="relative inline-block">
+          <div className="relative inline-block w-full sm:w-auto">
             <select
               id="asset-select"
               name="asset-select"
               onChange={(e) => {
                 if (e.target.value && e.target.value !== 'Select') {
                   handleTokenSelect(e.target.value);
-                  e.target.value = 'Select'; // Reset dropdown
+                  e.target.value = 'Select';
                 }
               }}
-              className="bg-cream-100 dark:bg-zen-700 border border-cream-300 dark:border-zen-600 text-zen-900 dark:text-cream-100 px-4 py-2 pr-10 rounded-lg focus:outline-none transition-all duration-200 appearance-none cursor-pointer w-[140px] relative z-10"
+              className="bg-cream-100 dark:bg-zen-700 border border-cream-300 dark:border-zen-600 text-zen-900 dark:text-cream-100 px-4 py-3 pr-10 rounded-lg focus:outline-none transition-all duration-200 appearance-none cursor-pointer w-full sm:w-[140px] relative z-10 text-base sm:text-sm"
               style={{ fontWeight: 'normal' }}
               defaultValue="Select"
             >
@@ -275,25 +250,23 @@ export default function MarketTable() {
                 </option>
               ))}
             </select>
-            {/* Custom dropdown arrow */}
             <div className="absolute top-1/2 right-3 transform -translate-y-1/2 pointer-events-none z-20">
               <svg className="w-4 h-4 text-zen-700 dark:text-cream-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
               </svg>
             </div>
           </div>
-          {/* Token Selection Chips */}
           {selectedTokens.length > 0 && (
-            <div className="flex flex-wrap gap-1 mt-1 justify-center max-w-[140px]">
+            <div className="flex flex-wrap gap-2 mt-2 justify-start sm:justify-center sm:max-w-[140px]">
               {selectedTokens.map((token) => (
-                <div key={token} className="flex items-center bg-briq-orange/20 text-briq-orange border border-briq-orange/40 px-1.5 py-0.5 rounded text-xs font-medium">
+                <div key={token} className="flex items-center bg-briq-orange/20 text-briq-orange border border-briq-orange/40 px-2 py-1 rounded text-sm font-medium">
                   <button
                     type="button"
                     onClick={() => removeToken(token)}
-                    className="mr-0.5 hover:bg-briq-orange/30 rounded-full p-0.5 transition-colors duration-200"
+                    className="mr-1 hover:bg-briq-orange/30 rounded-full p-1 transition-colors duration-200"
                     aria-label={`Remove ${token} asset filter`}
                   >
-                    <svg className="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                     </svg>
                   </button>
@@ -305,9 +278,8 @@ export default function MarketTable() {
         </div>
       </div>
 
-      {/* Status Bar */}
-      <div className="flex items-center justify-between bg-cream-50 dark:bg-zen-800 rounded-lg px-4 py-3 border border-cream-200 dark:border-zen-600">
-        <div className="flex items-center space-x-3">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between bg-cream-50 dark:bg-zen-800 rounded-lg px-4 py-3 border border-cream-200 dark:border-zen-600 gap-3 sm:gap-4">
+        <div className="flex items-center justify-center sm:justify-start space-x-3">
           {subgraphLoading ? (
             <>
               <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-briq-orange"></div>
@@ -338,7 +310,7 @@ export default function MarketTable() {
         <button
           onClick={refetch}
           disabled={subgraphLoading}
-          className="flex items-center space-x-2 px-3 py-1 text-sm bg-briq-orange text-zen-900 dark:text-cream-100 rounded hover:bg-[#e6692a] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          className="flex items-center justify-center space-x-2 px-4 py-2 text-sm bg-briq-orange text-zen-900 dark:text-cream-100 rounded hover:bg-[#e6692a] disabled:opacity-50 disabled:cursor-not-allowed transition-colors w-full sm:w-auto"
         >
           <svg 
             className={`w-4 h-4 ${subgraphLoading ? 'animate-spin' : ''}`} 
@@ -352,8 +324,8 @@ export default function MarketTable() {
         </button>
       </div>
 
-      {/* Markets Table */}
-      <div className="bg-cream-100 dark:bg-zen-700 rounded-lg border border-cream-300 dark:border-zen-600 overflow-hidden">
+      {/* Markets Table - Desktop */}
+      <div className="hidden md:block bg-cream-100 dark:bg-zen-700 rounded-lg border border-cream-300 dark:border-zen-600 overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead className="bg-cream-200 dark:bg-zen-600">
@@ -468,6 +440,102 @@ export default function MarketTable() {
             </tbody>
           </table>
         </div>
+      </div>
+
+      {/* Markets Cards - Mobile */}
+      <div className="md:hidden space-y-4">
+        {/* Mobile Sort Controls */}
+        <div className="flex items-center justify-between bg-cream-50 dark:bg-zen-800 rounded-lg px-4 py-3 border border-cream-200 dark:border-zen-600">
+          <span className="text-sm font-medium text-zen-900 dark:text-cream-100">Sort by:</span>
+          <div className="flex gap-2">
+            <button
+              onClick={() => handleSort('apy')}
+              className={`px-3 py-1 rounded text-sm font-medium transition-colors ${
+                sortConfig.key === 'apy' 
+                  ? 'bg-briq-orange text-zen-900 dark:text-cream-100' 
+                  : 'bg-cream-200 dark:bg-zen-600 text-zen-700 dark:text-cream-300 hover:bg-cream-300 dark:hover:bg-zen-500'
+              }`}
+            >
+              APY {sortConfig.key === 'apy' && (sortConfig.direction === 'desc' ? '↓' : '↑')}
+            </button>
+            <button
+              onClick={() => handleSort('tvl')}
+              className={`px-3 py-1 rounded text-sm font-medium transition-colors ${
+                sortConfig.key === 'tvl' 
+                  ? 'bg-briq-orange text-zen-900 dark:text-cream-100' 
+                  : 'bg-cream-200 dark:bg-zen-600 text-zen-700 dark:text-cream-300 hover:bg-cream-300 dark:hover:bg-zen-500'
+              }`}
+            >
+              TVL {sortConfig.key === 'tvl' && (sortConfig.direction === 'desc' ? '↓' : '↑')}
+            </button>
+            <button
+              onClick={() => handleSort('utilization')}
+              className={`px-3 py-1 rounded text-sm font-medium transition-colors ${
+                sortConfig.key === 'utilization' 
+                  ? 'bg-briq-orange text-zen-900 dark:text-cream-100' 
+                  : 'bg-cream-200 dark:bg-zen-600 text-zen-700 dark:text-cream-300 hover:bg-cream-300 dark:hover:bg-zen-500'
+              }`}
+            >
+              Util {sortConfig.key === 'utilization' && (sortConfig.direction === 'desc' ? '↓' : '↑')}
+            </button>
+          </div>
+        </div>
+
+        {/* Market Cards */}
+        {sortedMarkets.map((market, index) => (
+          <div key={index} className="bg-cream-100 dark:bg-zen-700 rounded-lg border border-cream-300 dark:border-zen-600 p-4 space-y-3">
+            {/* Header Row */}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <ProtocolIcon protocol={market.protocol} size={24} />
+                <div>
+                  <div className="font-medium text-zen-900 dark:text-cream-100">{market.protocol}</div>
+                  <div className="text-sm text-zen-600 dark:text-cream-400 flex items-center gap-2">
+                    <NetworkIcon network={market.network} size={16} />
+                    <span>{market.network}</span>
+                    <span>•</span>
+                    <TokenIcon token={market.token} size={16} />
+                    <span>{market.token}</span>
+                  </div>
+                </div>
+              </div>
+              <div className="flex flex-col items-end gap-1">
+                <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                  market.status === 'Active' 
+                    ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
+                    : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'
+                }`}>
+                  {market.status}
+                </span>
+                <span className={`px-2 py-1 rounded-full text-xs font-medium ${getHealthStyle(calculatePoolHealth(market.apyValue, market.utilizationValue, market.tvlValue))}`}>
+                  {calculatePoolHealth(market.apyValue, market.utilizationValue, market.tvlValue)}
+                </span>
+              </div>
+            </div>
+
+            {/* Metrics Row */}
+            <div className="grid grid-cols-3 gap-4 pt-2 border-t border-cream-200 dark:border-zen-600">
+              <div className="text-center">
+                <div className="text-xs text-zen-500 dark:text-cream-500 mb-1">APY</div>
+                <div className="bg-briq-orange/20 text-briq-orange px-2 py-1 rounded-full font-medium text-sm">
+                  {formatAPY(market.apyValue)}
+                </div>
+              </div>
+              <div className="text-center">
+                <div className="text-xs text-zen-500 dark:text-cream-500 mb-1">TVL</div>
+                <div className="text-sm font-medium text-zen-900 dark:text-cream-100">
+                  {formatTVL(market.tvlValue)}
+                </div>
+              </div>
+              <div className="text-center">
+                <div className="text-xs text-zen-500 dark:text-cream-500 mb-1">Utilization</div>
+                <div className="text-sm font-medium text-zen-900 dark:text-cream-100">
+                  {formatUtilization(market.utilizationValue)}
+                </div>
+              </div>
+            </div>
+          </div>
+        ))}
       </div>
     </div>
   );
