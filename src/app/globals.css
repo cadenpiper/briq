@@ -50,6 +50,25 @@ body {
   font-weight: 100;
 }
 
+/* Remove focus outlines from SVG elements and charts */
+svg, svg *, .recharts-wrapper, .recharts-wrapper * {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+svg:focus, svg *:focus {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+/* Prevent selection on chart elements */
+.recharts-wrapper {
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+}
+
 /* Mobile-specific improvements */
 @media (max-width: 640px) {
   /* Improve touch targets */
