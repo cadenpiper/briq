@@ -1,8 +1,8 @@
 /**
  * Check Balance Script - Briq Protocol
  * 
- * This script verifies the balances of hardhat account 0 and deployed contracts:
- * - Shows ETH, USDC, and WETH balances for the test account
+ * This script verifies the balances of hardhat accounts 0 and 1 and deployed contracts:
+ * - Shows ETH, USDC, and WETH balances for both test accounts
  * - Shows contract balances if deployment.json exists
  * - Validates that minimum required balances are met for testing
  * 
@@ -15,11 +15,12 @@ const fs = require('fs');
 async function main() {
   console.log("🔍 Checking account balances\n");
   
-  // Get account and network info
-  const [account] = await ethers.getSigners();
+  // Get accounts and network info
+  const [account0, account1] = await ethers.getSigners();
   const chainId = (await ethers.provider.getNetwork()).chainId;
   
-  console.log(`Account: ${account.address}`);
+  console.log(`Account 0: ${account0.address}`);
+  console.log(`Account 1: ${account1.address}`);
   console.log(`Chain ID: ${chainId}`);
   
   // Load network configuration
@@ -46,17 +47,29 @@ async function main() {
   const usdc = await ethers.getContractAt("IERC20", USDC_ADDRESS);
   const weth = await ethers.getContractAt("IERC20", WETH_ADDRESS);
   
-  // Get account balances
+  // Get account balances for both accounts
   console.log("\n📊 Account balances:");
   
   try {
-    const ethBalance = await ethers.provider.getBalance(account.address);
-    const usdcBalance = await usdc.balanceOf(account.address);
-    const wethBalance = await weth.balanceOf(account.address);
+    // Account 0 balances
+    const ethBalance0 = await ethers.provider.getBalance(account0.address);
+    const usdcBalance0 = await usdc.balanceOf(account0.address);
+    const wethBalance0 = await weth.balanceOf(account0.address);
     
-    console.log(`   ETH: ${ethers.formatEther(ethBalance)}`);
-    console.log(`   USDC: ${ethers.formatUnits(usdcBalance, 6)}`);
-    console.log(`   WETH: ${ethers.formatUnits(wethBalance, 18)}`);
+    console.log(`   Account 0:`);
+    console.log(`     ETH: ${ethers.formatEther(ethBalance0)}`);
+    console.log(`     USDC: ${ethers.formatUnits(usdcBalance0, 6)}`);
+    console.log(`     WETH: ${ethers.formatUnits(wethBalance0, 18)}`);
+    
+    // Account 1 balances
+    const ethBalance1 = await ethers.provider.getBalance(account1.address);
+    const usdcBalance1 = await usdc.balanceOf(account1.address);
+    const wethBalance1 = await weth.balanceOf(account1.address);
+    
+    console.log(`   Account 1:`);
+    console.log(`     ETH: ${ethers.formatEther(ethBalance1)}`);
+    console.log(`     USDC: ${ethers.formatUnits(usdcBalance1, 6)}`);
+    console.log(`     WETH: ${ethers.formatUnits(wethBalance1, 18)}`);
     
     // Show contract balances if deployment exists
     if (fs.existsSync('./deployment.json')) {
@@ -74,30 +87,50 @@ async function main() {
       console.log(`   Vault WETH: ${ethers.formatUnits(vaultWethBalance, 18)}`);
     }
     
-    // Validate minimum required balances for testing
+    // Validate minimum required balances for testing (both accounts)
     console.log("\n✅ Balance verification:");
     
     const expectedUsdc = ethers.parseUnits("10000", 6);
     const expectedWeth = ethers.parseUnits("10", 18);
     
-    const usdcCheck = usdcBalance >= expectedUsdc;
-    const wethCheck = wethBalance >= expectedWeth;
+    // Check Account 0
+    const usdcCheck0 = usdcBalance0 >= expectedUsdc;
+    const wethCheck0 = wethBalance0 >= expectedWeth;
     
-    console.log(`   USDC (≥10,000): ${usdcCheck ? '✅ PASS' : '❌ FAIL'}`);
-    console.log(`   WETH (≥10): ${wethCheck ? '✅ PASS' : '❌ FAIL'}`);
+    console.log(`   Account 0:`);
+    console.log(`     USDC (≥10,000): ${usdcCheck0 ? '✅ PASS' : '❌ FAIL'}`);
+    console.log(`     WETH (≥10): ${wethCheck0 ? '✅ PASS' : '❌ FAIL'}`);
     
-    if (usdcCheck && wethCheck) {
-      console.log("\n🎉 All balance checks passed! Ready for testing.");
+    // Check Account 1
+    const usdcCheck1 = usdcBalance1 >= expectedUsdc;
+    const wethCheck1 = wethBalance1 >= expectedWeth;
+    
+    console.log(`   Account 1:`);
+    console.log(`     USDC (≥10,000): ${usdcCheck1 ? '✅ PASS' : '❌ FAIL'}`);
+    console.log(`     WETH (≥10): ${wethCheck1 ? '✅ PASS' : '❌ FAIL'}`);
+    
+    const allChecksPass = usdcCheck0 && wethCheck0 && usdcCheck1 && wethCheck1;
+    
+    if (allChecksPass) {
+      console.log("\n🎉 All balance checks passed for both accounts! Ready for testing.");
     } else {
       console.log("\n⚠️  Insufficient balances detected.");
       
-      if (!usdcCheck) {
-        const shortfall = expectedUsdc - usdcBalance;
-        console.log(`   USDC shortfall: ${ethers.formatUnits(shortfall, 6)}`);
+      if (!usdcCheck0) {
+        const shortfall = expectedUsdc - usdcBalance0;
+        console.log(`   Account 0 USDC shortfall: ${ethers.formatUnits(shortfall, 6)}`);
       }
-      if (!wethCheck) {
-        const shortfall = expectedWeth - wethBalance;
-        console.log(`   WETH shortfall: ${ethers.formatUnits(shortfall, 18)}`);
+      if (!wethCheck0) {
+        const shortfall = expectedWeth - wethBalance0;
+        console.log(`   Account 0 WETH shortfall: ${ethers.formatUnits(shortfall, 18)}`);
+      }
+      if (!usdcCheck1) {
+        const shortfall = expectedUsdc - usdcBalance1;
+        console.log(`   Account 1 USDC shortfall: ${ethers.formatUnits(shortfall, 6)}`);
+      }
+      if (!wethCheck1) {
+        const shortfall = expectedWeth - wethBalance1;
+        console.log(`   Account 1 WETH shortfall: ${ethers.formatUnits(shortfall, 18)}`);
       }
     }
     
