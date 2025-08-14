@@ -22,26 +22,7 @@ export default function Home() {
             </p>
           </div>
 
-          {/* Call to Action */}
-          <div className="mb-12 sm:mb-16 lg:mb-20">
-            <p className="text-base sm:text-lg text-zen-700 dark:text-cream-300 mb-4 sm:mb-6 font-light font-lato text-center px-2">
-              Optimize your returns with Rupert or manually
-            </p>
-            <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center items-center max-w-sm sm:max-w-none mx-auto">
-              <Link 
-                href="/rupert" 
-                className="w-full sm:w-auto border border-briq-orange text-briq-orange hover:text-briq-orange hover:bg-briq-orange/20 dark:hover:bg-briq-orange/30 px-6 sm:px-8 py-3 rounded-lg transition-all duration-200 font-medium text-center"
-              >
-                Rupert
-              </Link>
-              <Link 
-                href="/markets" 
-                className="w-full sm:w-auto border border-briq-orange text-briq-orange hover:text-briq-orange hover:bg-briq-orange/20 dark:hover:bg-briq-orange/30 px-6 sm:px-8 py-3 rounded-lg transition-all duration-200 font-medium text-center"
-              >
-                DIY
-              </Link>
-            </div>
-          </div>
+
 
           {/* Available Networks Module */}
           <div className="mb-12 sm:mb-16 lg:mb-20">

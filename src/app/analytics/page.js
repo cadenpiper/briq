@@ -383,57 +383,32 @@ export default function Analytics() {
                               }
                             }}
                           >
-                            {pieChartData.map((entry, index) => (
-                              <Cell 
-                                key={`cell-${index}`} 
-                                fill={pieColors[index % pieColors.length]}
-                                stroke="transparent"
-                                strokeWidth={0}
-                                style={{
-                                  filter: 'drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1))',
-                                  transition: 'all 0.2s ease-in-out',
-                                  cursor: 'pointer',
-                                  outline: 'none !important',
-                                  border: 'none',
-                                  boxShadow: 'none'
-                                }}
-                                onMouseEnter={(e) => {
-                                  if (e && e.target) {
-                                    e.target.style.filter = 'drop-shadow(0 4px 8px rgba(0, 0, 0, 0.2))';
-                                    e.target.style.transform = 'scale(1.02)';
-                                    e.target.style.transformOrigin = 'center';
-                                    e.target.style.outline = 'none';
-                                  }
-                                }}
-                                onMouseLeave={(e) => {
-                                  if (e && e.target) {
-                                    e.target.style.filter = 'drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1))';
-                                    e.target.style.transform = 'scale(1)';
-                                    e.target.style.outline = 'none';
-                                  }
-                                }}
-                                onFocus={(e) => {
-                                  if (e && e.target) {
-                                    e.target.style.outline = 'none';
-                                    e.target.style.boxShadow = 'none';
-                                  }
-                                }}
-                                onBlur={(e) => {
-                                  if (e && e.target) {
-                                    e.target.style.outline = 'none';
-                                    e.target.style.boxShadow = 'none';
-                                  }
-                                }}
-                                onClick={(e) => {
-                                  if (e && e.preventDefault && typeof e.preventDefault === 'function') {
-                                    e.preventDefault();
-                                  }
-                                  if (e && e.target && e.target.blur && typeof e.target.blur === 'function') {
-                                    e.target.blur();
-                                  }
-                                }}
-                              />
-                            ))}
+                            {pieChartData.map((entry, index) => {
+                              const isHovered = !isMobile && hoveredSegment?.name === entry.name;
+                              const isSelected = isMobile && selectedSegment?.name === entry.name;
+                              const shouldScale = isHovered || isSelected;
+                              
+                              return (
+                                <Cell 
+                                  key={`cell-${index}`} 
+                                  fill={pieColors[index % pieColors.length]}
+                                  stroke="transparent"
+                                  strokeWidth={0}
+                                  style={{
+                                    filter: shouldScale 
+                                      ? 'drop-shadow(0 4px 8px rgba(0, 0, 0, 0.2))' 
+                                      : 'drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1))',
+                                    transform: shouldScale ? 'scale(1.02)' : 'scale(1)',
+                                    transformOrigin: 'center',
+                                    transition: 'all 0.2s ease-in-out',
+                                    cursor: 'pointer',
+                                    outline: 'none !important',
+                                    border: 'none',
+                                    boxShadow: 'none'
+                                  }}
+                                />
+                              );
+                            })}
                           </Pie>
                           <CenterLabel 
                             hoveredData={hoveredSegment} 

@@ -399,7 +399,7 @@ export default function Portfolio() {
                   {/* Portfolio Value - Centered */}
                   <div className="mb-8">
                     <h4 className="text-sm font-medium text-zen-600 dark:text-cream-400 uppercase tracking-wider mb-3">
-                      Portfolio Value
+                      Value
                     </h4>
                     
                     <div className="text-4xl sm:text-5xl font-bold text-green-600 font-jetbrains-mono mb-2">
@@ -444,7 +444,7 @@ export default function Portfolio() {
                   {/* Center - User Rewards */}
                   <div className="flex flex-col items-center space-y-4">
                     <h4 className="text-sm font-medium text-zen-600 dark:text-cream-400 uppercase tracking-wider text-center">
-                      Your Rewards
+                      Available Rewards
                     </h4>
                     
                     <div className="text-center p-4 bg-cream-100 dark:bg-zen-700 rounded-xl border border-cream-200 dark:border-zen-600 w-full max-w-sm">
@@ -464,7 +464,7 @@ export default function Portfolio() {
                   {/* Right Side - Available Wallet Balance */}
                   <div className="flex flex-col items-center space-y-4">
                     <h4 className="text-sm font-medium text-zen-600 dark:text-cream-400 uppercase tracking-wider text-center">
-                      Available Balance
+                      Available Wallet Balance
                     </h4>
                     <div className="space-y-3 w-full max-w-sm">
                       {/* USDC */}
