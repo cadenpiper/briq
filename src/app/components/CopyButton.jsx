@@ -61,13 +61,6 @@ const CopyButton = ({
         </div>
       </button>
 
-      {/* Success Tooltip */}
-      {copied && (
-        <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-green-600 text-white text-xs rounded shadow-lg whitespace-nowrap z-10 animate-fade-in">
-          Copied!
-          <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-green-600" />
-        </div>
-      )}
     </div>
   );
 };
