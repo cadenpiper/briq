@@ -523,15 +523,14 @@ export default function Portfolio() {
                 Vault Interface
               </h3>
               
-              {/* Deposit/Withdraw Sliding Toggle Switch */}
+              {/* Deposit/Withdraw Pill Toggle - Website Theme */}
               <div className="mb-6">
-                <div className="relative bg-cream-50 dark:bg-zen-600 rounded-lg border border-zen-300 dark:border-zen-500 overflow-hidden p-1">
-                  {/* Sliding Background - Matches Button Hover Theme */}
+                <div className="relative bg-cream-100 dark:bg-zen-700 rounded-full p-1 border border-cream-200 dark:border-zen-600">
+                  {/* Sliding Background */}
                   <div 
-                    className="absolute bg-briq-orange/10 border-briq-orange/20 rounded-md transition-all duration-300 ease-out"
+                    className="absolute bg-cream-50 dark:bg-zen-800 rounded-full shadow-sm transition-all duration-300 ease-out border border-cream-200 dark:border-zen-500"
                     style={{
                       transform: vaultMode === 'withdraw' ? 'translateX(calc(100% + 8px))' : 'translateX(0%)',
-                      borderWidth: '1px',
                       top: '4px',
                       bottom: '4px',
                       left: '4px',
@@ -543,22 +542,30 @@ export default function Portfolio() {
                   <div className="relative flex">
                     <button
                       onClick={() => setVaultMode('deposit')}
-                      className={`flex-1 py-3 px-4 text-sm font-medium transition-all duration-300 relative z-10 rounded-md ${
+                      className={`flex-1 py-3 px-6 text-sm font-semibold transition-all duration-300 relative z-10 rounded-full flex items-center justify-center gap-2 ${
                         vaultMode === 'deposit'
-                          ? 'text-briq-orange font-semibold'
+                          ? 'text-briq-orange'
                           : 'text-zen-500 dark:text-cream-500 hover:text-zen-700 dark:hover:text-cream-300'
                       }`}
                     >
+                      {/* Deposit Icon */}
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8l-8-8-8 8" />
+                      </svg>
                       Deposit
                     </button>
                     <button
                       onClick={() => setVaultMode('withdraw')}
-                      className={`flex-1 py-3 px-4 text-sm font-medium transition-all duration-300 relative z-10 rounded-md ${
+                      className={`flex-1 py-3 px-6 text-sm font-semibold transition-all duration-300 relative z-10 rounded-full flex items-center justify-center gap-2 ${
                         vaultMode === 'withdraw'
-                          ? 'text-briq-orange font-semibold'
+                          ? 'text-briq-orange'
                           : 'text-zen-500 dark:text-cream-500 hover:text-zen-700 dark:hover:text-cream-300'
                       }`}
                     >
+                      {/* Withdraw Icon */}
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 20V4m-8 8l8 8 8-8" />
+                      </svg>
                       Withdraw
                     </button>
                   </div>
@@ -566,29 +573,55 @@ export default function Portfolio() {
               </div>
               
               <div className="space-y-6">
-                {/* Token Selection */}
+                {/* Token Selection - Compact Card Style */}
                 <div>
-                  <label 
-                    htmlFor="token-select"
-                    className="block text-sm font-medium text-zen-900 dark:text-cream-100 mb-3 font-lato"
-                  >
+                  <label className="block text-sm font-medium text-zen-900 dark:text-cream-100 mb-3 font-lato">
                     Select Token
                   </label>
-                  <div className="relative">
-                    <select
-                      id="token-select"
-                      value={selectedToken}
-                      onChange={(e) => setSelectedToken(e.target.value)}
-                      className="w-full p-4 border border-zen-300 dark:border-zen-500 rounded-lg bg-cream-50 dark:bg-zen-600 text-zen-900 dark:text-cream-100 transition-colors duration-300 font-lato focus:outline-none focus:ring-2 focus:ring-briq-orange focus:border-transparent appearance-none cursor-pointer"
+                  <div className="grid grid-cols-2 gap-3">
+                    {/* USDC Card */}
+                    <button
+                      type="button"
+                      onClick={() => setSelectedToken('USDC')}
+                      className={`p-3 rounded-lg border-2 transition-all duration-300 flex items-center gap-3 ${
+                        selectedToken === 'USDC'
+                          ? 'bg-blue-50 dark:bg-blue-900/20 border-blue-300 dark:border-blue-600 shadow-md transform scale-[1.02] opacity-100'
+                          : 'bg-zen-200 dark:bg-zen-700 border-zen-300 dark:border-zen-600 opacity-60 hover:opacity-80 hover:bg-zen-100 dark:hover:bg-zen-600'
+                      }`}
                     >
-                      <option value="USDC">USDC</option>
-                      <option value="WETH">WETH</option>
-                    </select>
-                    <div className="absolute inset-y-0 right-0 flex items-center pr-4 pointer-events-none">
-                      <svg className="w-5 h-5 text-zen-500 dark:text-cream-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                      </svg>
-                    </div>
+                      <div className="w-6 h-6 flex items-center justify-center flex-shrink-0">
+                        <USDCIcon size={24} />
+                      </div>
+                      <span className={`text-sm font-semibold ${
+                        selectedToken === 'USDC' 
+                          ? 'text-blue-600 dark:text-blue-400' 
+                          : 'text-zen-600 dark:text-cream-400'
+                      }`}>
+                        USDC
+                      </span>
+                    </button>
+
+                    {/* WETH Card */}
+                    <button
+                      type="button"
+                      onClick={() => setSelectedToken('WETH')}
+                      className={`p-3 rounded-lg border-2 transition-all duration-300 flex items-center gap-3 ${
+                        selectedToken === 'WETH'
+                          ? 'bg-purple-50 dark:bg-purple-900/20 border-purple-300 dark:border-purple-600 shadow-md transform scale-[1.02] opacity-100'
+                          : 'bg-zen-200 dark:bg-zen-700 border-zen-300 dark:border-zen-600 opacity-60 hover:opacity-80 hover:bg-zen-100 dark:hover:bg-zen-600'
+                      }`}
+                    >
+                      <div className="w-6 h-6 flex items-center justify-center flex-shrink-0">
+                        <WETHIcon size={24} />
+                      </div>
+                      <span className={`text-sm font-semibold ${
+                        selectedToken === 'WETH' 
+                          ? 'text-purple-600 dark:text-purple-400' 
+                          : 'text-zen-600 dark:text-cream-400'
+                      }`}>
+                        WETH
+                      </span>
+                    </button>
                   </div>
                   <p className="text-sm text-zen-600 dark:text-cream-400 mt-2 font-lato">
                     {vaultMode === 'deposit' ? `Balance: ${getCurrentBalance()} ${selectedToken}` : `Shares: ${formatBalance(sharesBalance, 18)} BRIQ`}
