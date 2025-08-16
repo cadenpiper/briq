@@ -111,6 +111,21 @@ export default function Header() {
         {isMobileMenuOpen && (
           <div className="md:hidden bg-cream-100 dark:bg-zen-700 border-t border-cream-300 dark:border-zen-600 animate-slide-down">
             <nav className="px-4 py-4 space-y-2">
+              {/* Mobile Connect Button - Top placement for visibility, centered */}
+              <div className="pb-3 border-b border-cream-300 dark:border-zen-600 flex justify-center">
+                <ConnectButton
+                  label="Connect Wallet"
+                  accountStatus={{
+                    smallScreen: "avatar",
+                    largeScreen: "full",
+                  }}
+                  showBalance={{
+                    smallScreen: "false",
+                    largeScreen: "false",
+                  }}
+                />
+              </div>
+              
               <Link 
                 href="/portfolio" 
                 className="block px-3 py-2 rounded-md text-zen-800 dark:text-cream-200 hover:text-briq-orange dark:hover:text-briq-orange hover:bg-briq-orange/20 dark:hover:bg-briq-orange/30 transition-all duration-200 font-light font-lato"
@@ -139,21 +154,6 @@ export default function Header() {
               >
                 Briq?
               </Link>
-              
-              {/* Mobile Connect Button */}
-              <div className="pt-2">
-                <ConnectButton
-                  label="Connect Wallet"
-                  accountStatus={{
-                    smallScreen: "avatar",
-                    largeScreen: "full",
-                  }}
-                  showBalance={{
-                    smallScreen: "false",
-                    largeScreen: "false",
-                  }}
-                />
-              </div>
               
               {/* Mobile Theme Toggle at bottom */}
               <div className="pt-4 border-t border-cream-300 dark:border-zen-600 flex justify-center">
