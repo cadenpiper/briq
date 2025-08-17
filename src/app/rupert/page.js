@@ -64,6 +64,29 @@ export default function Rupert() {
     }
   }, [messages, isLoading]);
 
+  // Prevent page scroll when chat container is at scroll limits
+  useEffect(() => {
+    const chatContainer = chatContainerRef.current;
+    if (!chatContainer) return;
+
+    const handleWheel = (e) => {
+      const { scrollTop, scrollHeight, clientHeight } = chatContainer;
+      const isAtTop = scrollTop === 0;
+      const isAtBottom = scrollTop + clientHeight >= scrollHeight - 1;
+
+      // Prevent page scroll if trying to scroll beyond chat limits
+      if ((isAtTop && e.deltaY < 0) || (isAtBottom && e.deltaY > 0)) {
+        e.preventDefault();
+      }
+    };
+
+    chatContainer.addEventListener('wheel', handleWheel, { passive: false });
+
+    return () => {
+      chatContainer.removeEventListener('wheel', handleWheel);
+    };
+  }, []);
+
   // Clear chat history and reset conversation
   const clearChat = () => {
     if (isClient) {
