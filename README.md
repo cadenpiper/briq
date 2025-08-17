@@ -12,6 +12,7 @@ Briq is a modern DeFi protocol that provides users with an intuitive interface t
 - **Multi-Chain Support**: Compatible for all EVM networks  
 - **Vault-Based Architecture**: Secure deposit and withdrawal mechanisms
 - **Real-time Analytics**: Interactive charts and portfolio tracking with Recharts
+- **AI Assistant (Rupert)**: Real-time blockchain data and DeFi guidance with MCP integration
 - **Web3 Integration**: Seamless wallet connection via RainbowKit and Wagmi
 
 ## Installation
@@ -40,7 +41,14 @@ pnpm install
 bun install
 ```
 
-3. Set up environment variables:
+3. Install MCP server dependencies:
+```bash
+cd mcp-server
+npm install
+cd ..
+```
+
+4. Set up environment variables:
 
 Create a `.env.local` file in the root directory with the following variables:
 
@@ -50,6 +58,12 @@ NEXT_PUBLIC_PROJECT_ID=
 
 # GraphQL API Key for blockchain data queries
 NEXT_PUBLIC_GRAPHQL_API_KEY=
+
+# OpenAI API Key (required for Rupert AI assistant)
+OPENAI_API_KEY=
+
+# Etherscan API Key (required for real-time blockchain data)
+ETHERSCAN_API_KEY=
 ```
 
 ## Getting Started
@@ -76,6 +90,8 @@ briq/
 │   └── app/                 # Next.js App Router directory
 │       ├── abis/            # Smart contract ABIs
 │       ├── analytics/       # Analytics components
+│       ├── api/             # API routes
+│       │   └── chat/        # Rupert AI chat API with MCP integration
 │       ├── briq/            # Briq-specific pages
 │       ├── components/      # Reusable React components
 │       ├── context/         # React context providers
@@ -83,11 +99,17 @@ briq/
 │       ├── hooks/           # Custom React hooks
 │       ├── markets/         # Markets page components
 │       ├── portfolio/       # Portfolio page components
+│       ├── rupert/          # Rupert AI assistant interface
 │       ├── utils/           # Utility functions
+│       │   └── simpleMcpClient.js  # MCP client for blockchain data
 │       ├── layout.js        # Root layout component
 │       ├── page.js          # Main page component
 │       ├── providers.jsx    # App providers setup
 │       └── globals.css      # Global styles
+├── mcp-server/              # Model Context Protocol server
+│   ├── index.js             # MCP server with blockchain tools
+│   ├── package.json         # Server dependencies
+│   └── README.md            # MCP server documentation
 ├── hardhat/                 # Smart contracts directory
 │   ├── contracts/           # Solidity smart contracts
 │   │   ├── strategies/      # Strategy implementations
@@ -109,13 +131,30 @@ briq/
 
 ## Features
 
+### Core Platform
 - ⚡ Built with Next.js 14+ and App Router
 - 🎨 Optimized font loading with Geist font family
 - 📱 Responsive design
 - 🔧 Modern development tools and hot reload
 
+### Rupert AI Assistant
+- 🤖 **Real-time Blockchain Data**: Current token prices and gas costs via Etherscan API
+- 📊 **DeFi Market Intelligence**: Live yield rates and TVL data from The Graph
+- 🌐 **Multi-Network Support**: Ethereum and Arbitrum data with USD conversions
+- 💬 **Natural Language Processing**: Understands queries like "What's the current ETH price?"
+- 💾 **Session Persistence**: Chat history saved across browser sessions
+- 🔄 **Real-time Updates**: Live data integration without page refresh
+
+### MCP Server Capabilities
+- **Token Prices**: Real-time ETH and USDC prices
+- **Gas Tracking**: Current gas costs for Ethereum and Arbitrum with USD conversion
+- **DeFi Protocols**: Market data from Aave V3 and Compound V3
+- **Yield Optimization**: Best yield opportunity recommendations
+- **Error Handling**: Graceful fallbacks and rate limiting
+
 ## Technologies Used
 
+### Frontend
 - [Next.js](https://nextjs.org) - React framework with App Router
 - [React](https://reactjs.org) - UI library
 - [Tailwind CSS](https://tailwindcss.com) - Utility-first CSS framework
@@ -123,5 +162,64 @@ briq/
 - [Wagmi](https://wagmi.sh) - React hooks for Ethereum
 - [Viem](https://viem.sh) - TypeScript interface for Ethereum
 - [Recharts](https://recharts.org) - Composable charting library
+
+### AI & Data
+- [OpenAI](https://openai.com) - GPT-3.5 Turbo for Rupert AI assistant
+- [Model Context Protocol](https://modelcontextprotocol.io) - Real-time data integration
 - [GraphQL](https://graphql.org) - Query language for APIs
+- [The Graph](https://thegraph.com) - Decentralized protocol for indexing blockchain data
+- [Etherscan API](https://etherscan.io/apis) - Blockchain data and gas prices
+
+### Development
 - [Tanstack Query](https://tanstack.com/query) - Data fetching and caching
+- [Hardhat](https://hardhat.org) - Ethereum development environment
+
+## API Endpoints
+
+### Chat API
+- `POST /api/chat` - Rupert AI assistant with MCP integration
+
+### MCP Tools Available
+- `get_token_prices` - Current ETH and USDC prices
+- `get_gas_prices` - Gas costs for Ethereum and Arbitrum
+- `get_market_data` - DeFi protocol market information
+- `get_best_yield` - Optimal yield opportunities
+
+## Usage Examples
+
+### Rupert AI Queries
+Ask Rupert natural language questions:
+- *"What's the current price of ETH?"*
+- *"What are gas prices on Ethereum and Arbitrum?"*
+- *"How much does it cost to send a transaction?"*
+- *"What are the best USDC yield opportunities?"*
+
+### MCP Server Testing
+```bash
+cd mcp-server
+echo '{"jsonrpc": "2.0", "id": 1, "method": "tools/call", "params": {"name": "get_gas_prices", "arguments": {"network": "both"}}}' | node index.js
+```
+
+## Development
+
+### Running Tests
+```bash
+# Smart contract tests
+cd hardhat
+npx hardhat test
+
+# MCP server tests
+cd mcp-server
+npm test
+```
+
+### Environment Setup
+1. Get API keys:
+   - [OpenAI API Key](https://platform.openai.com/api-keys)
+   - [Etherscan API Key](https://etherscan.io/apis)
+   - [The Graph API Key](https://thegraph.com/studio/)
+   - [WalletConnect Project ID](https://cloud.walletconnect.com/)
+
+2. Configure `.env.local` with your keys
+
+3. Start development server: `npm run dev`

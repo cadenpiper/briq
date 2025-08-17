@@ -6,6 +6,7 @@ import Layout from '../components/Layout';
 
 export default function Rupert() {
   const messagesEndRef = useRef(null);
+  const chatContainerRef = useRef(null);
   const [isResetting, setIsResetting] = useState(false);
   const [isClient, setIsClient] = useState(false);
   
@@ -55,6 +56,13 @@ export default function Rupert() {
       sessionStorage.setItem('rupert-chat-messages', JSON.stringify(messages));
     }
   }, [messages, isClient]);
+
+  // Auto-scroll chat messages area to bottom when new messages arrive or loading
+  useEffect(() => {
+    if (chatContainerRef.current) {
+      chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
+    }
+  }, [messages, isLoading]);
 
   // Clear chat history and reset conversation
   const clearChat = () => {
@@ -124,7 +132,10 @@ export default function Rupert() {
             </div>
 
             {/* Messages Area */}
-            <div className="h-[600px] overflow-y-auto p-6 space-y-6 bg-cream-50 dark:bg-zen-800">
+            <div 
+              ref={chatContainerRef}
+              className="h-[600px] overflow-y-auto p-6 space-y-6 bg-cream-50 dark:bg-zen-800"
+            >
               {messages.map((message) => (
                 <div
                   key={message.id}
