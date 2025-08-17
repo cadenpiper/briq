@@ -7,16 +7,40 @@ import Layout from '../components/Layout';
 export default function Rupert() {
   const messagesEndRef = useRef(null);
   
-  const { messages, input, handleInputChange, handleSubmit, isLoading } = useChat({
-    api: '/api/chat',
-    initialMessages: [
+  // Load initial messages from session storage or use default
+  const getInitialMessages = () => {
+    if (typeof window !== 'undefined') {
+      const savedMessages = sessionStorage.getItem('rupert-chat-messages');
+      if (savedMessages) {
+        try {
+          return JSON.parse(savedMessages);
+        } catch (error) {
+          console.error('Error parsing saved messages:', error);
+        }
+      }
+    }
+    
+    // Default welcome message
+    return [
       {
         id: 'welcome',
         role: 'assistant',
-        content: 'Good day. I am Rupert, your dedicated AI butler for the Briq DeFi platform. I am here to provide you with expert assistance regarding yield optimization strategies, DeFi protocols, and comprehensive guidance on utilizing the Briq platform to its fullest potential. Whether you require information about our automated routing between Aave V3 and Compound V3, portfolio management strategies, or technical support with USDC and WETH deposits, I am at your complete service. How may I assist you today?'
+        content: 'Hello. I am Rupert, your AI assistant for the Briq DeFi platform. I provide expert guidance on yield optimization, DeFi protocols, and platform features. How may I assist you today?'
       }
-    ]
+    ];
+  };
+
+  const { messages, input, handleInputChange, handleSubmit, isLoading } = useChat({
+    api: '/api/chat',
+    initialMessages: getInitialMessages()
   });
+
+  // Save messages to session storage whenever they change
+  useEffect(() => {
+    if (typeof window !== 'undefined' && messages.length > 0) {
+      sessionStorage.setItem('rupert-chat-messages', JSON.stringify(messages));
+    }
+  }, [messages]);
 
   const scrollToBottom = () => {
     if (messagesEndRef.current) {
@@ -29,6 +53,14 @@ export default function Rupert() {
       scrollToBottom();
     }
   }, [messages, isLoading]);
+
+  // Clear chat function
+  const clearChat = () => {
+    if (typeof window !== 'undefined') {
+      sessionStorage.removeItem('rupert-chat-messages');
+      window.location.reload();
+    }
+  };
 
   return (
     <Layout>
@@ -53,19 +85,30 @@ export default function Rupert() {
             
             {/* Chat Header */}
             <div className="bg-cream-100 dark:bg-zen-700 px-6 py-4 border-b border-cream-200 dark:border-zen-600">
-              <div className="flex items-center space-x-3">
-                <div className="w-10 h-10 bg-briq-orange rounded-full flex items-center justify-center">
-                  <span className="text-white font-bold text-lg">R</span>
-                </div>
-                <div>
-                  <h3 className="font-semibold text-zen-900 dark:text-cream-100 font-lato">
-                    Rupert
-                  </h3>
-                  <div className="flex items-center space-x-2">
-                    <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                    <span className="text-sm text-zen-600 dark:text-cream-400">Online</span>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-3">
+                  <div className="w-10 h-10 bg-briq-orange rounded-full flex items-center justify-center">
+                    <span className="text-white font-bold text-lg">R</span>
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-zen-900 dark:text-cream-100 font-lato">
+                      Rupert
+                    </h3>
+                    <div className="flex items-center space-x-2">
+                      <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                      <span className="text-sm text-zen-600 dark:text-cream-400">Online</span>
+                    </div>
                   </div>
                 </div>
+                
+                {/* Clear Chat Button */}
+                <button
+                  onClick={clearChat}
+                  className="text-zen-600 dark:text-cream-400 hover:text-zen-800 dark:hover:text-cream-200 transition-colors duration-200 text-sm font-lato"
+                  title="Clear chat history"
+                >
+                  Clear Chat
+                </button>
               </div>
             </div>
 
