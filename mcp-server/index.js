@@ -11,7 +11,14 @@ import { request, gql } from 'graphql-request';
 import { createPublicClient, http, formatUnits } from 'viem';
 import { localhost } from 'viem/chains';
 import { getContractAddresses } from '../src/app/utils/forkAddresses.js';
+import { readFileSync } from 'fs';
 import path from 'path';
+
+// Load ABIs from JSON files
+const loadABI = (filename) => {
+  const filePath = path.join(process.cwd(), '..', 'src', 'app', 'abis', filename);
+  return JSON.parse(readFileSync(filePath, 'utf8')).abi;
+};
 
 // Load environment variables from parent directory
 dotenv.config({ path: path.join(process.cwd(), '..', '.env.local') });
@@ -51,16 +58,12 @@ class RupertMCPServer {
     // Import Briq contract addresses from frontend (same source of truth)
     this.BRIQ_CONTRACTS = getContractAddresses();
 
-    // Basic BriqVault ABI for getTotalVaultValueInUSD function
-    this.VAULT_ABI = [
-      {
-        "inputs": [],
-        "name": "getTotalVaultValueInUSD",
-        "outputs": [{"internalType": "uint256", "name": "totalUsdValue", "type": "uint256"}],
-        "stateMutability": "view",
-        "type": "function"
-      }
-    ];
+    // Load ABIs from JSON files (same as frontend)
+    this.VAULT_ABI = loadABI('BriqVault.json');
+    this.STRATEGY_COORDINATOR_ABI = loadABI('StrategyCoordinator.json');
+    this.PRICE_FEED_MANAGER_ABI = loadABI('PriceFeedManager.json');
+    this.STRATEGY_AAVE_ABI = loadABI('StrategyAave.json');
+    this.STRATEGY_COMPOUND_ABI = loadABI('StrategyCompoundComet.json');
 
     this.setupToolHandlers();
     this.setupErrorHandling();
@@ -128,6 +131,400 @@ Make sure:
 1. Hardhat node is running on localhost:8545
 2. Briq contracts are deployed to the fork
 3. Contract address is correct: ${this.BRIQ_CONTRACTS.VAULT}`
+          }
+        ],
+        isError: true
+      };
+    }
+  }
+
+  // Get comprehensive Briq analytics (same as analytics page)
+  async getBriqAnalytics() {
+    try {
+      // Get TVL
+      const tvlData = await this.getBriqTVL();
+      
+      // Get market allocations
+      const marketData = await this.getMarketAllocations();
+      
+      // Get strategy rewards
+      const rewardsData = await this.getStrategyRewards('both');
+      
+      // Calculate weighted average APY
+      const totalMarketValue = marketData.markets.reduce((sum, market) => sum + market.usdValue, 0);
+      const weightedAverageAPY = totalMarketValue > 0 
+        ? marketData.markets.reduce((sum, market) => {
+            const weight = market.usdValue / totalMarketValue;
+            return sum + (market.apy * weight);
+          }, 0)
+        : 0;
+
+      return {
+        tvl: tvlData.tvl,
+        weightedAverageAPY,
+        totalRewards: rewardsData.totalRewardsUSD,
+        marketAllocations: marketData.markets,
+        aaveRewards: rewardsData.aave,
+        compoundRewards: rewardsData.compound,
+        timestamp: Date.now()
+      };
+    } catch (error) {
+      console.error('Error fetching Briq analytics:', error);
+      throw error;
+    }
+  }
+
+  // Get market allocations (token distribution across strategies)
+  async getMarketAllocations() {
+    try {
+      // Get supported tokens
+      const supportedTokens = await this.viemClient.readContract({
+        address: this.BRIQ_CONTRACTS.VAULT,
+        abi: this.VAULT_ABI,
+        functionName: 'getSupportedTokens'
+      });
+
+      const markets = [];
+      
+      for (const tokenAddress of supportedTokens) {
+        // Get strategy balance for this token
+        const balance = await this.viemClient.readContract({
+          address: this.BRIQ_CONTRACTS.STRATEGY_COORDINATOR,
+          abi: this.STRATEGY_COORDINATOR_ABI,
+          functionName: 'getStrategyBalance',
+          args: [tokenAddress]
+        });
+
+        // Get USD value of the balance
+        const usdValue = balance > 0n ? await this.viemClient.readContract({
+          address: this.BRIQ_CONTRACTS.PRICE_FEED_MANAGER,
+          abi: this.PRICE_FEED_MANAGER_ABI,
+          functionName: 'getTokenValueInUSD',
+          args: [tokenAddress, balance]
+        }) : 0n;
+
+        // Get APY for this token
+        const apyBasisPoints = await this.viemClient.readContract({
+          address: this.BRIQ_CONTRACTS.STRATEGY_COORDINATOR,
+          abi: this.STRATEGY_COORDINATOR_ABI,
+          functionName: 'getStrategyAPY',
+          args: [tokenAddress]
+        });
+
+        // Determine token symbol and strategy name
+        const isUSDC = tokenAddress.toLowerCase() === this.BRIQ_CONTRACTS.USDC.toLowerCase();
+        const isWETH = tokenAddress.toLowerCase() === this.BRIQ_CONTRACTS.WETH.toLowerCase();
+        
+        let tokenSymbol = 'UNKNOWN';
+        let strategyName = 'Unknown';
+        
+        if (isUSDC) {
+          tokenSymbol = 'USDC';
+          strategyName = 'Aave';
+        } else if (isWETH) {
+          tokenSymbol = 'WETH';
+          strategyName = 'Compound';
+        }
+
+        markets.push({
+          tokenAddress,
+          tokenSymbol,
+          strategyName,
+          balance: parseFloat(formatUnits(balance, isUSDC ? 6 : 18)),
+          usdValue: parseFloat(formatUnits(usdValue, 18)),
+          apy: Number(apyBasisPoints) / 100 // Convert basis points to percentage
+        });
+      }
+
+      return { markets, timestamp: Date.now() };
+    } catch (error) {
+      console.error('Error fetching market allocations:', error);
+      throw error;
+    }
+  }
+
+  // Get strategy rewards (Aave and Compound)
+  async getStrategyRewards(strategy = 'both') {
+    try {
+      const results = {
+        aave: { tokens: [], totalUSD: 0 },
+        compound: { tokens: [], totalUSD: 0 },
+        totalRewardsUSD: 0
+      };
+
+      if (strategy === 'aave' || strategy === 'both') {
+        // Get Aave rewards
+        const aaveTokens = [this.BRIQ_CONTRACTS.USDC]; // Aave handles USDC
+        
+        for (const tokenAddress of aaveTokens) {
+          const isUSDC = tokenAddress.toLowerCase() === this.BRIQ_CONTRACTS.USDC.toLowerCase();
+          const tokenSymbol = isUSDC ? 'USDC' : 'UNKNOWN';
+          
+          // Get current balance
+          const currentBalance = await this.viemClient.readContract({
+            address: this.BRIQ_CONTRACTS.STRATEGY_AAVE,
+            abi: this.STRATEGY_AAVE_ABI,
+            functionName: 'getCurrentBalance',
+            args: [tokenAddress]
+          });
+
+          // Get accrued rewards (interest from aTokens)
+          const accruedRewards = await this.viemClient.readContract({
+            address: this.BRIQ_CONTRACTS.STRATEGY_AAVE,
+            abi: this.STRATEGY_AAVE_ABI,
+            functionName: 'getAccruedRewards',
+            args: [tokenAddress]
+          });
+
+          // Get current APY
+          const currentAPY = await this.viemClient.readContract({
+            address: this.BRIQ_CONTRACTS.STRATEGY_COORDINATOR,
+            abi: this.STRATEGY_COORDINATOR_ABI,
+            functionName: 'getStrategyAPY',
+            args: [tokenAddress]
+          });
+
+          // Convert to USD
+          const rewardsUSD = accruedRewards > 0n ? await this.viemClient.readContract({
+            address: this.BRIQ_CONTRACTS.PRICE_FEED_MANAGER,
+            abi: this.PRICE_FEED_MANAGER_ABI,
+            functionName: 'getTokenValueInUSD',
+            args: [tokenAddress, accruedRewards]
+          }) : 0n;
+
+          const tokenData = {
+            tokenSymbol,
+            currentBalance: parseFloat(formatUnits(currentBalance, isUSDC ? 6 : 18)),
+            accruedRewards: parseFloat(formatUnits(accruedRewards, isUSDC ? 6 : 18)),
+            rewardsUSD: parseFloat(formatUnits(rewardsUSD, 18)),
+            currentAPY: Number(currentAPY) / 100
+          };
+
+          results.aave.tokens.push(tokenData);
+          results.aave.totalUSD += tokenData.rewardsUSD;
+        }
+      }
+
+      if (strategy === 'compound' || strategy === 'both') {
+        // Get Compound rewards
+        const compoundTokens = [this.BRIQ_CONTRACTS.WETH]; // Compound handles WETH
+        
+        for (const tokenAddress of compoundTokens) {
+          const isWETH = tokenAddress.toLowerCase() === this.BRIQ_CONTRACTS.WETH.toLowerCase();
+          const tokenSymbol = isWETH ? 'WETH' : 'UNKNOWN';
+          
+          // Get current balance
+          const currentBalance = await this.viemClient.readContract({
+            address: this.BRIQ_CONTRACTS.STRATEGY_COMPOUND,
+            abi: this.STRATEGY_COMPOUND_ABI,
+            functionName: 'getCurrentBalance',
+            args: [tokenAddress]
+          });
+
+          // Get interest rewards
+          const interestRewards = await this.viemClient.readContract({
+            address: this.BRIQ_CONTRACTS.STRATEGY_COMPOUND,
+            abi: this.STRATEGY_COMPOUND_ABI,
+            functionName: 'getInterestRewards',
+            args: [tokenAddress]
+          });
+
+          // Get protocol rewards (COMP tokens)
+          const protocolRewards = await this.viemClient.readContract({
+            address: this.BRIQ_CONTRACTS.STRATEGY_COMPOUND,
+            abi: this.STRATEGY_COMPOUND_ABI,
+            functionName: 'getProtocolRewards',
+            args: [tokenAddress]
+          });
+
+          // Get current APY
+          const currentAPY = await this.viemClient.readContract({
+            address: this.BRIQ_CONTRACTS.STRATEGY_COORDINATOR,
+            abi: this.STRATEGY_COORDINATOR_ABI,
+            functionName: 'getStrategyAPY',
+            args: [tokenAddress]
+          });
+
+          // Convert interest rewards to USD
+          const interestRewardsUSD = interestRewards > 0n ? await this.viemClient.readContract({
+            address: this.BRIQ_CONTRACTS.PRICE_FEED_MANAGER,
+            abi: this.PRICE_FEED_MANAGER_ABI,
+            functionName: 'getTokenValueInUSD',
+            args: [tokenAddress, interestRewards]
+          }) : 0n;
+
+          const tokenData = {
+            tokenSymbol,
+            currentBalance: parseFloat(formatUnits(currentBalance, isWETH ? 18 : 6)),
+            interestRewards: parseFloat(formatUnits(interestRewards, isWETH ? 18 : 6)),
+            protocolRewards: parseFloat(formatUnits(protocolRewards, 18)), // COMP has 18 decimals
+            interestRewardsUSD: parseFloat(formatUnits(interestRewardsUSD, 18)),
+            currentAPY: Number(currentAPY) / 100
+          };
+
+          results.compound.tokens.push(tokenData);
+          results.compound.totalUSD += tokenData.interestRewardsUSD;
+        }
+      }
+
+      results.totalRewardsUSD = results.aave.totalUSD + results.compound.totalUSD;
+      
+      return { ...results, timestamp: Date.now() };
+    } catch (error) {
+      console.error('Error fetching strategy rewards:', error);
+      throw error;
+    }
+  }
+
+  // Handle comprehensive Briq analytics request
+  async handleGetBriqAnalytics() {
+    try {
+      const data = await this.getBriqAnalytics();
+      
+      const analyticsText = `Briq Protocol Analytics:
+
+📊 OVERVIEW
+Total Value Locked: $${data.tvl.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+Weighted Average APY: ${data.weightedAverageAPY.toFixed(2)}%
+Total Rewards Earned: $${data.totalRewards.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+
+💰 MARKET ALLOCATIONS
+${data.marketAllocations.map(market => {
+  const totalValue = data.marketAllocations.reduce((sum, m) => sum + m.usdValue, 0);
+  const allocation = totalValue > 0 ? (market.usdValue / totalValue * 100) : 0;
+  return `• ${market.tokenSymbol} via ${market.strategyName}: $${market.usdValue.toFixed(2)} (${allocation.toFixed(1)}%) - ${market.apy.toFixed(2)}% APY`;
+}).join('\n')}
+
+🏆 STRATEGY REWARDS
+Aave Strategy: $${data.aaveRewards.totalUSD.toFixed(2)} USD
+${data.aaveRewards.tokens.map(token => 
+  `  • ${token.tokenSymbol}: ${token.accruedRewards.toFixed(6)} tokens ($${token.rewardsUSD.toFixed(2)})`
+).join('\n')}
+
+Compound Strategy: $${data.compoundRewards.totalUSD.toFixed(2)} USD
+${data.compoundRewards.tokens.map(token => 
+  `  • ${token.tokenSymbol}: ${token.interestRewards.toFixed(6)} tokens + ${token.protocolRewards.toFixed(6)} COMP`
+).join('\n')}
+
+Last Updated: ${new Date(data.timestamp).toLocaleString()}
+Data Source: Live contract data from forked network`;
+
+      return {
+        content: [
+          {
+            type: 'text',
+            text: analyticsText
+          }
+        ]
+      };
+    } catch (error) {
+      return {
+        content: [
+          {
+            type: 'text',
+            text: `Error fetching Briq analytics: ${error.message}
+
+Make sure contracts are deployed and accessible.`
+          }
+        ],
+        isError: true
+      };
+    }
+  }
+
+  // Handle market allocations request
+  async handleGetMarketAllocations() {
+    try {
+      const data = await this.getMarketAllocations();
+      const totalValue = data.markets.reduce((sum, market) => sum + market.usdValue, 0);
+      
+      const allocationsText = `Briq Market Allocations:
+
+Total Portfolio Value: $${totalValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+
+${data.markets.map(market => {
+  const allocation = totalValue > 0 ? (market.usdValue / totalValue * 100) : 0;
+  return `📈 ${market.tokenSymbol} Strategy (${market.strategyName})
+  Balance: ${market.balance.toFixed(4)} ${market.tokenSymbol}
+  USD Value: $${market.usdValue.toFixed(2)}
+  Allocation: ${allocation.toFixed(1)}%
+  Current APY: ${market.apy.toFixed(2)}%`;
+}).join('\n\n')}
+
+Last Updated: ${new Date(data.timestamp).toLocaleString()}`;
+
+      return {
+        content: [
+          {
+            type: 'text',
+            text: allocationsText
+          }
+        ]
+      };
+    } catch (error) {
+      return {
+        content: [
+          {
+            type: 'text',
+            text: `Error fetching market allocations: ${error.message}`
+          }
+        ],
+        isError: true
+      };
+    }
+  }
+
+  // Handle strategy rewards request
+  async handleGetStrategyRewards(strategy) {
+    try {
+      const data = await this.getStrategyRewards(strategy);
+      
+      let rewardsText = `Strategy Rewards Summary:\n\n`;
+      
+      if (strategy === 'aave' || strategy === 'both') {
+        rewardsText += `🔵 AAVE STRATEGY REWARDS
+Total: $${data.aave.totalUSD.toFixed(2)} USD
+
+${data.aave.tokens.map(token => `${token.tokenSymbol} Rewards:
+  • Current Balance: ${token.currentBalance.toFixed(4)} ${token.tokenSymbol}
+  • Accrued Interest: ${token.accruedRewards.toFixed(6)} ${token.tokenSymbol}
+  • USD Value: $${token.rewardsUSD.toFixed(2)}
+  • Current APY: ${token.currentAPY.toFixed(2)}%`).join('\n\n')}`;
+      }
+      
+      if (strategy === 'compound' || strategy === 'both') {
+        if (strategy === 'both') rewardsText += '\n\n';
+        rewardsText += `🟢 COMPOUND STRATEGY REWARDS
+Total: $${data.compound.totalUSD.toFixed(2)} USD
+
+${data.compound.tokens.map(token => `${token.tokenSymbol} Rewards:
+  • Current Balance: ${token.currentBalance.toFixed(4)} ${token.tokenSymbol}
+  • Interest Rewards: ${token.interestRewards.toFixed(6)} ${token.tokenSymbol}
+  • Protocol Rewards: ${token.protocolRewards.toFixed(6)} COMP
+  • USD Value: $${token.interestRewardsUSD.toFixed(2)}
+  • Current APY: ${token.currentAPY.toFixed(2)}%`).join('\n\n')}`;
+      }
+      
+      if (strategy === 'both') {
+        rewardsText += `\n\n💰 TOTAL REWARDS: $${data.totalRewardsUSD.toFixed(2)} USD`;
+      }
+      
+      rewardsText += `\n\nLast Updated: ${new Date(data.timestamp).toLocaleString()}`;
+
+      return {
+        content: [
+          {
+            type: 'text',
+            text: rewardsText
+          }
+        ]
+      };
+    } catch (error) {
+      return {
+        content: [
+          {
+            type: 'text',
+            text: `Error fetching strategy rewards: ${error.message}`
           }
         ],
         isError: true
@@ -501,6 +898,37 @@ Make sure:
               type: 'object',
               properties: {}
             }
+          },
+          {
+            name: 'get_briq_analytics',
+            description: 'Get comprehensive Briq protocol analytics including TVL, APY, allocations, and rewards',
+            inputSchema: {
+              type: 'object',
+              properties: {}
+            }
+          },
+          {
+            name: 'get_market_allocations',
+            description: 'Get current token allocations across strategies (USDC/WETH distribution)',
+            inputSchema: {
+              type: 'object',
+              properties: {}
+            }
+          },
+          {
+            name: 'get_strategy_rewards',
+            description: 'Get detailed rewards breakdown from Aave and Compound strategies',
+            inputSchema: {
+              type: 'object',
+              properties: {
+                strategy: {
+                  type: 'string',
+                  description: 'Specific strategy to query (optional)',
+                  enum: ['aave', 'compound', 'both'],
+                  default: 'both'
+                }
+              }
+            }
           }
         ]
       };
@@ -526,6 +954,15 @@ Make sure:
           
           case 'get_briq_tvl':
             return await this.handleGetBriqTVL();
+          
+          case 'get_briq_analytics':
+            return await this.handleGetBriqAnalytics();
+          
+          case 'get_market_allocations':
+            return await this.handleGetMarketAllocations();
+          
+          case 'get_strategy_rewards':
+            return await this.handleGetStrategyRewards(args?.strategy || 'both');
           
           default:
             throw new Error(`Unknown tool: ${name}`);

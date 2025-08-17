@@ -35,14 +35,29 @@ function shouldUseMCP(message) {
     'usdc price',
     'briq tvl',
     'briq protocol',
+    'briq analytics',
+    'briq rewards',
+    'briq allocations',
+    'briq performance',
+    'briq allocated',
+    'briq distribution',
+    'briq portfolio',
+    'where is briq',
+    'how is briq',
+    'briq current',
+    'strategy rewards',
+    'market allocations',
     'total value locked',
-    'current tvl'
+    'current tvl',
+    'aave rewards',
+    'compound rewards'
   ];
   
   // Individual keywords as fallback
   const keywords = [
     'price', 'gas', 'gwei', 'eth', 'weth', 'usdc', 'ethereum', 'arbitrum',
-    'mainnet', 'token', 'cost', 'fee', 'current', 'transaction', 'briq', 'tvl'
+    'mainnet', 'token', 'cost', 'fee', 'current', 'transaction', 'briq', 'tvl',
+    'analytics', 'rewards', 'allocations', 'aave', 'compound', 'strategy'
   ];
   
   // Check specific phrases first (more accurate)
@@ -61,9 +76,34 @@ function getMCPTool(message) {
     return 'get_gas_prices';
   }
   
-  // Briq TVL queries
-  if (messageText.includes('briq') && (messageText.includes('tvl') || messageText.includes('total value'))) {
-    return 'get_briq_tvl';
+  // Briq analytics queries (check these FIRST before general queries)
+  if (messageText.includes('briq')) {
+    if (messageText.includes('analytics') || messageText.includes('performance') || messageText.includes('overview')) {
+      return 'get_briq_analytics';
+    } else if (messageText.includes('allocations') || messageText.includes('allocation') || messageText.includes('distribution') || messageText.includes('allocated') || messageText.includes('portfolio')) {
+      return 'get_market_allocations';
+    } else if (messageText.includes('rewards')) {
+      return 'get_strategy_rewards';
+    } else if (messageText.includes('tvl') || messageText.includes('total value')) {
+      return 'get_briq_tvl';
+    }
+  }
+  
+  // Briq allocation queries (catch "where is briq" type questions)
+  if ((messageText.includes('where') || messageText.includes('how')) && messageText.includes('briq')) {
+    if (messageText.includes('allocated') || messageText.includes('distribution') || messageText.includes('portfolio')) {
+      return 'get_market_allocations';
+    }
+  }
+  
+  // Strategy-specific rewards queries
+  if ((messageText.includes('aave') || messageText.includes('compound')) && messageText.includes('rewards')) {
+    return 'get_strategy_rewards';
+  }
+  
+  // Market allocation queries (only if NOT about Briq specifically)
+  if (!messageText.includes('briq') && (messageText.includes('allocation') || messageText.includes('distribution') || messageText.includes('portfolio'))) {
+    return 'get_market_allocations';
   }
   
   // Token price queries
@@ -163,6 +203,29 @@ export async function POST(req) {
         mcpResponse = await mcpClient.sendRequest('tools/call', {
           name: 'get_briq_tvl',
           arguments: {}
+        });
+      } else if (tool === 'get_briq_analytics') {
+        mcpResponse = await mcpClient.sendRequest('tools/call', {
+          name: 'get_briq_analytics',
+          arguments: {}
+        });
+      } else if (tool === 'get_market_allocations') {
+        mcpResponse = await mcpClient.sendRequest('tools/call', {
+          name: 'get_market_allocations',
+          arguments: {}
+        });
+      } else if (tool === 'get_strategy_rewards') {
+        // Determine which strategy based on message content
+        let strategy = 'both';
+        if (messageText.includes('aave') && !messageText.includes('compound')) {
+          strategy = 'aave';
+        } else if (messageText.includes('compound') && !messageText.includes('aave')) {
+          strategy = 'compound';
+        }
+        
+        mcpResponse = await mcpClient.sendRequest('tools/call', {
+          name: 'get_strategy_rewards',
+          arguments: { strategy }
         });
       } else {
         mcpResponse = await mcpClient.getMarketData(params);
