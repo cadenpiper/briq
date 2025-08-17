@@ -1,14 +1,13 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useRef, useEffect } from 'react';
 import { useChat } from 'ai/react';
 import Layout from '../components/Layout';
 
 export default function Rupert() {
   const messagesEndRef = useRef(null);
-  const messagesContainerRef = useRef(null);
   
-  const { messages, input, handleInputChange, handleSubmit, isLoading, append } = useChat({
+  const { messages, input, handleInputChange, handleSubmit, isLoading } = useChat({
     api: '/api/chat',
     initialMessages: [
       {
@@ -20,14 +19,12 @@ export default function Rupert() {
   });
 
   const scrollToBottom = () => {
-    // Auto-scroll when Rupert is generating text
     if (messagesEndRef.current) {
       messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
     }
   };
 
   useEffect(() => {
-    // Scroll when messages change or when loading (Rupert is typing)
     if (isLoading || messages.length > 0) {
       scrollToBottom();
     }
@@ -73,10 +70,7 @@ export default function Rupert() {
             </div>
 
             {/* Messages Container */}
-            <div 
-              ref={messagesContainerRef}
-              className="h-[600px] overflow-y-auto p-6 space-y-6 bg-cream-50 dark:bg-zen-800"
-            >
+            <div className="h-[600px] overflow-y-auto p-6 space-y-6 bg-cream-50 dark:bg-zen-800">
               {messages.map((message) => (
                 <div
                   key={message.id}
