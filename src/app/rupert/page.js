@@ -22,7 +22,7 @@ export default function Rupert() {
         {
           id: 'welcome',
           role: 'assistant',
-          content: 'Hello. I am Rupert, your AI assistant for the Briq DeFi platform. I provide expert guidance on yield optimization, DeFi protocols, and platform features. How may I assist you today?'
+          content: "Greetings, I'm Rupert, the dedicated DeFi agent for Briq protocol. How may I be of service?"
         }
       ];
     }
@@ -40,7 +40,7 @@ export default function Rupert() {
       {
         id: 'welcome',
         role: 'assistant',
-        content: 'Hello. I am Rupert, your AI assistant for the Briq DeFi platform. I provide expert guidance on yield optimization, DeFi protocols, and platform features. How may I assist you today?'
+        content: "Greetings, I'm Rupert, the dedicated DeFi agent for Briq protocol. How may I be of service?"
       }
     ];
   };
@@ -103,7 +103,7 @@ export default function Rupert() {
   return (
     <Layout>
       <div className="flex justify-center py-12">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 w-full">
           
           {/* Page Header */}
           <div className="text-center mb-12">
@@ -114,12 +114,12 @@ export default function Rupert() {
               Rupert
             </h1>
             <p className="text-xl text-zen-700 dark:text-cream-300 max-w-2xl mx-auto font-light font-lato">
-              Your AI-powered DeFi assistant for yield optimization and strategy guidance
+              Your AI-powered DeFi agent for yield optimization and strategy guidance
             </p>
           </div>
 
           {/* Chat Container */}
-          <div className="bg-cream-50 dark:bg-zen-800 rounded-2xl border border-cream-200 dark:border-zen-600 shadow-lg backdrop-blur-sm overflow-hidden">
+          <div className="w-full max-w-4xl h-[700px] sm:h-[700px] h-[80vh] bg-cream-50 dark:bg-zen-800 rounded-2xl border border-cream-200 dark:border-zen-600 shadow-lg backdrop-blur-sm overflow-hidden flex flex-col">
             
             {/* Chat Header */}
             <div className="bg-cream-100 dark:bg-zen-700 px-6 py-4 border-b border-cream-200 dark:border-zen-600">
@@ -157,7 +157,7 @@ export default function Rupert() {
             {/* Messages Area */}
             <div 
               ref={chatContainerRef}
-              className="h-[600px] overflow-y-auto p-6 space-y-6 bg-cream-50 dark:bg-zen-800 custom-scrollbar"
+              className="flex-1 overflow-y-auto p-6 space-y-6 bg-cream-50 dark:bg-zen-800 custom-scrollbar"
             >
               {messages.map((message) => (
                 <div
@@ -199,7 +199,7 @@ export default function Rupert() {
             </div>
 
             {/* Input Area */}
-            <div className="bg-cream-100 dark:bg-zen-700 px-6 py-4">
+            <div className="flex-shrink-0 bg-cream-100 dark:bg-zen-700 px-6 py-4">
               <form onSubmit={handleSubmit} className="flex space-x-4">
                 <div className="flex-1 relative">
                   <input

@@ -147,10 +147,7 @@ Make sure:
       // Get market allocations
       const marketData = await this.getMarketAllocations();
       
-      // Get strategy rewards
-      const rewardsData = await this.getStrategyRewards('both');
-      
-      // Calculate weighted average APY
+      // Calculate weighted average APY from market data
       const totalMarketValue = marketData.markets.reduce((sum, market) => sum + market.usdValue, 0);
       const weightedAverageAPY = totalMarketValue > 0 
         ? marketData.markets.reduce((sum, market) => {
@@ -158,6 +155,15 @@ Make sure:
             return sum + (market.apy * weight);
           }, 0)
         : 0;
+
+      // Get strategy rewards
+      let rewardsData = { totalRewardsUSD: 0, aave: { totalUSD: 0 }, compound: { totalUSD: 0 } };
+      try {
+        rewardsData = await this.getStrategyRewards('both');
+      } catch (error) {
+        console.error('Error fetching rewards for analytics:', error);
+        // Continue without rewards data
+      }
 
       return {
         tvl: tvlData.tvl,
@@ -243,7 +249,7 @@ Make sure:
     }
   }
 
-  // Get strategy rewards (Aave and Compound)
+  // Get strategy rewards (Aave and Compound) using same method as frontend
   async getStrategyRewards(strategy = 'both') {
     try {
       const results = {
@@ -253,117 +259,153 @@ Make sure:
       };
 
       if (strategy === 'aave' || strategy === 'both') {
-        // Get Aave rewards
-        const aaveTokens = [this.BRIQ_CONTRACTS.USDC]; // Aave handles USDC
-        
-        for (const tokenAddress of aaveTokens) {
-          const isUSDC = tokenAddress.toLowerCase() === this.BRIQ_CONTRACTS.USDC.toLowerCase();
-          const tokenSymbol = isUSDC ? 'USDC' : 'UNKNOWN';
-          
-          // Get current balance
-          const currentBalance = await this.viemClient.readContract({
+        try {
+          // Get all token analytics from Aave strategy (same as frontend)
+          const [supportedTokens, analyticsArray] = await this.viemClient.readContract({
             address: this.BRIQ_CONTRACTS.STRATEGY_AAVE,
             abi: this.STRATEGY_AAVE_ABI,
-            functionName: 'getCurrentBalance',
-            args: [tokenAddress]
+            functionName: 'getAllTokenAnalytics'
           });
 
-          // Get accrued rewards (interest from aTokens)
-          const accruedRewards = await this.viemClient.readContract({
-            address: this.BRIQ_CONTRACTS.STRATEGY_AAVE,
-            abi: this.STRATEGY_AAVE_ABI,
-            functionName: 'getAccruedRewards',
-            args: [tokenAddress]
-          });
+          // Process each token's rewards data
+          for (let i = 0; i < supportedTokens.length; i++) {
+            const tokenAddress = supportedTokens[i];
+            const analytics = analyticsArray[i];
+            
+            const [
+              currentBalance,
+              totalDeposits,
+              totalWithdrawals,
+              netDeposits,
+              accruedRewards,
+              currentAPY
+            ] = analytics;
 
-          // Get current APY
-          const currentAPY = await this.viemClient.readContract({
-            address: this.BRIQ_CONTRACTS.STRATEGY_COORDINATOR,
-            abi: this.STRATEGY_COORDINATOR_ABI,
-            functionName: 'getStrategyAPY',
-            args: [tokenAddress]
-          });
+            // Determine token details
+            const isUSDC = tokenAddress.toLowerCase() === this.BRIQ_CONTRACTS.USDC?.toLowerCase();
+            const isWETH = tokenAddress.toLowerCase() === this.BRIQ_CONTRACTS.WETH?.toLowerCase();
+            
+            let tokenSymbol = 'UNKNOWN';
+            let decimals = 18;
+            
+            if (isUSDC) {
+              tokenSymbol = 'USDC';
+              decimals = 6;
+            } else if (isWETH) {
+              tokenSymbol = 'WETH';
+              decimals = 18;
+            }
 
-          // Convert to USD
-          const rewardsUSD = accruedRewards > 0n ? await this.viemClient.readContract({
-            address: this.BRIQ_CONTRACTS.PRICE_FEED_MANAGER,
-            abi: this.PRICE_FEED_MANAGER_ABI,
-            functionName: 'getTokenValueInUSD',
-            args: [tokenAddress, accruedRewards]
-          }) : 0n;
+            // Format the rewards amount
+            const rewardsFormatted = parseFloat(formatUnits(accruedRewards, decimals));
+            const currentBalanceFormatted = parseFloat(formatUnits(currentBalance, decimals));
+            
+            // Get USD value of rewards
+            let rewardsUSD = 0;
+            if (accruedRewards > 0n) {
+              try {
+                const rewardsUSDRaw = await this.viemClient.readContract({
+                  address: this.BRIQ_CONTRACTS.PRICE_FEED_MANAGER,
+                  abi: this.PRICE_FEED_MANAGER_ABI,
+                  functionName: 'getTokenValueInUSD',
+                  args: [tokenAddress, accruedRewards]
+                });
+                rewardsUSD = parseFloat(formatUnits(rewardsUSDRaw, 18));
+              } catch (error) {
+                console.error('Error getting USD value for Aave rewards:', error);
+              }
+            }
 
-          const tokenData = {
-            tokenSymbol,
-            currentBalance: parseFloat(formatUnits(currentBalance, isUSDC ? 6 : 18)),
-            accruedRewards: parseFloat(formatUnits(accruedRewards, isUSDC ? 6 : 18)),
-            rewardsUSD: parseFloat(formatUnits(rewardsUSD, 18)),
-            currentAPY: Number(currentAPY) / 100
-          };
+            const tokenData = {
+              tokenSymbol,
+              currentBalance: currentBalanceFormatted,
+              accruedRewards: rewardsFormatted,
+              rewardsUSD,
+              currentAPY: Number(currentAPY) / 100 // Convert basis points to percentage
+            };
 
-          results.aave.tokens.push(tokenData);
-          results.aave.totalUSD += tokenData.rewardsUSD;
+            results.aave.tokens.push(tokenData);
+            results.aave.totalUSD += rewardsUSD;
+          }
+        } catch (error) {
+          console.error('Error fetching Aave rewards:', error);
         }
       }
 
       if (strategy === 'compound' || strategy === 'both') {
-        // Get Compound rewards
-        const compoundTokens = [this.BRIQ_CONTRACTS.WETH]; // Compound handles WETH
-        
-        for (const tokenAddress of compoundTokens) {
-          const isWETH = tokenAddress.toLowerCase() === this.BRIQ_CONTRACTS.WETH.toLowerCase();
-          const tokenSymbol = isWETH ? 'WETH' : 'UNKNOWN';
-          
-          // Get current balance
-          const currentBalance = await this.viemClient.readContract({
+        try {
+          // Get all token analytics from Compound strategy (same as frontend)
+          const [supportedTokens, analyticsArray] = await this.viemClient.readContract({
             address: this.BRIQ_CONTRACTS.STRATEGY_COMPOUND,
             abi: this.STRATEGY_COMPOUND_ABI,
-            functionName: 'getCurrentBalance',
-            args: [tokenAddress]
+            functionName: 'getAllTokenAnalytics'
           });
 
-          // Get interest rewards
-          const interestRewards = await this.viemClient.readContract({
-            address: this.BRIQ_CONTRACTS.STRATEGY_COMPOUND,
-            abi: this.STRATEGY_COMPOUND_ABI,
-            functionName: 'getInterestRewards',
-            args: [tokenAddress]
-          });
+          // Process each token's rewards data
+          for (let i = 0; i < supportedTokens.length; i++) {
+            const tokenAddress = supportedTokens[i];
+            const analytics = analyticsArray[i];
+            
+            const [
+              currentBalance,
+              totalDeposits,
+              totalWithdrawals,
+              netDeposits,
+              interestRewards,
+              protocolRewards,
+              currentAPY
+            ] = analytics;
 
-          // Get protocol rewards (COMP tokens)
-          const protocolRewards = await this.viemClient.readContract({
-            address: this.BRIQ_CONTRACTS.STRATEGY_COMPOUND,
-            abi: this.STRATEGY_COMPOUND_ABI,
-            functionName: 'getProtocolRewards',
-            args: [tokenAddress]
-          });
+            // Determine token details
+            const isUSDC = tokenAddress.toLowerCase() === this.BRIQ_CONTRACTS.USDC?.toLowerCase();
+            const isWETH = tokenAddress.toLowerCase() === this.BRIQ_CONTRACTS.WETH?.toLowerCase();
+            
+            let tokenSymbol = 'UNKNOWN';
+            let decimals = 18;
+            
+            if (isUSDC) {
+              tokenSymbol = 'USDC';
+              decimals = 6;
+            } else if (isWETH) {
+              tokenSymbol = 'WETH';
+              decimals = 18;
+            }
 
-          // Get current APY
-          const currentAPY = await this.viemClient.readContract({
-            address: this.BRIQ_CONTRACTS.STRATEGY_COORDINATOR,
-            abi: this.STRATEGY_COORDINATOR_ABI,
-            functionName: 'getStrategyAPY',
-            args: [tokenAddress]
-          });
+            // Format the rewards amounts
+            const interestRewardsFormatted = parseFloat(formatUnits(interestRewards, decimals));
+            const protocolRewardsFormatted = parseFloat(formatUnits(protocolRewards, 18)); // COMP has 18 decimals
+            const currentBalanceFormatted = parseFloat(formatUnits(currentBalance, decimals));
+            
+            // Get USD value of interest rewards
+            let interestRewardsUSD = 0;
+            if (interestRewards > 0n) {
+              try {
+                const rewardsUSDRaw = await this.viemClient.readContract({
+                  address: this.BRIQ_CONTRACTS.PRICE_FEED_MANAGER,
+                  abi: this.PRICE_FEED_MANAGER_ABI,
+                  functionName: 'getTokenValueInUSD',
+                  args: [tokenAddress, interestRewards]
+                });
+                interestRewardsUSD = parseFloat(formatUnits(rewardsUSDRaw, 18));
+              } catch (error) {
+                console.error('Error getting USD value for Compound rewards:', error);
+              }
+            }
 
-          // Convert interest rewards to USD
-          const interestRewardsUSD = interestRewards > 0n ? await this.viemClient.readContract({
-            address: this.BRIQ_CONTRACTS.PRICE_FEED_MANAGER,
-            abi: this.PRICE_FEED_MANAGER_ABI,
-            functionName: 'getTokenValueInUSD',
-            args: [tokenAddress, interestRewards]
-          }) : 0n;
+            const tokenData = {
+              tokenSymbol,
+              currentBalance: currentBalanceFormatted,
+              interestRewards: interestRewardsFormatted,
+              protocolRewards: protocolRewardsFormatted,
+              interestRewardsUSD,
+              currentAPY: Number(currentAPY) / 100 // Convert basis points to percentage
+            };
 
-          const tokenData = {
-            tokenSymbol,
-            currentBalance: parseFloat(formatUnits(currentBalance, isWETH ? 18 : 6)),
-            interestRewards: parseFloat(formatUnits(interestRewards, isWETH ? 18 : 6)),
-            protocolRewards: parseFloat(formatUnits(protocolRewards, 18)), // COMP has 18 decimals
-            interestRewardsUSD: parseFloat(formatUnits(interestRewardsUSD, 18)),
-            currentAPY: Number(currentAPY) / 100
-          };
-
-          results.compound.tokens.push(tokenData);
-          results.compound.totalUSD += tokenData.interestRewardsUSD;
+            results.compound.tokens.push(tokenData);
+            results.compound.totalUSD += interestRewardsUSD;
+          }
+        } catch (error) {
+          console.error('Error fetching Compound rewards:', error);
         }
       }
 
@@ -497,12 +539,19 @@ ${data.aave.tokens.map(token => `${token.tokenSymbol} Rewards:
         rewardsText += `🟢 COMPOUND STRATEGY REWARDS
 Total: $${data.compound.totalUSD.toFixed(2)} USD
 
-${data.compound.tokens.map(token => `${token.tokenSymbol} Rewards:
+${data.compound.tokens.map(token => {
+  // Format COMP rewards with appropriate precision
+  const compFormatted = token.protocolRewards < 0.000001 && token.protocolRewards > 0 
+    ? token.protocolRewards.toExponential(2) 
+    : token.protocolRewards.toFixed(8);
+    
+  return `${token.tokenSymbol} Rewards:
   • Current Balance: ${token.currentBalance.toFixed(4)} ${token.tokenSymbol}
   • Interest Rewards: ${token.interestRewards.toFixed(6)} ${token.tokenSymbol}
-  • Protocol Rewards: ${token.protocolRewards.toFixed(6)} COMP
+  • Protocol Rewards: ${compFormatted} COMP
   • USD Value: $${token.interestRewardsUSD.toFixed(2)}
-  • Current APY: ${token.currentAPY.toFixed(2)}%`).join('\n\n')}`;
+  • Current APY: ${token.currentAPY.toFixed(2)}%`;
+}).join('\n\n')}`;
       }
       
       if (strategy === 'both') {
@@ -1132,7 +1181,7 @@ ${data.compound.tokens.map(token => `${token.tokenSymbol} Rewards:
   async run() {
     const transport = new StdioServerTransport();
     await this.server.connect(transport);
-    console.error('Rupert MCP Server running on stdio');
+    // Server running on stdio
   }
 }
 
