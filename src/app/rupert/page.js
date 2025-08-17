@@ -134,7 +134,7 @@ export default function Rupert() {
             {/* Messages Area */}
             <div 
               ref={chatContainerRef}
-              className="h-[600px] overflow-y-auto p-6 space-y-6 bg-cream-50 dark:bg-zen-800"
+              className="h-[600px] overflow-y-auto p-6 space-y-6 bg-cream-50 dark:bg-zen-800 custom-scrollbar"
             >
               {messages.map((message) => (
                 <div

@@ -26,6 +26,9 @@ module.exports = {
           600: '#A99251',
         },
         'zen': {
+          400: '#6B7280',
+          500: '#4B5563',
+          600: '#374151',
           700: '#2A2A2A',
           800: '#1F1F1F',
           900: '#171717',
@@ -34,5 +37,7 @@ module.exports = {
       },
     },
   },
-  plugins: [],
+  plugins: [
+    require('tailwind-scrollbar'),
+  ],
 }

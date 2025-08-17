@@ -4,6 +4,8 @@
   --background: #DBC9A6; /* cream-100 - much darker */
   --foreground: #171717; /* zen-900 - dark grey */
   --accent: #FF7A2F; /* briq-orange */
+  --scrollbar-track: #D1BE95; /* cream-200 */
+  --scrollbar-thumb: #374151; /* zen-600 */
 }
 
 @theme inline {
@@ -20,6 +22,8 @@
   --background: #171717; /* zen-900 - dark grey */
   --foreground: #D1BE95; /* cream-200 - much darker */
   --accent: #FF7A2F; /* briq-orange */
+  --scrollbar-track: #2A2A2A; /* zen-700 */
+  --scrollbar-thumb: #D1BE95; /* cream-200 */
 }
 
 body {
@@ -28,6 +32,31 @@ body {
   font-family: var(--font-lato), sans-serif;
   font-weight: 300;
   transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* Custom Scrollbar Styles */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 8px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: var(--scrollbar-track);
+  border-radius: 4px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-thumb);
+  border-radius: 4px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: var(--accent);
+}
+
+/* Firefox scrollbar */
+.custom-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
 }
 
 .font-jetbrains-mono {
