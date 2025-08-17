@@ -55,6 +55,9 @@ export default function Header() {
               <Link href="/analytics" className="hover-highlight-effect text-zen-800 dark:text-cream-200 hover:text-briq-orange dark:hover:text-briq-orange hover:bg-briq-orange/20 dark:hover:bg-briq-orange/30 px-3 py-2 rounded-md transition-all duration-200 font-light font-lato relative hover:shadow-highlight">
                 Analytics
               </Link>
+              <Link href="/rupert" className="hover-highlight-effect text-zen-800 dark:text-cream-200 hover:text-briq-orange dark:hover:text-briq-orange hover:bg-briq-orange/20 dark:hover:bg-briq-orange/30 px-3 py-2 rounded-md transition-all duration-200 font-light font-lato relative hover:shadow-highlight">
+                Rupert
+              </Link>
               <Link href="/briq" className="hover-highlight-effect text-zen-800 dark:text-cream-200 hover:text-briq-orange dark:hover:text-briq-orange hover:bg-briq-orange/20 dark:hover:bg-briq-orange/30 px-3 py-2 rounded-md transition-all duration-200 font-light font-lato relative hover:shadow-highlight">
                 Briq?
               </Link>
@@ -146,6 +149,13 @@ export default function Header() {
                 onClick={closeMobileMenu}
               >
                 Analytics
+              </Link>
+              <Link 
+                href="/rupert" 
+                className="block px-3 py-2 rounded-md text-zen-800 dark:text-cream-200 hover:text-briq-orange dark:hover:text-briq-orange hover:bg-briq-orange/20 dark:hover:bg-briq-orange/30 transition-all duration-200 font-light font-lato"
+                onClick={closeMobileMenu}
+              >
+                Rupert
               </Link>
               <Link 
                 href="/briq" 
