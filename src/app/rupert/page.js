@@ -1,13 +1,13 @@
 'use client';
 
-import { useRef, useEffect } from 'react';
+import { useRef, useEffect, useState } from 'react';
 import { useChat } from 'ai/react';
 import Layout from '../components/Layout';
 
 export default function Rupert() {
   const messagesEndRef = useRef(null);
+  const [isResetting, setIsResetting] = useState(false);
   
-  // Load initial messages from session storage or use default
   const getInitialMessages = () => {
     if (typeof window !== 'undefined') {
       const savedMessages = sessionStorage.getItem('rupert-chat-messages');
@@ -20,7 +20,6 @@ export default function Rupert() {
       }
     }
     
-    // Default welcome message
     return [
       {
         id: 'welcome',
@@ -35,30 +34,25 @@ export default function Rupert() {
     initialMessages: getInitialMessages()
   });
 
-  // Save messages to session storage whenever they change
   useEffect(() => {
     if (typeof window !== 'undefined' && messages.length > 0) {
       sessionStorage.setItem('rupert-chat-messages', JSON.stringify(messages));
     }
   }, [messages]);
 
-  const scrollToBottom = () => {
-    if (messagesEndRef.current) {
-      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
-    }
-  };
-
   useEffect(() => {
-    if (isLoading || messages.length > 0) {
-      scrollToBottom();
-    }
+    // Auto scroll removed per user request
   }, [messages, isLoading]);
 
-  // Clear chat function
   const clearChat = () => {
     if (typeof window !== 'undefined') {
+      setIsResetting(true);
       sessionStorage.removeItem('rupert-chat-messages');
-      window.location.reload();
+      
+      // Add a small delay to show the animation
+      setTimeout(() => {
+        window.location.reload();
+      }, 500);
     }
   };
 
@@ -67,7 +61,6 @@ export default function Rupert() {
       <div className="flex justify-center py-12">
         <div className="max-w-4xl mx-auto px-4 sm:px-6">
           
-          {/* Hero Section */}
           <div className="text-center mb-12">
             <h1 
               className="text-5xl md:text-6xl text-zen-900 dark:text-cream-100 font-light mb-6 transition-colors duration-300"
@@ -80,39 +73,39 @@ export default function Rupert() {
             </p>
           </div>
 
-          {/* Chat Interface */}
           <div className="bg-cream-50 dark:bg-zen-800 rounded-2xl border border-cream-200 dark:border-zen-600 shadow-lg backdrop-blur-sm overflow-hidden">
             
-            {/* Chat Header */}
             <div className="bg-cream-100 dark:bg-zen-700 px-6 py-4 border-b border-cream-200 dark:border-zen-600">
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-3">
-                  <div className="w-10 h-10 bg-briq-orange rounded-full flex items-center justify-center">
-                    <span className="text-white font-bold text-lg">R</span>
-                  </div>
-                  <div>
-                    <h3 className="font-semibold text-zen-900 dark:text-cream-100 font-lato">
-                      Rupert
-                    </h3>
-                    <div className="flex items-center space-x-2">
-                      <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                      <span className="text-sm text-zen-600 dark:text-cream-400">Online</span>
-                    </div>
+                  <h3 className="font-semibold text-zen-900 dark:text-cream-100 font-lato">
+                    Rupert
+                  </h3>
+                  <div className="flex items-center space-x-2">
+                    <div className="w-2 h-2 bg-green-600 rounded-full animate-pulse"></div>
+                    <span className="text-sm text-zen-600 dark:text-cream-400">Online</span>
                   </div>
                 </div>
                 
-                {/* Clear Chat Button */}
                 <button
                   onClick={clearChat}
-                  className="text-zen-600 dark:text-cream-400 hover:text-zen-800 dark:hover:text-cream-200 transition-colors duration-200 text-sm font-lato"
-                  title="Clear chat history"
+                  disabled={isResetting}
+                  className="flex items-center justify-center space-x-2 px-4 py-2 text-sm bg-briq-orange text-zen-900 dark:text-cream-100 rounded hover:bg-[#e6692a] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  title="Reset chat conversation"
                 >
-                  Clear Chat
+                  <svg 
+                    className={`w-4 h-4 ${isResetting ? 'animate-spin' : ''}`}
+                    fill="none" 
+                    stroke="currentColor" 
+                    viewBox="0 0 24 24"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                  </svg>
+                  <span>Reset</span>
                 </button>
               </div>
             </div>
 
-            {/* Messages Container */}
             <div className="h-[600px] overflow-y-auto p-6 space-y-6 bg-cream-50 dark:bg-zen-800">
               {messages.map((message) => (
                 <div
@@ -120,7 +113,6 @@ export default function Rupert() {
                   className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
                 >
                   <div className={`max-w-[80%]`}>
-                    {/* Message Bubble */}
                     <div
                       className={`p-4 rounded-2xl shadow-sm border ${
                         message.role === 'user'
@@ -136,7 +128,6 @@ export default function Rupert() {
                 </div>
               ))}
               
-              {/* Loading Indicator */}
               {isLoading && (
                 <div className="flex justify-start">
                   <div className="max-w-[80%]">
@@ -154,7 +145,6 @@ export default function Rupert() {
               <div ref={messagesEndRef} />
             </div>
 
-            {/* Input Area */}
             <div className="bg-cream-100 dark:bg-zen-700 px-6 py-4">
               <form onSubmit={handleSubmit} className="flex space-x-4">
                 <div className="flex-1 relative">
@@ -166,7 +156,6 @@ export default function Rupert() {
                     disabled={isLoading}
                   />
                   
-                  {/* Send Button Inside Input */}
                   <button
                     type="submit"
                     disabled={isLoading || !input.trim()}
