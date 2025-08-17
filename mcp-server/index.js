@@ -27,7 +27,7 @@ class RupertMCPServer {
       }
     );
 
-    // Subgraph configuration
+    // The Graph subgraph configuration for DeFi protocols
     this.SUBGRAPH_IDS = {
       AAVE_V3_ARB: "4xyasjQeREe7PxnF6wVdobZvCw5mhoHZq3T7guRpuNPf",
       COMPOUND_V3_ARB: "5MjRndNWGhqvNX7chUYLQDnvEgc8DaH8eisEkcJt71SR",
@@ -35,10 +35,15 @@ class RupertMCPServer {
       COMPOUND_V3_ETH: "AwoxEZbiWLvv6e3QdvdMZw4WDURdGbvPfHmZRc8Dpfz9"
     };
 
+    // Etherscan API configuration (unified endpoint for all networks)
+    this.ETHERSCAN_API_KEY = process.env.ETHERSCAN_API_KEY;
+    this.ETHERSCAN_API_URL = 'https://api.etherscan.io/api';
+
     this.setupToolHandlers();
     this.setupErrorHandling();
   }
 
+  // Generate The Graph subgraph URL with API key
   getSubgraphUrl(subgraphId) {
     const apiKey = process.env.NEXT_PUBLIC_GRAPHQL_API_KEY;
     if (!apiKey) {
@@ -47,6 +52,7 @@ class RupertMCPServer {
     return `https://gateway.thegraph.com/api/${apiKey}/subgraphs/id/${subgraphId}`;
   }
 
+  // Create GraphQL query for market data
   createMarketQuery(tokenSymbol) {
     return gql`
       {
@@ -66,6 +72,169 @@ class RupertMCPServer {
     `;
   }
 
+  // Fetch data from Etherscan API (supports both Ethereum and Arbitrum via L2 parameter)
+  async fetchFromEtherscan(network, params) {
+    const url = new URL(this.ETHERSCAN_API_URL);
+    
+    // Add API key
+    url.searchParams.append('apikey', this.ETHERSCAN_API_KEY);
+    
+    // Add L2 parameter for Arbitrum
+    if (network === 'arbitrum') {
+      url.searchParams.append('L2', 'arbitrum');
+    }
+    
+    // Add other parameters
+    Object.entries(params).forEach(([key, value]) => {
+      url.searchParams.append(key, value);
+    });
+
+    const response = await fetch(url.toString());
+    const data = await response.json();
+    
+    if (data.status !== '1') {
+      throw new Error(`Etherscan API error: ${data.message || 'Unknown error'}`);
+    }
+    
+    return data.result;
+  }
+
+  // Get current token prices (ETH from Etherscan, USDC as stablecoin)
+  async getTokenPrices() {
+    try {
+      // Get ETH price from Etherscan
+      const ethPriceData = await this.fetchFromEtherscan('ethereum', {
+        module: 'stats',
+        action: 'ethprice'
+      });
+
+      const ethPriceUSD = parseFloat(ethPriceData.ethusd);
+
+      // USDC is a stablecoin pegged to $1
+      const usdcPriceUSD = 1.00;
+
+      return {
+        ETH: {
+          price_usd: ethPriceUSD,
+          symbol: 'ETH',
+          name: 'Ethereum'
+        },
+        USDC: {
+          price_usd: usdcPriceUSD,
+          symbol: 'USDC', 
+          name: 'USD Coin'
+        }
+      };
+    } catch (error) {
+      console.error('Error fetching token prices:', error);
+      throw error;
+    }
+  }
+
+  // Get Ethereum gas prices with USD conversion
+  async getEthereumGasPrices() {
+    const ethGasData = await this.fetchFromEtherscan('ethereum', {
+      module: 'gastracker',
+      action: 'gasoracle'
+    });
+
+    const tokenPrices = await this.getTokenPrices();
+    const ethPrice = tokenPrices.ETH.price_usd;
+
+    return {
+      safe_gas_price: parseFloat(ethGasData.SafeGasPrice),
+      standard_gas_price: parseFloat(ethGasData.ProposeGasPrice),
+      fast_gas_price: parseFloat(ethGasData.FastGasPrice),
+      eth_price_usd: ethPrice,
+      transfer_cost_usd: {
+        safe: ((parseFloat(ethGasData.SafeGasPrice) * 21000) / 1e9) * ethPrice,
+        standard: ((parseFloat(ethGasData.ProposeGasPrice) * 21000) / 1e9) * ethPrice,
+        fast: ((parseFloat(ethGasData.FastGasPrice) * 21000) / 1e9) * ethPrice
+      }
+    };
+  }
+
+  // Get Arbitrum gas prices with USD conversion
+  async getArbitrumGasPrices() {
+    const arbGasData = await this.fetchFromEtherscan('arbitrum', {
+      module: 'gastracker',
+      action: 'gasoracle'
+    });
+
+    const tokenPrices = await this.getTokenPrices();
+    const ethPrice = tokenPrices.ETH.price_usd;
+
+    return {
+      safe_gas_price: parseFloat(arbGasData.SafeGasPrice),
+      standard_gas_price: parseFloat(arbGasData.ProposeGasPrice),
+      fast_gas_price: parseFloat(arbGasData.FastGasPrice),
+      eth_price_usd: ethPrice,
+      transfer_cost_usd: {
+        safe: ((parseFloat(arbGasData.SafeGasPrice) * 21000) / 1e9) * ethPrice,
+        standard: ((parseFloat(arbGasData.ProposeGasPrice) * 21000) / 1e9) * ethPrice,
+        fast: ((parseFloat(arbGasData.FastGasPrice) * 21000) / 1e9) * ethPrice
+      }
+    };
+  }
+
+  // Get gas prices for specified networks
+  async getGasPrices(network) {
+    try {
+      const results = {};
+
+      if (network === 'ethereum') {
+        results.ethereum = await this.getEthereumGasPrices();
+      } else if (network === 'arbitrum') {
+        results.arbitrum = await this.getArbitrumGasPrices();
+      } else if (network === 'both') {
+        // Fetch both networks with delay to avoid rate limiting
+        try {
+          results.ethereum = await this.getEthereumGasPrices();
+        } catch (error) {
+          console.error('Error fetching Ethereum gas prices:', error);
+        }
+
+        // Add delay between API calls
+        await new Promise(resolve => setTimeout(resolve, 1000));
+
+        try {
+          results.arbitrum = await this.getArbitrumGasPrices();
+        } catch (error) {
+          console.error('Error fetching Arbitrum gas prices:', error);
+          // Provide fallback if Arbitrum fails but Ethereum succeeded
+          if (results.ethereum) {
+            const ethPrice = results.ethereum.eth_price_usd;
+            const arbGasPrice = 0.1; // Typical Arbitrum gas price
+            
+            results.arbitrum = {
+              safe_gas_price: arbGasPrice,
+              standard_gas_price: arbGasPrice,
+              fast_gas_price: arbGasPrice,
+              eth_price_usd: ethPrice,
+              transfer_cost_usd: {
+                safe: ((arbGasPrice * 21000) / 1e9) * ethPrice,
+                standard: ((arbGasPrice * 21000) / 1e9) * ethPrice,
+                fast: ((arbGasPrice * 21000) / 1e9) * ethPrice
+              },
+              note: "Using fallback values - Arbitrum API unavailable"
+            };
+          }
+        }
+
+        // Ensure we have at least one result
+        if (!results.ethereum && !results.arbitrum) {
+          throw new Error('Failed to fetch gas prices for both networks');
+        }
+      }
+
+      return results;
+    } catch (error) {
+      console.error('Error in getGasPrices:', error);
+      throw error;
+    }
+  }
+
+  // Query DeFi protocol markets from The Graph
   async queryProtocolMarkets(protocolName, subgraphId, tokenSymbol = "USDC") {
     try {
       const url = this.getSubgraphUrl(subgraphId);
@@ -77,7 +246,7 @@ class RupertMCPServer {
         return null;
       }
 
-      // Find the best market (highest lending rate)
+      // Find the market with highest lending rate
       let bestMarket = null;
       let highestRate = 0;
 
@@ -108,6 +277,7 @@ class RupertMCPServer {
     }
   }
 
+  // Get all market data from supported protocols
   async getAllMarketData() {
     const results = [];
     
@@ -164,6 +334,7 @@ class RupertMCPServer {
     return results;
   }
 
+  // Setup MCP tool handlers
   setupToolHandlers() {
     // List available tools
     this.server.setRequestHandler(ListToolsRequestSchema, async () => {
@@ -207,6 +378,29 @@ class RupertMCPServer {
                 }
               }
             }
+          },
+          {
+            name: 'get_token_prices',
+            description: 'Get current prices for supported tokens (ETH, USDC)',
+            inputSchema: {
+              type: 'object',
+              properties: {}
+            }
+          },
+          {
+            name: 'get_gas_prices',
+            description: 'Get current gas prices for Ethereum and/or Arbitrum with USD conversion',
+            inputSchema: {
+              type: 'object',
+              properties: {
+                network: {
+                  type: 'string',
+                  description: 'Network to get gas prices for',
+                  enum: ['ethereum', 'arbitrum', 'both'],
+                  default: 'both'
+                }
+              }
+            }
           }
         ]
       };
@@ -223,6 +417,12 @@ class RupertMCPServer {
           
           case 'get_best_yield':
             return await this.getBestYield(args?.token || 'USDC');
+          
+          case 'get_token_prices':
+            return await this.handleGetTokenPrices();
+          
+          case 'get_gas_prices':
+            return await this.handleGetGasPrices(args?.network || 'both');
           
           default:
             throw new Error(`Unknown tool: ${name}`);
@@ -241,6 +441,54 @@ class RupertMCPServer {
     });
   }
 
+  // Handle token prices request
+  async handleGetTokenPrices() {
+    const prices = await this.getTokenPrices();
+    
+    const priceText = Object.entries(prices).map(([symbol, data]) => {
+      return `${data.name} (${symbol}): $${data.price_usd.toFixed(2)}`;
+    }).join('\n');
+
+    return {
+      content: [
+        {
+          type: 'text',
+          text: `Current Token Prices:\n\n${priceText}`
+        }
+      ]
+    };
+  }
+
+  // Handle gas prices request
+  async handleGetGasPrices(network) {
+    const gasData = await this.getGasPrices(network);
+    
+    let gasText = 'Current Gas Prices:\n\n';
+    
+    Object.entries(gasData).forEach(([networkName, data]) => {
+      const networkDisplay = networkName.charAt(0).toUpperCase() + networkName.slice(1);
+      gasText += `${networkDisplay}:\n`;
+      gasText += `  Safe: ${data.safe_gas_price} gwei ($${data.transfer_cost_usd.safe.toFixed(3)} for transfer)\n`;
+      gasText += `  Standard: ${data.standard_gas_price} gwei ($${data.transfer_cost_usd.standard.toFixed(3)} for transfer)\n`;
+      gasText += `  Fast: ${data.fast_gas_price} gwei ($${data.transfer_cost_usd.fast.toFixed(3)} for transfer)\n`;
+      gasText += `  ETH Price: $${data.eth_price_usd.toFixed(2)}\n`;
+      if (data.note) {
+        gasText += `  Note: ${data.note}\n`;
+      }
+      gasText += '\n';
+    });
+
+    return {
+      content: [
+        {
+          type: 'text',
+          text: gasText.trim()
+        }
+      ]
+    };
+  }
+
+  // Handle market data request with filtering
   async getMarketData(filters = {}) {
     const allMarkets = await this.getAllMarketData();
     
@@ -270,7 +518,7 @@ class RupertMCPServer {
       };
     }
 
-    // Format the data for display - rates are already in percentage format
+    // Format market data for display
     const marketText = filteredMarkets.map(market => {
       const apy = market.apy.toFixed(2);
       const tvl = (market.tvl / 1000000).toFixed(1);
@@ -289,6 +537,7 @@ class RupertMCPServer {
     };
   }
 
+  // Find best yield opportunity for a token
   async getBestYield(token) {
     const allMarkets = await this.getAllMarketData();
     const tokenMarkets = allMarkets.filter(m => m.token === token);
@@ -327,6 +576,7 @@ class RupertMCPServer {
     };
   }
 
+  // Setup error handling
   setupErrorHandling() {
     this.server.onerror = (error) => {
       console.error('[MCP Error]', error);
@@ -338,6 +588,7 @@ class RupertMCPServer {
     });
   }
 
+  // Start the MCP server
   async run() {
     const transport = new StdioServerTransport();
     await this.server.connect(transport);
@@ -345,6 +596,6 @@ class RupertMCPServer {
   }
 }
 
-// Start the server
+// Initialize and start the server
 const server = new RupertMCPServer();
 server.run().catch(console.error);

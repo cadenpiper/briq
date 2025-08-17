@@ -2,29 +2,96 @@ import OpenAI from 'openai';
 import { OpenAIStream, StreamingTextResponse } from 'ai';
 import { getSimpleMCPClient } from '../../utils/simpleMcpClient';
 
-// Create an OpenAI API client
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
-// Helper function to detect if user is asking for market data
+// Detect if user query requires real-time blockchain data
 function shouldUseMCP(message) {
-  const marketKeywords = [
-    'market', 'yield', 'apy', 'rate', 'tvl', 'best', 'current', 'price',
-    'aave', 'compound', 'ethereum', 'arbitrum', 'usdc', 'weth',
-    'protocol', 'lending', 'borrowing', 'defi', 'data'
+  const messageText = message.toLowerCase();
+  
+  // Specific phrases people use for crypto queries
+  const specificPhrases = [
+    'current price of',
+    'price of eth',
+    'price of weth', 
+    'price of usdc',
+    'gas price',
+    'gas prices',
+    'gas cost',
+    'gas fees',
+    'transaction cost',
+    'cost to send',
+    'how much does it cost',
+    'ethereum mainnet',
+    'arbitrum mainnet',
+    'current token prices',
+    'token prices',
+    'eth price',
+    'weth price',
+    'usdc price'
   ];
   
-  const messageText = message.toLowerCase();
-  return marketKeywords.some(keyword => messageText.includes(keyword));
+  // Individual keywords as fallback
+  const keywords = [
+    'price', 'gas', 'gwei', 'eth', 'weth', 'usdc', 'ethereum', 'arbitrum',
+    'mainnet', 'token', 'cost', 'fee', 'current', 'transaction'
+  ];
+  
+  // Check specific phrases first (more accurate)
+  const hasSpecificPhrase = specificPhrases.some(phrase => messageText.includes(phrase));
+  const hasKeyword = keywords.some(keyword => messageText.includes(keyword));
+  
+  return hasSpecificPhrase || hasKeyword;
 }
 
-// Helper function to extract MCP tool parameters from user message
+// Determine which MCP tool to use based on user query
+function getMCPTool(message) {
+  const messageText = message.toLowerCase();
+  
+  // Gas-related queries
+  if (messageText.includes('gas') || messageText.includes('gwei') || messageText.includes('fee') || messageText.includes('cost')) {
+    return 'get_gas_prices';
+  }
+  
+  // Token price queries
+  if ((messageText.includes('price') || messageText.includes('cost')) && 
+      (messageText.includes('eth') || messageText.includes('usdc') || messageText.includes('token'))) {
+    return 'get_token_prices';
+  }
+  
+  // Best yield queries
+  if (messageText.includes('best') && (messageText.includes('yield') || messageText.includes('apy'))) {
+    return 'get_best_yield';
+  }
+  
+  // Default to market data
+  return 'get_market_data';
+}
+
+// Extract parameters from user message for MCP tools
 function extractMCPParams(message) {
   const messageText = message.toLowerCase();
   const params = {};
   
-  // Extract network
+  // For gas price queries, determine which networks to query
+  if (messageText.includes('gas')) {
+    const hasEthereum = messageText.includes('ethereum') || messageText.includes('mainnet');
+    const hasArbitrum = messageText.includes('arbitrum');
+    
+    if (hasEthereum && hasArbitrum) {
+      params.network = 'both';
+    } else if (hasArbitrum) {
+      params.network = 'arbitrum';
+    } else if (hasEthereum) {
+      params.network = 'ethereum';
+    } else {
+      params.network = 'both'; // Default to both networks
+    }
+    return params;
+  }
+  
+  // Extract network for other queries
   if (messageText.includes('ethereum') || messageText.includes('eth')) {
     params.network = 'Ethereum';
   } else if (messageText.includes('arbitrum') || messageText.includes('arb')) {
@@ -48,43 +115,45 @@ function extractMCPParams(message) {
   return params;
 }
 
-// Helper function to determine which MCP tool to use
-function getMCPTool(message) {
-  const messageText = message.toLowerCase();
-  
-  if (messageText.includes('best') && (messageText.includes('yield') || messageText.includes('apy'))) {
-    return 'get_best_yield';
-  }
-  
-  return 'get_market_data';
-}
-
 export async function POST(req) {
   const { messages } = await req.json();
   const lastMessage = messages[messages.length - 1];
   
   let enhancedMessages = [...messages];
-  
-  // Check if we should use MCP for real-time data
+
+  // Check if we should fetch real-time blockchain data
   if (lastMessage && shouldUseMCP(lastMessage.content)) {
     try {
+      // Initialize MCP client and connect to server
       const mcpClient = getSimpleMCPClient();
       await mcpClient.connect();
       
+      // Determine tool and parameters based on user query
       const tool = getMCPTool(lastMessage.content);
       const params = extractMCPParams(lastMessage.content);
       
+      // Call appropriate MCP tool
       let mcpResponse;
       if (tool === 'get_best_yield') {
         mcpResponse = await mcpClient.getBestYield(params.token);
+      } else if (tool === 'get_token_prices') {
+        mcpResponse = await mcpClient.sendRequest('tools/call', {
+          name: 'get_token_prices',
+          arguments: {}
+        });
+      } else if (tool === 'get_gas_prices') {
+        const network = params.network || 'both';
+        mcpResponse = await mcpClient.sendRequest('tools/call', {
+          name: 'get_gas_prices', 
+          arguments: { network: network.toLowerCase() }
+        });
       } else {
         mcpResponse = await mcpClient.getMarketData(params);
       }
       
+      // Add real-time data to context if available
       if (mcpResponse && mcpResponse.content && mcpResponse.content[0]) {
         const marketData = mcpResponse.content[0].text;
-        
-        // Add the market data as context for Rupert
         enhancedMessages.push({
           role: 'system',
           content: `IMPORTANT: Use this current market data in your response: ${marketData}`
@@ -92,7 +161,7 @@ export async function POST(req) {
       }
     } catch (error) {
       console.error('MCP Error:', error.message);
-      // Add error context so Rupert knows data is unavailable
+      // Add fallback context if real-time data unavailable
       enhancedMessages.push({
         role: 'system',
         content: 'Note: Real-time market data is currently unavailable. Provide general information and suggest checking the platform dashboard.'
@@ -100,7 +169,7 @@ export async function POST(req) {
     }
   }
 
-  // Ask OpenAI for a streaming chat completion given the prompt
+  // Generate response with OpenAI
   const response = await openai.chat.completions.create({
     model: 'gpt-3.5-turbo',
     stream: true,
@@ -139,7 +208,7 @@ Keep all responses concise, accurate, and professional. When providing market da
     ],
   });
 
-  // Convert the response into a friendly text-stream
+  // Return streaming response
   const stream = OpenAIStream(response);
   return new StreamingTextResponse(stream);
 }

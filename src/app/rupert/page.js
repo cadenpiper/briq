@@ -7,16 +7,31 @@ import Layout from '../components/Layout';
 export default function Rupert() {
   const messagesEndRef = useRef(null);
   const [isResetting, setIsResetting] = useState(false);
+  const [isClient, setIsClient] = useState(false);
   
+  // Ensure client-side rendering to prevent hydration issues
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
+  
+  // Load chat history from session storage or return default welcome message
   const getInitialMessages = () => {
-    if (typeof window !== 'undefined') {
-      const savedMessages = sessionStorage.getItem('rupert-chat-messages');
-      if (savedMessages) {
-        try {
-          return JSON.parse(savedMessages);
-        } catch (error) {
-          console.error('Error parsing saved messages:', error);
+    if (!isClient) {
+      return [
+        {
+          id: 'welcome',
+          role: 'assistant',
+          content: 'Hello. I am Rupert, your AI assistant for the Briq DeFi platform. I provide expert guidance on yield optimization, DeFi protocols, and platform features. How may I assist you today?'
         }
+      ];
+    }
+    
+    const savedMessages = sessionStorage.getItem('rupert-chat-messages');
+    if (savedMessages) {
+      try {
+        return JSON.parse(savedMessages);
+      } catch (error) {
+        console.error('Error parsing saved messages:', error);
       }
     }
     
@@ -34,22 +49,20 @@ export default function Rupert() {
     initialMessages: getInitialMessages()
   });
 
+  // Save messages to session storage whenever they change
   useEffect(() => {
-    if (typeof window !== 'undefined' && messages.length > 0) {
+    if (isClient && messages.length > 0) {
       sessionStorage.setItem('rupert-chat-messages', JSON.stringify(messages));
     }
-  }, [messages]);
+  }, [messages, isClient]);
 
-  useEffect(() => {
-    // Auto scroll removed per user request
-  }, [messages, isLoading]);
-
+  // Clear chat history and reset conversation
   const clearChat = () => {
-    if (typeof window !== 'undefined') {
+    if (isClient) {
       setIsResetting(true);
       sessionStorage.removeItem('rupert-chat-messages');
       
-      // Add a small delay to show the animation
+      // Show reset animation briefly before reload
       setTimeout(() => {
         window.location.reload();
       }, 500);
@@ -61,6 +74,7 @@ export default function Rupert() {
       <div className="flex justify-center py-12">
         <div className="max-w-4xl mx-auto px-4 sm:px-6">
           
+          {/* Page Header */}
           <div className="text-center mb-12">
             <h1 
               className="text-5xl md:text-6xl text-zen-900 dark:text-cream-100 font-light mb-6 transition-colors duration-300"
@@ -73,8 +87,10 @@ export default function Rupert() {
             </p>
           </div>
 
+          {/* Chat Container */}
           <div className="bg-cream-50 dark:bg-zen-800 rounded-2xl border border-cream-200 dark:border-zen-600 shadow-lg backdrop-blur-sm overflow-hidden">
             
+            {/* Chat Header */}
             <div className="bg-cream-100 dark:bg-zen-700 px-6 py-4 border-b border-cream-200 dark:border-zen-600">
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-3">
@@ -87,6 +103,7 @@ export default function Rupert() {
                   </div>
                 </div>
                 
+                {/* Reset Chat Button */}
                 <button
                   onClick={clearChat}
                   disabled={isResetting}
@@ -106,13 +123,14 @@ export default function Rupert() {
               </div>
             </div>
 
+            {/* Messages Area */}
             <div className="h-[600px] overflow-y-auto p-6 space-y-6 bg-cream-50 dark:bg-zen-800">
               {messages.map((message) => (
                 <div
                   key={message.id}
                   className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
                 >
-                  <div className={`max-w-[80%]`}>
+                  <div className="max-w-[80%]">
                     <div
                       className={`p-4 rounded-2xl shadow-sm border ${
                         message.role === 'user'
@@ -128,6 +146,7 @@ export default function Rupert() {
                 </div>
               ))}
               
+              {/* Loading Indicator */}
               {isLoading && (
                 <div className="flex justify-start">
                   <div className="max-w-[80%]">
@@ -145,6 +164,7 @@ export default function Rupert() {
               <div ref={messagesEndRef} />
             </div>
 
+            {/* Input Area */}
             <div className="bg-cream-100 dark:bg-zen-700 px-6 py-4">
               <form onSubmit={handleSubmit} className="flex space-x-4">
                 <div className="flex-1 relative">
@@ -156,6 +176,7 @@ export default function Rupert() {
                     disabled={isLoading}
                   />
                   
+                  {/* Send Button */}
                   <button
                     type="submit"
                     disabled={isLoading || !input.trim()}
