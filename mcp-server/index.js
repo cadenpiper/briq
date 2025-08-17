@@ -8,6 +8,9 @@ import {
   ListToolsRequestSchema,
 } from '@modelcontextprotocol/sdk/types.js';
 import { request, gql } from 'graphql-request';
+import { createPublicClient, http, formatUnits } from 'viem';
+import { localhost } from 'viem/chains';
+import { getContractAddresses } from '../src/app/utils/forkAddresses.js';
 import path from 'path';
 
 // Load environment variables from parent directory
@@ -39,8 +42,97 @@ class RupertMCPServer {
     this.ETHERSCAN_API_KEY = process.env.ETHERSCAN_API_KEY;
     this.ETHERSCAN_API_URL = 'https://api.etherscan.io/api';
 
+    // Viem client for Briq contract interactions (same as frontend)
+    this.viemClient = createPublicClient({
+      chain: localhost,
+      transport: http('http://localhost:8545')
+    });
+
+    // Import Briq contract addresses from frontend (same source of truth)
+    this.BRIQ_CONTRACTS = getContractAddresses();
+
+    // Basic BriqVault ABI for getTotalVaultValueInUSD function
+    this.VAULT_ABI = [
+      {
+        "inputs": [],
+        "name": "getTotalVaultValueInUSD",
+        "outputs": [{"internalType": "uint256", "name": "totalUsdValue", "type": "uint256"}],
+        "stateMutability": "view",
+        "type": "function"
+      }
+    ];
+
     this.setupToolHandlers();
     this.setupErrorHandling();
+  }
+
+  // Get Briq protocol TVL from deployed contracts
+  async getBriqTVL() {
+    try {
+      // Read getTotalVaultValueInUSD from BriqVault contract (same as frontend)
+      const totalUsdValue = await this.viemClient.readContract({
+        address: this.BRIQ_CONTRACTS.VAULT,
+        abi: this.VAULT_ABI,
+        functionName: 'getTotalVaultValueInUSD'
+      });
+
+      // Convert from wei to USD (totalUsdValue is already in USD with 18 decimals)
+      const tvlUSD = parseFloat(formatUnits(totalUsdValue, 18));
+
+      return {
+        tvl: tvlUSD,
+        totalUsdValue: totalUsdValue.toString(),
+        vaultAddress: this.BRIQ_CONTRACTS.VAULT,
+        timestamp: Date.now()
+      };
+    } catch (error) {
+      console.error('Error fetching Briq TVL:', error);
+      throw error;
+    }
+  }
+
+  // Handle Briq TVL request
+  async handleGetBriqTVL() {
+    try {
+      const data = await this.getBriqTVL();
+      
+      const tvlText = `Briq Protocol TVL:
+
+Total Value Locked: $${data.tvl.toLocaleString('en-US', { 
+  minimumFractionDigits: 2, 
+  maximumFractionDigits: 2 
+})}
+
+Contract: ${data.vaultAddress}
+Raw Value: ${data.totalUsdValue} wei
+Last Updated: ${new Date(data.timestamp).toLocaleString()}
+
+Data source: BriqVault contract on forked network`;
+
+      return {
+        content: [
+          {
+            type: 'text',
+            text: tvlText
+          }
+        ]
+      };
+    } catch (error) {
+      return {
+        content: [
+          {
+            type: 'text',
+            text: `Error fetching Briq TVL: ${error.message}
+
+Make sure:
+1. Hardhat node is running on localhost:8545
+2. Briq contracts are deployed to the fork
+3. Contract address is correct: ${this.BRIQ_CONTRACTS.VAULT}`
+          }
+        ],
+        isError: true
+      };
+    }
   }
 
   // Generate The Graph subgraph URL with API key
@@ -401,6 +493,14 @@ class RupertMCPServer {
                 }
               }
             }
+          },
+          {
+            name: 'get_briq_tvl',
+            description: 'Get current Briq protocol Total Value Locked (TVL) from deployed contracts',
+            inputSchema: {
+              type: 'object',
+              properties: {}
+            }
           }
         ]
       };
@@ -423,6 +523,9 @@ class RupertMCPServer {
           
           case 'get_gas_prices':
             return await this.handleGetGasPrices(args?.network || 'both');
+          
+          case 'get_briq_tvl':
+            return await this.handleGetBriqTVL();
           
           default:
             throw new Error(`Unknown tool: ${name}`);

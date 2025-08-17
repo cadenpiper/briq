@@ -32,13 +32,17 @@ function shouldUseMCP(message) {
     'token prices',
     'eth price',
     'weth price',
-    'usdc price'
+    'usdc price',
+    'briq tvl',
+    'briq protocol',
+    'total value locked',
+    'current tvl'
   ];
   
   // Individual keywords as fallback
   const keywords = [
     'price', 'gas', 'gwei', 'eth', 'weth', 'usdc', 'ethereum', 'arbitrum',
-    'mainnet', 'token', 'cost', 'fee', 'current', 'transaction'
+    'mainnet', 'token', 'cost', 'fee', 'current', 'transaction', 'briq', 'tvl'
   ];
   
   // Check specific phrases first (more accurate)
@@ -55,6 +59,11 @@ function getMCPTool(message) {
   // Gas-related queries
   if (messageText.includes('gas') || messageText.includes('gwei') || messageText.includes('fee') || messageText.includes('cost')) {
     return 'get_gas_prices';
+  }
+  
+  // Briq TVL queries
+  if (messageText.includes('briq') && (messageText.includes('tvl') || messageText.includes('total value'))) {
+    return 'get_briq_tvl';
   }
   
   // Token price queries
@@ -149,6 +158,11 @@ export async function POST(req) {
         mcpResponse = await mcpClient.sendRequest('tools/call', {
           name: 'get_gas_prices', 
           arguments: { network: network.toLowerCase() }
+        });
+      } else if (tool === 'get_briq_tvl') {
+        mcpResponse = await mcpClient.sendRequest('tools/call', {
+          name: 'get_briq_tvl',
+          arguments: {}
         });
       } else {
         mcpResponse = await mcpClient.getMarketData(params);
