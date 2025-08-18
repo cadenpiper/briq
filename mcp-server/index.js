@@ -425,19 +425,19 @@ Make sure:
       
       const analyticsText = `Briq Protocol Analytics:
 
-📊 OVERVIEW
+OVERVIEW
 Total Value Locked: $${data.tvl.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
 Weighted Average APY: ${data.weightedAverageAPY.toFixed(2)}%
 Total Rewards Earned: $${data.totalRewards.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
 
-💰 MARKET ALLOCATIONS
+MARKET ALLOCATIONS
 ${data.marketAllocations.map(market => {
   const totalValue = data.marketAllocations.reduce((sum, m) => sum + m.usdValue, 0);
   const allocation = totalValue > 0 ? (market.usdValue / totalValue * 100) : 0;
   return `• ${market.tokenSymbol} via ${market.strategyName}: $${market.usdValue.toFixed(2)} (${allocation.toFixed(1)}%) - ${market.apy.toFixed(2)}% APY`;
 }).join('\n')}
 
-🏆 STRATEGY REWARDS
+STRATEGY REWARDS
 Aave Strategy: $${data.aaveRewards.totalUSD.toFixed(2)} USD
 ${data.aaveRewards.tokens.map(token => 
   `  • ${token.tokenSymbol}: ${token.accruedRewards.toFixed(6)} tokens ($${token.rewardsUSD.toFixed(2)})`
@@ -486,7 +486,7 @@ Total Portfolio Value: $${totalValue.toLocaleString('en-US', { minimumFractionDi
 
 ${data.markets.map(market => {
   const allocation = totalValue > 0 ? (market.usdValue / totalValue * 100) : 0;
-  return `📈 ${market.tokenSymbol} Strategy (${market.strategyName})
+  return `${market.tokenSymbol} Strategy (${market.strategyName})
   Balance: ${market.balance.toFixed(4)} ${market.tokenSymbol}
   USD Value: $${market.usdValue.toFixed(2)}
   Allocation: ${allocation.toFixed(1)}%
@@ -555,7 +555,7 @@ ${data.compound.tokens.map(token => {
       }
       
       if (strategy === 'both') {
-        rewardsText += `\n\n💰 TOTAL REWARDS: $${data.totalRewardsUSD.toFixed(2)} USD`;
+        rewardsText += `\n\nTOTAL REWARDS: $${data.totalRewardsUSD.toFixed(2)} USD`;
       }
       
       rewardsText += `\n\nLast Updated: ${new Date(data.timestamp).toLocaleString()}`;
@@ -669,50 +669,74 @@ ${data.compound.tokens.map(token => {
     }
   }
 
-  // Get Ethereum gas prices with USD conversion
+  // Get Ethereum gas prices with USD conversion using v2 API
   async getEthereumGasPrices() {
-    const ethGasData = await this.fetchFromEtherscan('ethereum', {
-      module: 'gastracker',
-      action: 'gasoracle'
-    });
-
-    const tokenPrices = await this.getTokenPrices();
-    const ethPrice = tokenPrices.ETH.price_usd;
-
-    return {
-      safe_gas_price: parseFloat(ethGasData.SafeGasPrice),
-      standard_gas_price: parseFloat(ethGasData.ProposeGasPrice),
-      fast_gas_price: parseFloat(ethGasData.FastGasPrice),
-      eth_price_usd: ethPrice,
-      transfer_cost_usd: {
-        safe: ((parseFloat(ethGasData.SafeGasPrice) * 21000) / 1e9) * ethPrice,
-        standard: ((parseFloat(ethGasData.ProposeGasPrice) * 21000) / 1e9) * ethPrice,
-        fast: ((parseFloat(ethGasData.FastGasPrice) * 21000) / 1e9) * ethPrice
+    try {
+      // Use Etherscan v2 API with chainid=1 for Ethereum mainnet
+      const response = await fetch(`https://api.etherscan.io/v2/api?chainid=1&module=proxy&action=eth_gasPrice&apikey=${this.ETHERSCAN_API_KEY}`);
+      const data = await response.json();
+      
+      if (!data.result) {
+        throw new Error(`Etherscan API error: ${data.message || 'No result'}`);
       }
-    };
+      
+      // Convert from wei to gwei
+      const gasPriceWei = parseInt(data.result, 16);
+      const gasPriceGwei = gasPriceWei / 1e9;
+      
+      const tokenPrices = await this.getTokenPrices();
+      const ethPrice = tokenPrices.ETH.price_usd;
+
+      return {
+        safe_gas_price: gasPriceGwei,
+        standard_gas_price: gasPriceGwei * 1.1, // 10% higher for standard
+        fast_gas_price: gasPriceGwei * 1.2, // 20% higher for fast
+        eth_price_usd: ethPrice,
+        transfer_cost_usd: {
+          safe: ((gasPriceGwei * 21000) / 1e9) * ethPrice,
+          standard: ((gasPriceGwei * 1.1 * 21000) / 1e9) * ethPrice,
+          fast: ((gasPriceGwei * 1.2 * 21000) / 1e9) * ethPrice
+        }
+      };
+    } catch (error) {
+      console.error('Error fetching Ethereum gas prices:', error);
+      throw error;
+    }
   }
 
-  // Get Arbitrum gas prices with USD conversion
+  // Get Arbitrum gas prices with USD conversion using v2 API
   async getArbitrumGasPrices() {
-    const arbGasData = await this.fetchFromEtherscan('arbitrum', {
-      module: 'gastracker',
-      action: 'gasoracle'
-    });
-
-    const tokenPrices = await this.getTokenPrices();
-    const ethPrice = tokenPrices.ETH.price_usd;
-
-    return {
-      safe_gas_price: parseFloat(arbGasData.SafeGasPrice),
-      standard_gas_price: parseFloat(arbGasData.ProposeGasPrice),
-      fast_gas_price: parseFloat(arbGasData.FastGasPrice),
-      eth_price_usd: ethPrice,
-      transfer_cost_usd: {
-        safe: ((parseFloat(arbGasData.SafeGasPrice) * 21000) / 1e9) * ethPrice,
-        standard: ((parseFloat(arbGasData.ProposeGasPrice) * 21000) / 1e9) * ethPrice,
-        fast: ((parseFloat(arbGasData.FastGasPrice) * 21000) / 1e9) * ethPrice
+    try {
+      // Use Etherscan v2 API with chainid=42161 for Arbitrum
+      const response = await fetch(`https://api.etherscan.io/v2/api?chainid=42161&module=proxy&action=eth_gasPrice&apikey=${this.ETHERSCAN_API_KEY}`);
+      const data = await response.json();
+      
+      if (!data.result) {
+        throw new Error(`Etherscan API error: ${data.message || 'No result'}`);
       }
-    };
+      
+      // Convert from wei to gwei
+      const gasPriceWei = parseInt(data.result, 16);
+      const gasPriceGwei = gasPriceWei / 1e9;
+      
+      const tokenPrices = await this.getTokenPrices();
+      const ethPrice = tokenPrices.ETH.price_usd;
+
+      return {
+        safe_gas_price: gasPriceGwei,
+        standard_gas_price: gasPriceGwei * 1.05, // 5% higher for standard (Arbitrum has lower variance)
+        fast_gas_price: gasPriceGwei * 1.1, // 10% higher for fast
+        eth_price_usd: ethPrice,
+        transfer_cost_usd: {
+          safe: ((gasPriceGwei * 21000) / 1e9) * ethPrice,
+          standard: ((gasPriceGwei * 1.05 * 21000) / 1e9) * ethPrice,
+          fast: ((gasPriceGwei * 1.1 * 21000) / 1e9) * ethPrice
+        }
+      };
+    } catch (error) {
+      console.error('Error fetching Arbitrum gas prices:', error);
+      throw error;
+    }
   }
 
   // Get gas prices for specified networks
@@ -725,43 +749,22 @@ ${data.compound.tokens.map(token => {
       } else if (network === 'arbitrum') {
         results.arbitrum = await this.getArbitrumGasPrices();
       } else if (network === 'both') {
-        // Fetch both networks with delay to avoid rate limiting
+        // Fetch networks sequentially with longer delays to avoid API conflicts
         try {
           results.ethereum = await this.getEthereumGasPrices();
         } catch (error) {
           console.error('Error fetching Ethereum gas prices:', error);
+          throw new Error(`Failed to fetch Ethereum gas prices: ${error.message}`);
         }
 
-        // Add delay between API calls
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        // Longer delay between API calls since they use the same endpoint/key
+        await new Promise(resolve => setTimeout(resolve, 2000));
 
         try {
           results.arbitrum = await this.getArbitrumGasPrices();
         } catch (error) {
           console.error('Error fetching Arbitrum gas prices:', error);
-          // Provide fallback if Arbitrum fails but Ethereum succeeded
-          if (results.ethereum) {
-            const ethPrice = results.ethereum.eth_price_usd;
-            const arbGasPrice = 0.1; // Typical Arbitrum gas price
-            
-            results.arbitrum = {
-              safe_gas_price: arbGasPrice,
-              standard_gas_price: arbGasPrice,
-              fast_gas_price: arbGasPrice,
-              eth_price_usd: ethPrice,
-              transfer_cost_usd: {
-                safe: ((arbGasPrice * 21000) / 1e9) * ethPrice,
-                standard: ((arbGasPrice * 21000) / 1e9) * ethPrice,
-                fast: ((arbGasPrice * 21000) / 1e9) * ethPrice
-              },
-              note: "Using fallback values - Arbitrum API unavailable"
-            };
-          }
-        }
-
-        // Ensure we have at least one result
-        if (!results.ethereum && !results.arbitrum) {
-          throw new Error('Failed to fetch gas prices for both networks');
+          throw new Error(`Failed to fetch Arbitrum gas prices: ${error.message}`);
         }
       }
 

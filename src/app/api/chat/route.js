@@ -46,89 +46,120 @@ function shouldUseMCP(message) {
 function getMCPTool(message) {
   const messageText = message.toLowerCase();
   
+  // === INTENT ANALYSIS FIRST ===
+  
+  // Check for comparison/selection intent (which, what, best, highest, etc.)
+  const isComparison = messageText.includes('which') || messageText.includes('what') || 
+                      messageText.includes('best') || messageText.includes('highest') || 
+                      messageText.includes('compare') || messageText.includes('better');
+  
+  // Check for current status intent (how, where, current, show me)
+  const isStatusCheck = messageText.includes('how') || messageText.includes('where') || 
+                       messageText.includes('current') || messageText.includes('show me') || 
+                       messageText.includes('tell me');
+  
+  // Check for general information intent (what is, explain, about)
+  const isGeneralInfo = (messageText.includes('what is') || messageText.includes('explain') || 
+                        messageText.includes('about')) && !messageText.includes('current') && 
+                        !messageText.includes('data');
+  
   // === BRIQ PROTOCOL QUERIES ===
   
   // General Protocol Overview (NO MCP - use AI knowledge)
-  const generalBriqPatterns = [
-    'tell me about briq', 'what is briq', 'how does briq work', 'explain briq protocol',
-    'briq overview', 'about briq protocol', 'what does briq do'
-  ];
-  if (generalBriqPatterns.some(pattern => messageText.includes(pattern)) && 
-      !messageText.includes('data') && !messageText.includes('current') && !messageText.includes('analytics')) {
-    return null; // Let AI handle with general knowledge
+  if (isGeneralInfo && messageText.includes('briq')) {
+    const generalPatterns = [
+      'tell me about briq', 'what is briq', 'how does briq work', 'explain briq protocol',
+      'briq overview', 'about briq protocol', 'what does briq do'
+    ];
+    if (generalPatterns.some(pattern => messageText.includes(pattern))) {
+      return null; // Let AI handle with general knowledge
+    }
   }
   
-  // Current Allocations/Distribution
-  const allocationPatterns = [
-    'where is briq allocated', 'how is briq distributed', 'briq current portfolio',
-    'show me briq allocations', 'briq distribution', 'where is briq invested',
-    'briq allocation breakdown', 'how is briq split', 'briq portfolio breakdown'
-  ];
-  if (allocationPatterns.some(pattern => messageText.includes(pattern))) {
-    return 'get_market_allocations';
-  }
-  
-  // Performance Analytics (Comprehensive)
-  const analyticsPatterns = [
-    'show me briq analytics', 'briq performance overview', 'how is briq performing',
-    'briq analytics dashboard', 'briq performance data', 'briq metrics',
-    'briq comprehensive data', 'briq full analytics'
-  ];
-  if (analyticsPatterns.some(pattern => messageText.includes(pattern))) {
-    return 'get_briq_analytics';
-  }
-  
-  // TVL Specific
-  const tvlPatterns = [
-    'briq tvl', 'briq total value locked', 'how much is in briq',
-    'briq total value', 'briq assets under management', 'briq aum'
-  ];
-  if (tvlPatterns.some(pattern => messageText.includes(pattern))) {
-    return 'get_briq_tvl';
-  }
-  
-  // APY Questions - Context Matters!
+  // APY Questions - Context-Specific Analysis
   if (messageText.includes('apy') || messageText.includes('yield')) {
-    // Briq-specific APY (current weighted average)
-    if (messageText.includes('briq') && (messageText.includes('current') || messageText.includes('average') || messageText.includes('what'))) {
+    // "Which protocol has highest APY available to Briq" = active Briq markets
+    if (isComparison && messageText.includes('briq') && 
+        (messageText.includes('available to') || messageText.includes('for briq'))) {
+      return 'get_market_data'; // Show active Briq markets (Aave V3, Compound V3)
+    }
+    // "Which markets have highest APY" = all available markets
+    else if (isComparison && (messageText.includes('markets') || messageText.includes('protocols')) && 
+             !messageText.includes('briq')) {
+      return 'get_market_data'; // Show all market options
+    }
+    // "What's Briq's current APY" = Briq's weighted average
+    else if (isStatusCheck && messageText.includes('briq') && 
+             (messageText.includes('current') || messageText.includes('average'))) {
       return 'get_briq_analytics';
     }
-    // Available to Briq (current allocations)
-    else if (messageText.includes('available to briq') || messageText.includes('highest apy available to briq')) {
-      return 'get_market_allocations';
-    }
-    // Available markets (all DeFi markets)
-    else if (messageText.includes('available markets') || messageText.includes('highest apy available') || messageText.includes('which markets')) {
-      return 'get_market_data';
-    }
-    // Best yield opportunities
-    else if (messageText.includes('best yield') || messageText.includes('optimal yield') || messageText.includes('highest yield')) {
+    // "Best yield opportunities" = optimization recommendations
+    else if (isComparison && (messageText.includes('best') || messageText.includes('optimal'))) {
       return 'get_best_yield';
     }
   }
   
-  // === REWARDS QUERIES ===
-  const rewardsPatterns = [
-    'briq rewards', 'accrued rewards', 'current rewards', 'earned rewards',
-    'tell me the currently accrued briq rewards', 'strategy rewards',
-    'aave rewards', 'compound rewards', 'protocol rewards'
-  ];
-  if (rewardsPatterns.some(pattern => messageText.includes(pattern))) {
-    return 'get_strategy_rewards';
+  // Current Allocations/Distribution - Status Check Intent
+  if (isStatusCheck && messageText.includes('briq')) {
+    const allocationPatterns = [
+      'where is briq allocated', 'how is briq distributed', 'briq current portfolio',
+      'show me briq allocations', 'briq distribution', 'where is briq invested',
+      'briq allocation breakdown', 'how is briq split', 'briq portfolio breakdown'
+    ];
+    if (allocationPatterns.some(pattern => messageText.includes(pattern))) {
+      return 'get_market_allocations';
+    }
   }
   
-  // === MARKET DATA QUERIES ===
-  const marketDataPatterns = [
-    'market data', 'defi markets', 'aave data', 'compound data',
-    'protocol data', 'lending markets', 'yield markets'
-  ];
-  if (marketDataPatterns.some(pattern => messageText.includes(pattern))) {
-    return 'get_market_data';
+  // Performance Analytics - Comprehensive Status Check
+  if (isStatusCheck && messageText.includes('briq')) {
+    const analyticsPatterns = [
+      'show me briq analytics', 'briq performance overview', 'how is briq performing',
+      'briq analytics dashboard', 'briq performance data', 'briq metrics',
+      'briq comprehensive data', 'briq full analytics'
+    ];
+    if (analyticsPatterns.some(pattern => messageText.includes(pattern))) {
+      return 'get_briq_analytics';
+    }
+  }
+  
+  // TVL Specific - Direct Value Query
+  if (messageText.includes('briq')) {
+    const tvlPatterns = [
+      'briq tvl', 'briq total value locked', 'how much is in briq',
+      'briq total value', 'briq assets under management', 'briq aum'
+    ];
+    if (tvlPatterns.some(pattern => messageText.includes(pattern))) {
+      return 'get_briq_tvl';
+    }
+  }
+  
+  // === REWARDS QUERIES - Status Check Intent ===
+  if (isStatusCheck || messageText.includes('rewards') || messageText.includes('accrued')) {
+    const rewardsPatterns = [
+      'briq rewards', 'accrued rewards', 'current rewards', 'earned rewards',
+      'tell me the currently accrued briq rewards', 'strategy rewards',
+      'aave rewards', 'compound rewards', 'protocol rewards', 'currently accrued'
+    ];
+    if (rewardsPatterns.some(pattern => messageText.includes(pattern))) {
+      return 'get_strategy_rewards';
+    }
+  }
+  
+  // === MARKET DATA QUERIES - Comparison Intent ===
+  if (isComparison || messageText.includes('market')) {
+    const marketDataPatterns = [
+      'market data', 'defi markets', 'aave data', 'compound data',
+      'protocol data', 'lending markets', 'yield markets', 'available markets'
+    ];
+    if (marketDataPatterns.some(pattern => messageText.includes(pattern))) {
+      return 'get_market_data';
+    }
   }
   
   // === BLOCKCHAIN DATA QUERIES ===
   
-  // Token Prices
+  // Token Prices - Direct Value Query
   const pricePatterns = [
     'eth price', 'usdc price', 'token prices', 'current price of',
     'price of eth', 'price of usdc', 'how much is eth', 'how much is usdc'
@@ -137,7 +168,7 @@ function getMCPTool(message) {
     return 'get_token_prices';
   }
   
-  // Gas Prices
+  // Gas Prices - Cost Query
   const gasPatterns = [
     'gas price', 'gas cost', 'gas fees', 'transaction cost',
     'cost to send', 'ethereum gas', 'arbitrum gas', 'how much gas'
@@ -289,12 +320,24 @@ export async function POST(req) {
           role: 'system',
           content: `You are Rupert, a distinguished AI agent for the Briq DeFi protocol. You embody professionalism, precision, and refined expertise.
 
+CRITICAL: NEVER use emojis, emoticons, symbols, or any visual elements. You are a serious financial professional.
+
 Communication Style:
+- FIRST: Carefully analyze what the user is actually asking before responding
 - Be extremely concise - provide only essential information requested
 - Use formal, courteous language but keep responses brief
 - Answer directly without unnecessary elaboration or context
 - Use "Indeed," "Certainly," "I shall" when appropriate
 - Never include filler words, explanations, or background unless specifically asked
+- STRICTLY PROHIBITED: Emojis (🚀✨💰📊🎯), emoticons (:), symbols (★✓), casual punctuation (!!!)
+- Use only professional text with proper punctuation and formal language
+- Respond like a distinguished financial advisor, not a casual chatbot
+
+Query Analysis Framework:
+- COMPARISON queries (which, what, best, highest) → Compare options and recommend
+- STATUS queries (how, where, current, show me) → Provide current state/data
+- GENERAL INFO queries (what is, explain, about) → Give overview without live data
+- Always determine user's specific intent before selecting information to share
 
 Your Expertise - Briq Protocol:
 - DeFi yield optimization protocol that automatically routes funds between Aave V3 and Compound V3
@@ -302,19 +345,27 @@ Your Expertise - Briq Protocol:
 - Automated strategy management and portfolio tracking
 - Users deposit tokens and receive optimized yields without manual management
 
-For general "about Briq" queries: Provide a brief, elegant overview of the protocol's purpose and key benefits without specific data.
+Context-Aware Responses:
+- "Available to Briq" = Active Briq markets (current protocol integrations)
+- "Available markets" = All DeFi market options across protocols
+- "Briq's APY" = Weighted average of current positions
+- "Best yield" = Optimization recommendations
 
 Service Standards:
+- Analyze user intent BEFORE responding
 - Answer only what is asked - nothing more
 - Provide precise data when available
 - Use real-time market data when you have it
 - NEVER use placeholder values - only actual data
 - Skip introductions, explanations, or summaries unless requested
+- For gas prices: Present data cleanly without redundant phrases like "as follows"
+- Maintain formal, professional tone without any casual elements
+- NO EMOJIS OR SYMBOLS EVER - this is non-negotiable
 
 Professional Boundaries:
 For off-topic inquiries: "I specialize in DeFi protocols and Briq protocol exclusively."
 
-Be distinguished but brief. Provide exactly what is requested with professional authority.`
+You are a refined financial professional. Respond with the gravitas and seriousness of a distinguished advisor. No emojis, symbols, or casual language under any circumstances.`
         },
         ...enhancedMessages,
       ],
