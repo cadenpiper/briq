@@ -20,8 +20,9 @@ const loadABI = (filename) => {
   return JSON.parse(readFileSync(filePath, 'utf8')).abi;
 };
 
-// Load environment variables from parent directory
+// Load environment variables from both parent directory and hardhat directory
 dotenv.config({ path: path.join(process.cwd(), '..', '.env.local') });
+dotenv.config({ path: path.join(process.cwd(), '..', 'hardhat', '.env') });
 
 class RupertMCPServer {
   constructor() {
@@ -48,6 +49,9 @@ class RupertMCPServer {
     // Etherscan API configuration (unified endpoint for all networks)
     this.ETHERSCAN_API_KEY = process.env.ETHERSCAN_API_KEY;
     this.ETHERSCAN_API_URL = 'https://api.etherscan.io/api';
+
+    // CoinMarketCap API configuration
+    this.COINMARKETCAP_API_KEY = process.env.COINMARKETCAP_API_KEY;
 
     // Viem client for Briq contract interactions (same as frontend)
     this.viemClient = createPublicClient({
@@ -637,19 +641,29 @@ ${data.compound.tokens.map(token => {
     return data.result;
   }
 
-  // Get current token prices (ETH from Etherscan, USDC as stablecoin)
+  // Get current token prices from CoinMarketCap API
   async getTokenPrices() {
     try {
-      // Get ETH price from Etherscan
-      const ethPriceData = await this.fetchFromEtherscan('ethereum', {
-        module: 'stats',
-        action: 'ethprice'
+      // Get ETH and USDC prices from CoinMarketCap
+      const response = await fetch('https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest?symbol=ETH,USDC', {
+        headers: {
+          'X-CMC_PRO_API_KEY': this.COINMARKETCAP_API_KEY,
+          'Accept': 'application/json'
+        }
       });
 
-      const ethPriceUSD = parseFloat(ethPriceData.ethusd);
+      if (!response.ok) {
+        throw new Error(`CoinMarketCap API error: ${response.status}`);
+      }
 
-      // USDC is a stablecoin pegged to $1
-      const usdcPriceUSD = 1.00;
+      const data = await response.json();
+      
+      if (!data.data || !data.data.ETH || !data.data.USDC) {
+        throw new Error('Invalid response from CoinMarketCap API');
+      }
+
+      const ethPriceUSD = data.data.ETH.quote.USD.price;
+      const usdcPriceUSD = data.data.USDC.quote.USD.price;
 
       return {
         ETH: {

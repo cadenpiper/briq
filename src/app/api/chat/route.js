@@ -14,9 +14,11 @@ const openai = new OpenAI({
 function shouldUseMCP(message) {
   const messageText = message.toLowerCase();
   
-  // Specific phrases that indicate need for real-time data
-  const specificPhrases = [
+  // Only use specific phrases that clearly indicate need for real-time data
+  const realTimeDataPhrases = [
     'current price of', 'price of eth', 'price of weth', 'price of usdc',
+    'current price for', 'price for eth', 'price for weth', 'price for usdc',
+    'what is the current price', 'current token price', 'token price',
     'gas price', 'gas prices', 'gas cost', 'gas fees', 'transaction cost',
     'cost to send', 'how much does it cost', 'current token prices', 'token prices',
     'eth price', 'weth price', 'usdc price', 'briq tvl', 'briq analytics',
@@ -24,18 +26,11 @@ function shouldUseMCP(message) {
     'briq portfolio', 'briq apy', 'briq yield', 'accrued briq rewards',
     'currently accrued', 'current briq rewards', 'strategy rewards',
     'market allocations', 'total value locked', 'current tvl',
-    'aave rewards', 'compound rewards'
+    'aave rewards', 'compound rewards', 'show me briq', 'current gas price',
+    'what is the current', 'how much is', 'current market data'
   ];
   
-  // Fallback keywords
-  const keywords = [
-    'price', 'gas', 'gwei', 'eth', 'weth', 'usdc', 'ethereum', 'arbitrum',
-    'mainnet', 'token', 'cost', 'fee', 'current', 'transaction', 'briq', 'tvl',
-    'analytics', 'rewards', 'allocations', 'aave', 'compound', 'strategy', 'apy', 'yield', 'accrued'
-  ];
-  
-  return specificPhrases.some(phrase => messageText.includes(phrase)) || 
-         keywords.some(keyword => messageText.includes(keyword));
+  return realTimeDataPhrases.some(phrase => messageText.includes(phrase));
 }
 
 /**
@@ -46,26 +41,20 @@ function shouldUseMCP(message) {
 function getMCPTool(message) {
   const messageText = message.toLowerCase();
   
-  // === INTENT ANALYSIS FIRST ===
-  
-  // Check for comparison/selection intent (which, what, best, highest, etc.)
+  // === INTENT ANALYSIS ===
   const isComparison = messageText.includes('which') || messageText.includes('what') || 
                       messageText.includes('best') || messageText.includes('highest') || 
                       messageText.includes('compare') || messageText.includes('better');
   
-  // Check for current status intent (how, where, current, show me)
   const isStatusCheck = messageText.includes('how') || messageText.includes('where') || 
                        messageText.includes('current') || messageText.includes('show me') || 
                        messageText.includes('tell me');
   
-  // Check for general information intent (what is, explain, about)
   const isGeneralInfo = (messageText.includes('what is') || messageText.includes('explain') || 
                         messageText.includes('about')) && !messageText.includes('current') && 
                         !messageText.includes('data');
   
   // === BRIQ PROTOCOL QUERIES ===
-  
-  // General Protocol Overview (NO MCP - use AI knowledge)
   if (isGeneralInfo && messageText.includes('briq')) {
     const generalPatterns = [
       'tell me about briq', 'what is briq', 'how does briq work', 'explain briq protocol',
@@ -78,22 +67,18 @@ function getMCPTool(message) {
   
   // APY Questions - Context-Specific Analysis
   if (messageText.includes('apy') || messageText.includes('yield')) {
-    // "Which protocol has highest APY available to Briq" = active Briq markets
     if (isComparison && messageText.includes('briq') && 
         (messageText.includes('available to') || messageText.includes('for briq'))) {
       return 'get_market_data'; // Show active Briq markets (Aave V3, Compound V3)
     }
-    // "Which markets have highest APY" = all available markets
     else if (isComparison && (messageText.includes('markets') || messageText.includes('protocols')) && 
              !messageText.includes('briq')) {
       return 'get_market_data'; // Show all market options
     }
-    // "What's Briq's current APY" = Briq's weighted average
     else if (isStatusCheck && messageText.includes('briq') && 
              (messageText.includes('current') || messageText.includes('average'))) {
       return 'get_briq_analytics';
     }
-    // "Best yield opportunities" = optimization recommendations
     else if (isComparison && (messageText.includes('best') || messageText.includes('optimal'))) {
       return 'get_best_yield';
     }
@@ -134,7 +119,7 @@ function getMCPTool(message) {
     }
   }
   
-  // === REWARDS QUERIES - Status Check Intent ===
+  // === REWARDS QUERIES ===
   if (isStatusCheck || messageText.includes('rewards') || messageText.includes('accrued')) {
     const rewardsPatterns = [
       'briq rewards', 'accrued rewards', 'current rewards', 'earned rewards',
@@ -146,7 +131,7 @@ function getMCPTool(message) {
     }
   }
   
-  // === MARKET DATA QUERIES - Comparison Intent ===
+  // === MARKET DATA QUERIES ===
   if (isComparison || messageText.includes('market')) {
     const marketDataPatterns = [
       'market data', 'defi markets', 'aave data', 'compound data',
@@ -159,16 +144,18 @@ function getMCPTool(message) {
   
   // === BLOCKCHAIN DATA QUERIES ===
   
-  // Token Prices - Direct Value Query
+  // Token Prices
   const pricePatterns = [
-    'eth price', 'usdc price', 'token prices', 'current price of',
-    'price of eth', 'price of usdc', 'how much is eth', 'how much is usdc'
+    'eth price', 'usdc price', 'weth price', 'token prices', 'current price of',
+    'price of eth', 'price of usdc', 'price of weth', 'how much is eth', 'how much is usdc',
+    'current price for', 'price for eth', 'price for usdc', 'price for weth',
+    'what is the current price', 'current token price', 'token price'
   ];
   if (pricePatterns.some(pattern => messageText.includes(pattern))) {
     return 'get_token_prices';
   }
   
-  // Gas Prices - Cost Query
+  // Gas Prices
   const gasPatterns = [
     'gas price', 'gas cost', 'gas fees', 'transaction cost',
     'cost to send', 'ethereum gas', 'arbitrum gas', 'how much gas'
@@ -300,13 +287,16 @@ export async function POST(req) {
             role: 'system',
             content: `IMPORTANT: Use this current market data in your response: ${marketData}`
           });
+        } else {
+          // No fallback - if we can't get real-time data, inform the user
+          throw new Error('Real-time market data is currently unavailable');
         }
       } catch (error) {
         console.error('MCP Error:', error.message);
-        // Add fallback context if real-time data unavailable
+        // No fallback context - let the error propagate or inform user directly
         enhancedMessages.push({
           role: 'system',
-          content: 'Note: Real-time market data is currently unavailable. Provide general information and suggest checking the platform dashboard.'
+          content: `I apologize, but I cannot access real-time market data at this moment. The system requires live data to provide accurate information. Please try again in a moment.`
         });
       }
     }
