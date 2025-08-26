@@ -50,100 +50,95 @@ class RupertMCPServer {
       return {
         tools: [
           {
-            name: 'get_market_data',
-            description: 'Get current DeFi market data from Aave V3 and Compound V3 protocols',
-            inputSchema: {
-              type: 'object',
-              properties: {
-                network: {
-                  type: 'string',
-                  description: 'Network to filter by (optional)',
-                  enum: ['Ethereum', 'Arbitrum One']
-                },
-                token: {
-                  type: 'string',
-                  description: 'Token to filter by (optional)',
-                  enum: ['USDC', 'WETH']
-                },
-                protocol: {
-                  type: 'string',
-                  description: 'Protocol to filter by (optional)',
-                  enum: ['Aave V3', 'Compound V3']
-                }
-              }
-            }
-          },
-          {
-            name: 'get_best_yield',
-            description: 'Find the best yield opportunities for a specific token',
-            inputSchema: {
-              type: 'object',
-              properties: {
-                token: {
-                  type: 'string',
-                  description: 'Token to find best yield for',
-                  enum: ['USDC', 'WETH'],
-                  default: 'USDC'
-                }
-              }
-            }
-          },
-          {
             name: 'get_token_prices',
-            description: 'Get current prices for supported tokens (ETH, USDC)',
-            inputSchema: {
-              type: 'object',
-              properties: {}
-            }
-          },
-          {
-            name: 'get_token_price',
-            description: 'Get current price for a specific token (ETH, WETH, USDC)',
+            description: 'Get current prices for tokens. Can fetch single token or multiple tokens.',
             inputSchema: {
               type: 'object',
               properties: {
-                token: {
-                  type: 'string',
-                  description: 'Token symbol to get price for',
-                  enum: ['ETH', 'WETH', 'USDC', 'ETHEREUM', 'WRAPPED ETHER', 'USD COIN']
+                tokens: {
+                  type: 'array',
+                  description: 'Array of token symbols to get prices for. If empty, returns all supported tokens.',
+                  items: {
+                    type: 'string',
+                    enum: ['ETH', 'WETH', 'USDC']
+                  }
                 }
-              },
-              required: ['token']
+              }
             }
           },
           {
             name: 'get_gas_prices',
-            description: 'Get current gas prices for Ethereum and/or Arbitrum with USD conversion',
+            description: 'Get current standard gas prices for networks',
             inputSchema: {
               type: 'object',
               properties: {
-                network: {
-                  type: 'string',
-                  description: 'Network to get gas prices for',
-                  enum: ['ethereum', 'arbitrum', 'both'],
-                  default: 'both'
+                networks: {
+                  type: 'array',
+                  description: 'Networks to get gas prices for. If empty, returns all networks.',
+                  items: {
+                    type: 'string',
+                    enum: ['ethereum', 'arbitrum']
+                  }
+                }
+              }
+            }
+          },
+          {
+            name: 'get_detailed_gas_prices',
+            description: 'Get detailed gas prices with all tiers (safe, standard, fast)',
+            inputSchema: {
+              type: 'object',
+              properties: {
+                networks: {
+                  type: 'array',
+                  description: 'Networks to get detailed gas prices for. If empty, returns all networks.',
+                  items: {
+                    type: 'string',
+                    enum: ['ethereum', 'arbitrum']
+                  }
+                }
+              }
+            }
+          },
+          {
+            name: 'get_market_data',
+            description: 'Get current DeFi market data from protocols. Returns raw data for AI reasoning.',
+            inputSchema: {
+              type: 'object',
+              properties: {
+                networks: {
+                  type: 'array',
+                  description: 'Networks to filter by (optional)',
+                  items: {
+                    type: 'string',
+                    enum: ['Ethereum', 'Arbitrum One']
+                  }
                 },
-                detail: {
-                  type: 'string',
-                  description: 'Level of detail in response',
-                  enum: ['simple', 'standard', 'detailed'],
-                  default: 'standard'
+                tokens: {
+                  type: 'array',
+                  description: 'Tokens to filter by (optional)',
+                  items: {
+                    type: 'string',
+                    enum: ['USDC', 'WETH']
+                  }
+                },
+                protocols: {
+                  type: 'array',
+                  description: 'Protocols to filter by (optional)',
+                  items: {
+                    type: 'string',
+                    enum: ['Aave V3', 'Compound V3']
+                  }
                 }
               }
             }
           },
           {
             name: 'get_briq_data',
-            description: 'Get Briq protocol analytics and performance data with natural language queries (e.g., "How is performance?", "What\'s the TVL?", "Show me rewards")',
+            description: 'Get Briq protocol analytics and performance data',
             inputSchema: {
               type: 'object',
-              properties: {
-                query: {
-                  type: 'string',
-                  description: 'Natural language query about Briq protocol data (optional - defaults to overview)',
-                  default: ''
-                }
-              }
+              properties: {}
             }
           }
         ]
@@ -159,23 +154,17 @@ class RupertMCPServer {
           case 'get_market_data':
             return await this.defiMarketService.handleGetMarketData(args);
           
-          case 'get_best_yield':
-            return await this.defiMarketService.handleGetBestYield(args?.token || 'USDC');
-          
           case 'get_token_prices':
-            return await this.tokenPriceService.handleGetTokenPrices();
-          
-          case 'get_token_price':
-            return await this.tokenPriceService.handleGetTokenPrice(args?.token);
+            return await this.tokenPriceService.handleGetTokenPrices(args?.tokens);
           
           case 'get_gas_prices':
-            return await this.gasPriceService.handleGetGasPrices(
-              args?.network || 'both', 
-              args?.detail || 'standard'
-            );
+            return await this.gasPriceService.handleGetGasPrices(args?.networks);
+          
+          case 'get_detailed_gas_prices':
+            return await this.gasPriceService.handleGetDetailedGasPrices(args?.networks);
           
           case 'get_briq_data':
-            return await this.briqAnalyticsService.handleBriqQuery(args?.query || '');
+            return await this.briqAnalyticsService.handleGetBriqAnalytics();
           
           default:
             throw new Error(`Unknown tool: ${name}`);

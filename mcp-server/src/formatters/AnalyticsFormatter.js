@@ -1,27 +1,27 @@
 /**
- * Formatter for Briq analytics data with professional, conversational responses
+ * Dynamic formatter for Briq analytics data that adapts to actual state
  */
 export class AnalyticsFormatter {
   /**
-   * Format TVL data with professional tone
+   * Dynamically format TVL data based on actual state
    */
   formatTVL(data) {
-    const tvl = data.tvl.toLocaleString('en-US', { 
-      minimumFractionDigits: 2, 
-      maximumFractionDigits: 2 
-    });
-
-    let response = `The Briq protocol currently has $${tvl} in Total Value Locked. `;
+    const tvl = data.tvl;
     
-    if (data.tvl > 50000) {
-      response += `This represents a healthy amount of capital being actively deployed across our yield optimization strategies.`;
-    } else if (data.tvl > 10000) {
-      response += `We're building solid momentum with meaningful capital deployment across our strategies.`;
+    // Dynamic response based on actual TVL state
+    let response = '';
+    
+    if (tvl === 0) {
+      response = `The Briq protocol currently has no active deposits (TVL: $0.00). The vault is deployed and ready to accept deposits, but no users have deposited funds yet.`;
+    } else if (tvl < 1000) {
+      response = `The Briq protocol has $${tvl.toFixed(2)} in Total Value Locked. This represents the early stages of protocol adoption with initial deposits being managed across our yield strategies.`;
+    } else if (tvl < 10000) {
+      response = `The Briq protocol currently manages $${tvl.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} in Total Value Locked. We're seeing growing adoption with meaningful capital being deployed across our optimization strategies.`;
+    } else if (tvl < 100000) {
+      response = `The Briq protocol has reached $${tvl.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} in Total Value Locked, demonstrating solid traction and user confidence in our yield optimization approach.`;
     } else {
-      response += `While we're in the early stages, the protocol is actively managing funds across multiple DeFi strategies.`;
+      response = `The Briq protocol has achieved significant scale with $${tvl.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} in Total Value Locked, representing substantial user adoption and capital deployment across our strategies.`;
     }
-
-    response += `\n\nThis data comes directly from our deployed vault contract and reflects real-time on-chain activity.`;
 
     return {
       content: [
@@ -34,60 +34,106 @@ export class AnalyticsFormatter {
   }
 
   /**
-   * Format comprehensive analytics with professional tone
+   * Dynamically format comprehensive analytics based on actual state
    */
   formatAnalytics(data) {
-    const tvl = data.tvl.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-    const apy = data.weightedAverageAPY.toFixed(2);
-    const rewards = data.totalRewards.toFixed(2);
-
-    let response = `Here's a comprehensive overview of the Briq protocol's current performance:\n\n`;
+    const { tvl, weightedAverageAPY, totalRewards, marketAllocations, aaveRewards, compoundRewards } = data;
     
-    // Protocol Overview
-    response += `**Protocol Overview**\n`;
-    response += `Total Value Locked: $${tvl}\n`;
-    response += `Weighted Average APY: ${apy}%\n`;
-    response += `Total Rewards Earned: $${rewards}\n\n`;
-
-    // Asset Allocation
-    response += `**Asset Allocation Strategy**\n`;
-    const totalValue = data.marketAllocations.reduce((sum, m) => sum + m.usdValue, 0);
+    let response = '';
     
-    data.marketAllocations.forEach(market => {
-      const allocation = totalValue > 0 ? (market.usdValue / totalValue * 100) : 0;
-      const value = market.usdValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-      response += `${market.tokenSymbol} via ${market.strategyName}: $${value} (${allocation.toFixed(1)}%) earning ${market.apy.toFixed(2)}% APY\n`;
-    });
-
-    // Strategy Performance
-    response += `\n**Strategy Performance**\n`;
-    if (data.aaveRewards.totalUSD > 0 || data.compoundRewards.totalUSD > 0) {
-      response += `Aave Strategy: $${data.aaveRewards.totalUSD.toFixed(2)} in accumulated rewards\n`;
-      response += `Compound Strategy: $${data.compoundRewards.totalUSD.toFixed(2)} in accumulated rewards\n`;
+    // Dynamic protocol status assessment
+    if (tvl === 0) {
+      response += `**Briq Protocol Status: Awaiting First Deposits**\n\n`;
+      response += `The Briq protocol is fully deployed and operational, but currently has no active deposits. `;
+      response += `Once users begin depositing USDC and WETH, the protocol will automatically optimize yields across Aave V3 and Compound V3 strategies.\n\n`;
+      
+      response += `**Ready Strategies:**\n`;
+      response += `- USDC Strategy: Aave V3 integration ready\n`;
+      response += `- WETH Strategy: Compound V3 integration ready\n\n`;
+      
+      response += `The protocol is monitoring market conditions and will begin yield optimization immediately upon receiving deposits.`;
+      
     } else {
-      response += `Both strategies are actively deployed and generating yield.\n`;
-      response += `Rewards will accumulate over time as positions mature and compound.\n`;
+      // Active protocol with deposits
+      response += `**Briq Protocol Performance Overview**\n\n`;
+      
+      // TVL Analysis
+      response += `**Total Value Locked:** $${tvl.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}\n`;
+      
+      // APY Analysis
+      if (weightedAverageAPY > 0) {
+        response += `**Weighted Average APY:** ${weightedAverageAPY.toFixed(2)}%\n`;
+        
+        if (weightedAverageAPY > 5) {
+          response += `*Excellent yield performance in current market conditions*\n`;
+        } else if (weightedAverageAPY > 3) {
+          response += `*Strong yield generation across strategies*\n`;
+        } else if (weightedAverageAPY > 1) {
+          response += `*Steady yield generation with conservative positioning*\n`;
+        } else {
+          response += `*Conservative positioning in current market environment*\n`;
+        }
+      } else {
+        response += `**Weighted Average APY:** 0.00% (positions still initializing)\n`;
+      }
+      
+      // Rewards Analysis
+      response += `**Total Rewards Earned:** $${totalRewards.toFixed(2)}\n\n`;
+      
+      // Asset Allocation Analysis
+      response += `**Current Asset Allocation:**\n`;
+      const totalValue = marketAllocations.reduce((sum, m) => sum + m.usdValue, 0);
+      
+      if (marketAllocations.length === 0) {
+        response += `No active allocations detected.\n`;
+      } else {
+        marketAllocations.forEach(market => {
+          const allocation = totalValue > 0 ? (market.usdValue / totalValue * 100) : 0;
+          const value = market.usdValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+          
+          response += `- ${market.tokenSymbol} via ${market.strategyName}: $${value} (${allocation.toFixed(1)}%) at ${market.apy.toFixed(2)}% APY\n`;
+        });
+      }
+      
+      response += `\n`;
+      
+      // Strategy Performance Analysis
+      response += `**Strategy Performance:**\n`;
+      
+      const hasAaveRewards = aaveRewards.totalUSD > 0;
+      const hasCompoundRewards = compoundRewards.totalUSD > 0;
+      
+      if (!hasAaveRewards && !hasCompoundRewards) {
+        response += `Strategies are active but rewards are still accumulating. This is normal for new positions as DeFi yields compound over time.\n`;
+      } else {
+        if (hasAaveRewards) {
+          response += `- Aave Strategy: $${aaveRewards.totalUSD.toFixed(2)} in accumulated rewards\n`;
+        }
+        if (hasCompoundRewards) {
+          response += `- Compound Strategy: $${compoundRewards.totalUSD.toFixed(2)} in accumulated rewards\n`;
+        }
+      }
+      
+      // Market Context
+      response += `\n**Market Analysis:**\n`;
+      
+      if (marketAllocations.length > 1) {
+        const bestStrategy = marketAllocations.reduce((best, current) => 
+          current.apy > best.apy ? current : best
+        );
+        response += `Currently, our highest-performing allocation is ${bestStrategy.tokenSymbol} via ${bestStrategy.strategyName} at ${bestStrategy.apy.toFixed(2)}% APY. `;
+      }
+      
+      if (totalRewards > tvl * 0.01) { // If rewards > 1% of TVL
+        response += `Strong reward accumulation demonstrates effective yield optimization.`;
+      } else if (totalRewards > 0) {
+        response += `Rewards are accumulating as expected for our current position duration.`;
+      } else {
+        response += `Positions are newly established and rewards will accumulate over time.`;
+      }
     }
-
-    // Market Analysis
-    response += `\n**Market Analysis**\n`;
-    if (data.weightedAverageAPY > 3) {
-      response += `Our current APY of ${apy}% demonstrates strong performance in the current market environment. `;
-    } else if (data.weightedAverageAPY > 1) {
-      response += `We're maintaining solid yield generation with a ${apy}% APY despite current market conditions. `;
-    } else {
-      response += `Our conservative positioning reflects prudent risk management in the current market environment. `;
-    }
-
-    const largestAllocation = data.marketAllocations.reduce((max, market) => 
-      market.usdValue > max.usdValue ? market : max, data.marketAllocations[0]);
     
-    if (largestAllocation) {
-      const allocation = totalValue > 0 ? (largestAllocation.usdValue / totalValue * 100) : 0;
-      response += `Our largest position represents ${allocation.toFixed(1)}% of the portfolio in ${largestAllocation.tokenSymbol} through ${largestAllocation.strategyName}.`;
-    }
-
-    response += `\n\nAll data is sourced from live contract interactions and updates in real-time.`;
+    response += `\n\nAll data reflects real-time on-chain contract state.`;
 
     return {
       content: [
@@ -100,33 +146,59 @@ export class AnalyticsFormatter {
   }
 
   /**
-   * Format market allocations with professional tone
+   * Dynamically format market allocations based on actual state
    */
   formatAllocations(data) {
-    const totalValue = data.markets.reduce((sum, market) => sum + market.usdValue, 0);
-    const totalFormatted = totalValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    const { markets } = data;
+    const totalValue = markets.reduce((sum, market) => sum + market.usdValue, 0);
     
-    let response = `Here's how the Briq protocol is currently allocating capital across our strategies:\n\n`;
-    response += `**Total Portfolio Value: $${totalFormatted}**\n\n`;
+    let response = '';
+    
+    if (totalValue === 0) {
+      response = `The Briq protocol currently has no active asset allocations. The vault is ready to receive deposits and will automatically begin optimizing yields across Aave V3 and Compound V3 strategies once funds are deposited.`;
+    } else {
+      response += `**Briq Protocol Asset Allocation**\n\n`;
+      response += `**Total Portfolio Value:** $${totalValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}\n\n`;
 
-    data.markets.forEach(market => {
-      const allocation = totalValue > 0 ? (market.usdValue / totalValue * 100) : 0;
-      const value = market.usdValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      // Analyze allocation diversity
+      const activeStrategies = markets.filter(m => m.usdValue > 0);
       
-      response += `**${market.tokenSymbol} Strategy via ${market.strategyName}**\n`;
-      response += `Position Size: ${market.balance.toFixed(4)} ${market.tokenSymbol}\n`;
-      response += `USD Value: $${value}\n`;
-      response += `Portfolio Weight: ${allocation.toFixed(1)}%\n`;
-      response += `Current APY: ${market.apy.toFixed(2)}%\n\n`;
-    });
+      if (activeStrategies.length === 1) {
+        response += `*Currently concentrated in a single strategy for optimal yield capture*\n\n`;
+      } else if (activeStrategies.length > 1) {
+        response += `*Diversified across ${activeStrategies.length} strategies for risk management*\n\n`;
+      }
 
-    // Add professional insights
-    const highestAPY = Math.max(...data.markets.map(m => m.apy));
-    const bestStrategy = data.markets.find(m => m.apy === highestAPY);
-    
-    if (bestStrategy) {
-      response += `Currently, our highest-performing strategy is ${bestStrategy.tokenSymbol} via ${bestStrategy.strategyName}, generating ${bestStrategy.apy.toFixed(2)}% APY. `;
-      response += `This demonstrates our protocol's ability to identify and capitalize on the most attractive yield opportunities in the market.`;
+      markets.forEach(market => {
+        if (market.usdValue > 0) {
+          const allocation = (market.usdValue / totalValue * 100);
+          const value = market.usdValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+          
+          response += `**${market.tokenSymbol} Strategy (${market.strategyName})**\n`;
+          response += `- Position Size: ${market.balance.toFixed(4)} ${market.tokenSymbol}\n`;
+          response += `- USD Value: $${value}\n`;
+          response += `- Portfolio Weight: ${allocation.toFixed(1)}%\n`;
+          response += `- Current APY: ${market.apy.toFixed(2)}%\n\n`;
+        }
+      });
+
+      // Dynamic insights based on actual allocation
+      const highestAPY = Math.max(...markets.map(m => m.apy));
+      const bestStrategy = markets.find(m => m.apy === highestAPY);
+      
+      if (bestStrategy && bestStrategy.usdValue > 0) {
+        const bestAllocation = (bestStrategy.usdValue / totalValue * 100);
+        response += `**Portfolio Insights:**\n`;
+        response += `Our highest-yielding position is ${bestStrategy.tokenSymbol} via ${bestStrategy.strategyName} at ${bestStrategy.apy.toFixed(2)}% APY, `;
+        
+        if (bestAllocation > 70) {
+          response += `representing ${bestAllocation.toFixed(1)}% of the portfolio, indicating strong conviction in this opportunity.`;
+        } else if (bestAllocation > 40) {
+          response += `representing ${bestAllocation.toFixed(1)}% of the portfolio, showing balanced optimization.`;
+        } else {
+          response += `representing ${bestAllocation.toFixed(1)}% of the portfolio as part of our diversified approach.`;
+        }
+      }
     }
 
     return {
@@ -140,54 +212,93 @@ export class AnalyticsFormatter {
   }
 
   /**
-   * Format strategy rewards with professional tone
+   * Dynamically format strategy rewards based on actual performance
    */
   formatRewards(data, strategy) {
-    let response = `Here's a detailed breakdown of rewards generated by our yield optimization strategies:\n\n`;
+    const { aave, compound, totalRewardsUSD } = data;
     
-    if (strategy === 'aave' || strategy === 'both') {
-      response += `**Aave Strategy Performance**\n`;
-      response += `Total Rewards Generated: $${data.aave.totalUSD.toFixed(2)}\n\n`;
+    let response = '';
+    
+    if (totalRewardsUSD === 0) {
+      response += `**Strategy Rewards Status: Accumulation Phase**\n\n`;
+      response += `Our yield strategies are currently active but rewards are still in the early accumulation phase. `;
+      response += `This is typical for new positions as DeFi protocols compound returns over time.\n\n`;
       
-      data.aave.tokens.forEach(token => {
-        response += `${token.tokenSymbol} Position Analysis:\n`;
-        response += `Current Balance: ${token.currentBalance.toLocaleString()} ${token.tokenSymbol}\n`;
-        response += `Interest Earned: ${token.accruedRewards.toFixed(6)} ${token.tokenSymbol}\n`;
-        response += `USD Value of Rewards: $${token.rewardsUSD.toFixed(2)}\n`;
-        response += `Current APY: ${token.currentAPY.toFixed(2)}%\n\n`;
-      });
-    }
-    
-    if (strategy === 'compound' || strategy === 'both') {
-      response += `**Compound Strategy Performance**\n`;
-      response += `Total Rewards Generated: $${data.compound.totalUSD.toFixed(2)}\n\n`;
+      if (strategy === 'aave' || strategy === 'both') {
+        response += `**Aave Strategy:** Positions deployed and earning yield\n`;
+      }
+      if (strategy === 'compound' || strategy === 'both') {
+        response += `**Compound Strategy:** Positions deployed and earning yield\n`;
+      }
       
-      data.compound.tokens.forEach(token => {
-        const compFormatted = token.protocolRewards < 0.000001 && token.protocolRewards > 0 
-          ? token.protocolRewards.toExponential(2) 
-          : token.protocolRewards.toFixed(8);
-          
-        response += `${token.tokenSymbol} Position Analysis:\n`;
-        response += `Current Balance: ${token.currentBalance.toLocaleString()} ${token.tokenSymbol}\n`;
-        response += `Interest Earned: ${token.interestRewards.toFixed(6)} ${token.tokenSymbol}\n`;
-        response += `COMP Token Rewards: ${compFormatted} COMP\n`;
-        response += `USD Value of Rewards: $${token.interestRewardsUSD.toFixed(2)}\n`;
-        response += `Current APY: ${token.currentAPY.toFixed(2)}%\n\n`;
-      });
-    }
-    
-    if (strategy === 'both') {
-      response += `**Combined Strategy Performance**\n`;
-      response += `Total Rewards Across All Strategies: $${data.totalRewardsUSD.toFixed(2)}\n\n`;
-    }
-
-    // Add professional context
-    if (data.totalRewardsUSD < 1) {
-      response += `Please note that rewards are still in the early accumulation phase as our positions are relatively new. `;
-      response += `DeFi yields compound over time, and we expect to see increasing returns as our strategies mature.`;
+      response += `\nRewards will become visible as positions mature and compound over the coming blocks.`;
+      
     } else {
-      response += `Our yield optimization strategies are performing well and generating meaningful returns. `;
-      response += `This demonstrates the effectiveness of our automated approach to DeFi yield farming.`;
+      response += `**Strategy Rewards Performance**\n\n`;
+      response += `**Total Rewards Generated:** $${totalRewardsUSD.toFixed(2)}\n\n`;
+      
+      // Analyze reward distribution
+      const aavePercentage = totalRewardsUSD > 0 ? (aave.totalUSD / totalRewardsUSD * 100) : 0;
+      const compoundPercentage = totalRewardsUSD > 0 ? (compound.totalUSD / totalRewardsUSD * 100) : 0;
+      
+      if (strategy === 'aave' || strategy === 'both') {
+        response += `**Aave Strategy Performance**\n`;
+        response += `Total Rewards: $${aave.totalUSD.toFixed(2)}`;
+        if (strategy === 'both' && totalRewardsUSD > 0) {
+          response += ` (${aavePercentage.toFixed(1)}% of total)`;
+        }
+        response += `\n\n`;
+        
+        if (aave.tokens.length > 0) {
+          aave.tokens.forEach(token => {
+            response += `${token.tokenSymbol} Position:\n`;
+            response += `- Balance: ${token.currentBalance.toLocaleString()} ${token.tokenSymbol}\n`;
+            response += `- Interest Earned: ${token.accruedRewards.toFixed(6)} ${token.tokenSymbol}\n`;
+            response += `- USD Value: $${token.rewardsUSD.toFixed(2)}\n`;
+            response += `- Current APY: ${token.currentAPY.toFixed(2)}%\n\n`;
+          });
+        }
+      }
+      
+      if (strategy === 'compound' || strategy === 'both') {
+        response += `**Compound Strategy Performance**\n`;
+        response += `Total Rewards: $${compound.totalUSD.toFixed(2)}`;
+        if (strategy === 'both' && totalRewardsUSD > 0) {
+          response += ` (${compoundPercentage.toFixed(1)}% of total)`;
+        }
+        response += `\n\n`;
+        
+        if (compound.tokens.length > 0) {
+          compound.tokens.forEach(token => {
+            const compFormatted = token.protocolRewards < 0.000001 && token.protocolRewards > 0 
+              ? token.protocolRewards.toExponential(2) 
+              : token.protocolRewards.toFixed(8);
+              
+            response += `${token.tokenSymbol} Position:\n`;
+            response += `- Balance: ${token.currentBalance.toLocaleString()} ${token.tokenSymbol}\n`;
+            response += `- Interest Earned: ${token.interestRewards.toFixed(6)} ${token.tokenSymbol}\n`;
+            response += `- COMP Rewards: ${compFormatted} COMP\n`;
+            response += `- USD Value: $${token.interestRewardsUSD.toFixed(2)}\n`;
+            response += `- Current APY: ${token.currentAPY.toFixed(2)}%\n\n`;
+          });
+        }
+      }
+      
+      // Dynamic performance assessment
+      response += `**Performance Analysis:**\n`;
+      
+      if (aave.totalUSD > compound.totalUSD && strategy === 'both') {
+        response += `Aave strategy is currently outperforming with ${aavePercentage.toFixed(1)}% of total rewards, `;
+        response += `demonstrating effective yield capture in current market conditions.`;
+      } else if (compound.totalUSD > aave.totalUSD && strategy === 'both') {
+        response += `Compound strategy is leading performance with ${compoundPercentage.toFixed(1)}% of total rewards, `;
+        response += `showing strong returns from our Compound V3 integration.`;
+      } else if (strategy === 'both') {
+        response += `Both strategies are contributing relatively equally to our yield generation, `;
+        response += `indicating balanced performance across protocols.`;
+      } else {
+        response += `Strategy is performing as expected with consistent reward accumulation.`;
+      }
     }
 
     return {

@@ -112,7 +112,7 @@ export class DeFiMarketService {
   }
 
   /**
-   * Handle market data request with filtering
+   * Handle market data request - returns raw data for AI reasoning
    */
   async handleGetMarketData(filters = {}) {
     try {
@@ -121,16 +121,16 @@ export class DeFiMarketService {
       // Apply filters
       let filteredMarkets = allMarkets;
       
-      if (filters.network) {
-        filteredMarkets = filteredMarkets.filter(m => m.network === filters.network);
+      if (filters.networks && filters.networks.length > 0) {
+        filteredMarkets = filteredMarkets.filter(m => filters.networks.includes(m.network));
       }
       
-      if (filters.token) {
-        filteredMarkets = filteredMarkets.filter(m => m.token === filters.token);
+      if (filters.tokens && filters.tokens.length > 0) {
+        filteredMarkets = filteredMarkets.filter(m => filters.tokens.includes(m.token));
       }
       
-      if (filters.protocol) {
-        filteredMarkets = filteredMarkets.filter(m => m.protocol === filters.protocol);
+      if (filters.protocols && filters.protocols.length > 0) {
+        filteredMarkets = filteredMarkets.filter(m => filters.protocols.includes(m.protocol));
       }
 
       if (filteredMarkets.length === 0) {
@@ -144,7 +144,14 @@ export class DeFiMarketService {
         };
       }
 
-      return this.formatter.formatMarketData(filteredMarkets);
+      return {
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify(filteredMarkets, null, 2)
+          }
+        ]
+      };
     } catch (error) {
       return {
         content: [

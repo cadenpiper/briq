@@ -141,32 +141,7 @@ export class BriqAnalyticsService {
   }
 
   /**
-   * Handle Briq TVL request
-   */
-  async handleGetBriqTVL() {
-    try {
-      const data = await this.getBriqTVL();
-      return this.formatter.formatTVL(data);
-    } catch (error) {
-      return {
-        content: [
-          {
-            type: 'text',
-            text: `Error fetching Briq TVL: ${error.message}
-
-Make sure:
-1. Hardhat node is running on localhost:8545
-2. Briq contracts are deployed to the fork
-3. Contract address is correct: ${this.viemClient.getVaultAddress()}`
-          }
-        ],
-        isError: true
-      };
-    }
-  }
-
-  /**
-   * Handle comprehensive Briq analytics request
+   * Handle Briq analytics request - returns formatted response for natural conversation
    */
   async handleGetBriqAnalytics() {
     try {
@@ -177,107 +152,11 @@ Make sure:
         content: [
           {
             type: 'text',
-            text: `Error fetching Briq analytics: ${error.message}
-
-Make sure contracts are deployed and accessible.`
+            text: `Error fetching Briq analytics: ${error.message}`
           }
         ],
         isError: true
       };
     }
-  }
-
-  /**
-   * Handle market allocations request
-   */
-  async handleGetMarketAllocations() {
-    try {
-      const data = await this.getMarketAllocations();
-      return this.formatter.formatMarketAllocations(data);
-    } catch (error) {
-      return {
-        content: [
-          {
-            type: 'text',
-            text: `Error fetching market allocations: ${error.message}`
-          }
-        ],
-        isError: true
-      };
-    }
-  }
-
-  /**
-   * Handle strategy rewards request
-   */
-  async handleGetStrategyRewards(strategy) {
-    try {
-      const data = await this.getStrategyRewards(strategy);
-      return this.formatter.formatRewards(data, strategy);
-    } catch (error) {
-      return {
-        content: [
-          {
-            type: 'text',
-            text: `Error fetching strategy rewards: ${error.message}`
-          }
-        ],
-        isError: true
-      };
-    }
-  }
-
-  /**
-   * Handle general Briq data queries with natural language recognition
-   */
-  async handleBriqQuery(query = '') {
-    const queryLower = query.toLowerCase();
-    
-    // TVL related queries
-    if (queryLower.includes('tvl') || queryLower.includes('total value') || queryLower.includes('locked') || 
-        queryLower.includes('how much') || queryLower.includes('value')) {
-      return await this.handleGetBriqTVL();
-    }
-    
-    // Allocation related queries
-    if (queryLower.includes('allocation') || queryLower.includes('distribution') || queryLower.includes('breakdown') ||
-        queryLower.includes('portfolio') || queryLower.includes('position')) {
-      return await this.handleGetMarketAllocations();
-    }
-    
-    // Rewards related queries
-    if (queryLower.includes('reward') || queryLower.includes('earning') || queryLower.includes('yield') ||
-        queryLower.includes('profit') || queryLower.includes('return')) {
-      return await this.handleGetStrategyRewards('both');
-    }
-    
-    // Performance or analytics queries
-    if (queryLower.includes('performance') || queryLower.includes('analytics') || queryLower.includes('overview') ||
-        queryLower.includes('summary') || queryLower.includes('status') || queryLower.includes('how is') ||
-        queryLower.includes('doing')) {
-      return await this.handleGetBriqAnalytics();
-    }
-    
-    // Default to comprehensive analytics if query is unclear
-    if (query.trim() === '' || queryLower.includes('briq')) {
-      return await this.handleGetBriqAnalytics();
-    }
-    
-    // If no specific match, provide helpful guidance
-    return {
-      content: [
-        {
-          type: 'text',
-          text: `I can help you with information about the Briq protocol. Here are some things you can ask me about:
-
-**Protocol Overview**: "How is Briq performing?" or "Show me Briq analytics"
-**Total Value Locked**: "What's the TVL?" or "How much value is locked?"
-**Asset Allocation**: "Show me the portfolio breakdown" or "How are funds allocated?"
-**Strategy Rewards**: "What rewards have we earned?" or "Show me yield performance"
-
-What specific information about Briq would you like to know?`
-        }
-      ]
-    };
   }
 }

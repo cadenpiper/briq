@@ -111,13 +111,34 @@ export class GasPriceService {
   }
 
   /**
-   * Handle gas prices request with intelligent formatting
+   * Handle gas prices request - returns formatted response based on request context
    */
-  async handleGetGasPrices(network = 'both', detail = 'standard') {
+  async handleGetGasPrices(requestedNetworks = []) {
     try {
-      const gasData = await this.getGasPrices(network);
-      const formattedResponse = this.formatter.formatGasPrices(gasData, detail);
+      let networks = requestedNetworks;
       
+      // If no networks specified, return both
+      if (!networks || networks.length === 0) {
+        networks = ['ethereum', 'arbitrum'];
+      }
+
+      const results = {};
+
+      for (const network of networks) {
+        if (network === 'ethereum') {
+          results.ethereum = await this.getEthereumGasPrices();
+        } else if (network === 'arbitrum') {
+          // Add delay between API calls to avoid conflicts
+          if (results.ethereum) {
+            await new Promise(resolve => setTimeout(resolve, 1000));
+          }
+          results.arbitrum = await this.getArbitrumGasPrices();
+        }
+      }
+
+      // Format the response naturally
+      const formattedResponse = this.formatter.formatGasPrices(results, 'simple');
+
       return {
         content: [
           {
@@ -132,6 +153,54 @@ export class GasPriceService {
           {
             type: 'text',
             text: `Error fetching gas prices: ${error.message}`
+          }
+        ],
+        isError: true
+      };
+    }
+  }
+
+  /**
+   * Handle detailed gas prices request - shows all tiers when specifically requested
+   */
+  async handleGetDetailedGasPrices(requestedNetworks = []) {
+    try {
+      let networks = requestedNetworks;
+      
+      if (!networks || networks.length === 0) {
+        networks = ['ethereum', 'arbitrum'];
+      }
+
+      const results = {};
+
+      for (const network of networks) {
+        if (network === 'ethereum') {
+          results.ethereum = await this.getEthereumGasPrices();
+        } else if (network === 'arbitrum') {
+          if (results.ethereum) {
+            await new Promise(resolve => setTimeout(resolve, 1000));
+          }
+          results.arbitrum = await this.getArbitrumGasPrices();
+        }
+      }
+
+      // Format the detailed response
+      const formattedResponse = this.formatter.formatGasPrices(results, 'detailed');
+
+      return {
+        content: [
+          {
+            type: 'text',
+            text: formattedResponse
+          }
+        ]
+      };
+    } catch (error) {
+      return {
+        content: [
+          {
+            type: 'text',
+            text: `Error fetching detailed gas prices: ${error.message}`
           }
         ],
         isError: true

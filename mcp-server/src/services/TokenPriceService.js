@@ -54,39 +54,75 @@ export class TokenPriceService {
   }
 
   /**
-   * Handle token prices request with professional Rupert tone
+   * Handle token prices request - flexible for single or multiple tokens
    */
-  async handleGetTokenPrices() {
+  async handleGetTokenPrices(requestedTokens = []) {
     try {
-      const prices = await this.getTokenPrices();
+      const allPrices = await this.getTokenPrices();
       
-      const ethPrice = prices.ETH.price_usd;
-      const usdcPrice = prices.USDC.price_usd;
-      
-      // Show more precision for USDC to verify it's actually being fetched
-      const usdcDisplay = usdcPrice === 1.0 ? '$1.0000' : `$${usdcPrice.toFixed(4)}`;
-      
-      // Professional Rupert-like response
-      let response = `Here are the current token prices I'm seeing:\n\n`;
-      response += `**Ethereum (ETH)**: $${ethPrice.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}\n`;
-      response += `**USD Coin (USDC)**: ${usdcDisplay}\n\n`;
-      
-      // Add context about USDC
-      if (Math.abs(usdcPrice - 1.0) < 0.001) {
-        response += `USDC is trading very close to its $1.00 peg, which is exactly what we'd expect from this stablecoin.`;
-      } else if (usdcPrice > 1.002) {
-        response += `Interesting - USDC is trading slightly above its peg at ${usdcDisplay}, indicating some market premium.`;
-      } else if (usdcPrice < 0.998) {
-        response += `USDC is trading slightly below its peg at ${usdcDisplay}, which sometimes happens during market stress.`;
+      // If no specific tokens requested, return all
+      if (!requestedTokens || requestedTokens.length === 0) {
+        const ethPrice = allPrices.ETH.price_usd;
+        const usdcPrice = allPrices.USDC.price_usd;
+        
+        return {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify({
+                ETH: {
+                  price: ethPrice,
+                  symbol: 'ETH',
+                  name: 'Ethereum'
+                },
+                WETH: {
+                  price: ethPrice,
+                  symbol: 'WETH', 
+                  name: 'Wrapped Ether'
+                },
+                USDC: {
+                  price: usdcPrice,
+                  symbol: 'USDC',
+                  name: 'USD Coin'
+                }
+              }, null, 2)
+            }
+          ]
+        };
       }
+
+      // Handle specific token requests
+      const results = {};
       
-      response += `\n\nData sourced from CoinMarketCap in real-time.`;
+      for (const token of requestedTokens) {
+        const symbol = token.toUpperCase();
+        
+        if (symbol === 'ETH' || symbol === 'ETHEREUM') {
+          results.ETH = {
+            price: allPrices.ETH.price_usd,
+            symbol: 'ETH',
+            name: 'Ethereum'
+          };
+        } else if (symbol === 'WETH' || symbol === 'WRAPPED ETHER') {
+          results.WETH = {
+            price: allPrices.ETH.price_usd,
+            symbol: 'WETH',
+            name: 'Wrapped Ether'
+          };
+        } else if (symbol === 'USDC' || symbol === 'USD COIN') {
+          results.USDC = {
+            price: allPrices.USDC.price_usd,
+            symbol: 'USDC',
+            name: 'USD Coin'
+          };
+        }
+      }
 
       return {
         content: [
           {
             type: 'text',
-            text: response
+            text: JSON.stringify(results, null, 2)
           }
         ]
       };
@@ -95,7 +131,7 @@ export class TokenPriceService {
         content: [
           {
             type: 'text',
-            text: `I'm having trouble fetching the latest token prices right now. ${error.message}\n\nThis could be due to API rate limits or connectivity issues. Please try again in a moment.`
+            text: `Error fetching token prices: ${error.message}`
           }
         ],
         isError: true

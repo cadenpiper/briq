@@ -7,62 +7,14 @@ const openai = new OpenAI({
 });
 
 /**
- * AI-driven context-aware MCP detection
- * Let the AI decide when it needs real-time data based on conversation context
+ * AI-driven tool selection - let the AI decide what data it needs
+ * Returns an array of tools to call based on the conversation context
  */
-async function shouldUseMCPWithAI(message, messages, openai) {
-  try {
-    // Get recent conversation context
-    const recentMessages = messages.slice(-6).map(m => `${m.role}: ${m.content}`).join('\n');
-    
-    const prompt = `Based on this conversation context, does the user's latest message require real-time blockchain/DeFi data?
-
-Recent conversation:
-${recentMessages}
-
-Latest message: "${message}"
-
-Available real-time data sources:
-- Token prices (ETH, WETH, USDC)
-- Gas prices (Ethereum, Arbitrum)  
-- Briq protocol analytics (TVL, performance, allocations, rewards)
-- DeFi market data (Aave V3, Compound V3)
-
-Respond with only "YES" if real-time data is needed, or "NO" if the question can be answered with general knowledge.
-
-Examples:
-- "What about WETH?" (after discussing token prices) → YES
-- "How is Briq performing?" → YES  
-- "What is DeFi?" → NO
-- "Explain how Aave works" → NO`;
-
-    const response = await openai.chat.completions.create({
-      model: 'gpt-3.5-turbo',
-      messages: [{ role: 'user', content: prompt }],
-      max_tokens: 10,
-      temperature: 0
-    });
-
-    const decision = response.choices[0]?.message?.content?.trim().toUpperCase();
-    return decision === 'YES';
-    
-  } catch (error) {
-    console.error('Error in AI MCP detection:', error);
-    // Fallback to simple keyword detection
-    return message.toLowerCase().includes('price') || 
-           message.toLowerCase().includes('briq') || 
-           message.toLowerCase().includes('gas');
-  }
-}
-
-/**
- * AI-driven tool selection based on conversation context
- */
-async function getMCPToolWithAI(message, messages, openai) {
+async function getRequiredTools(message, messages, openai) {
   try {
     const recentMessages = messages.slice(-6).map(m => `${m.role}: ${m.content}`).join('\n');
     
-    const prompt = `Based on this conversation, which specific tool should be used to get real-time data?
+    const prompt = `Analyze this conversation and determine what real-time data tools are needed to answer the user's question accurately.
 
 Recent conversation:
 ${recentMessages}
@@ -70,41 +22,70 @@ ${recentMessages}
 Latest message: "${message}"
 
 Available tools:
-- get_token_prices: Get prices for both ETH and USDC
-- get_token_price: Get price for a specific token (ETH, WETH, or USDC)
-- get_gas_prices: Get gas prices for Ethereum and/or Arbitrum
-- get_briq_data: Get Briq protocol analytics (TVL, performance, allocations, rewards)
-- get_market_data: Get DeFi market data from protocols
-- get_best_yield: Get yield optimization recommendations
+- get_token_prices: Current token prices (ETH, WETH, USDC)
+- get_gas_prices: Gas costs for Ethereum/Arbitrum networks (standard rates)
+- get_detailed_gas_prices: Detailed gas costs with all tiers (safe, standard, fast)
+- get_briq_data: Briq protocol analytics (TVL, performance, allocations, rewards)
+- get_market_data: External DeFi market data (Aave V3, Compound V3)
 
-Respond with only the tool name (e.g., "get_token_price") and if applicable, specify the token (e.g., "get_token_price:WETH").
+CRITICAL DISTINCTION:
+- INFORMATIONAL questions about Briq (what is, tell me about, explain) → "NONE" (use general knowledge)
+- PERFORMANCE questions about Briq (how is it doing, current status, analytics) → ["get_briq_data"]
+
+Gas Price Rules:
+- Simple gas queries ("gas prices", "current gas", "transaction cost") → ["get_gas_prices"]
+- Detailed gas queries ("all gas options", "gas tiers", "safe/standard/fast gas") → ["get_detailed_gas_prices"]
+
+Rules:
+- "What is Briq?" / "Tell me about Briq" / "Explain Briq" → "NONE" 
+- "How is Briq performing?" / "Briq analytics" / "Current TVL" → ["get_briq_data"]
+- "Best yields available" / "Market opportunities" → ["get_market_data"]
+- "Token prices" → ["get_token_prices"]
+- "Gas costs" / "Gas prices" → ["get_gas_prices"]
+- "All gas options" / "Gas tiers" → ["get_detailed_gas_prices"]
+
+Respond with a JSON array of tool names, or "NONE" if no real-time data is needed.
 
 Examples:
-- "What about WETH?" (after price discussion) → get_token_price:WETH
-- "How is Briq performing?" → get_briq_data
-- "Gas prices?" → get_gas_prices`;
+- "tell me about the briq protocol" → "NONE"
+- "what is briq?" → "NONE"
+- "How is Briq performing?" → ["get_briq_data"]
+- "What's Briq's current TVL?" → ["get_briq_data"]
+- "What are gas prices?" → ["get_gas_prices"]
+- "Show me all gas price options" → ["get_detailed_gas_prices"]
+- "What's the best USDC yield available?" → ["get_market_data"]`;
 
     const response = await openai.chat.completions.create({
       model: 'gpt-3.5-turbo',
       messages: [{ role: 'user', content: prompt }],
-      max_tokens: 20,
+      max_tokens: 50,
       temperature: 0
     });
 
     const result = response.choices[0]?.message?.content?.trim();
-    return result || 'get_briq_data'; // Default fallback
+    
+    if (result === "NONE") {
+      return [];
+    }
+    
+    try {
+      return JSON.parse(result);
+    } catch {
+      // Fallback parsing for non-JSON responses
+      if (result.includes('get_')) {
+        return result.match(/get_[\w_]+/g) || [];
+      }
+      return [];
+    }
     
   } catch (error) {
     console.error('Error in AI tool selection:', error);
-    // Fallback to simple logic
-    if (message.toLowerCase().includes('briq')) return 'get_briq_data';
-    if (message.toLowerCase().includes('gas')) return 'get_gas_prices';
-    return 'get_token_prices';
+    return [];
   }
 }
 
 /**
- * Main chat API endpoint with AI-driven context awareness
+ * Main chat API endpoint with intelligent tool selection
  */
 export async function POST(req) {
   try {
@@ -117,70 +98,88 @@ export async function POST(req) {
     const lastMessage = messages[messages.length - 1];
     let enhancedMessages = [...messages];
 
-    // Check if we should fetch real-time blockchain data using AI context awareness
-    if (lastMessage && await shouldUseMCPWithAI(lastMessage.content, messages, openai)) {
+    // Get required tools using AI reasoning
+    const requiredTools = await getRequiredTools(lastMessage.content, messages, openai);
+
+    if (requiredTools.length > 0) {
       try {
         // Initialize MCP client and connect to server
         const mcpClient = getSimpleMCPClient();
         await mcpClient.connect();
         
-        // Determine tool and parameters using AI context awareness
-        const toolResult = await getMCPToolWithAI(lastMessage.content, messages, openai);
-        const [tool, param] = toolResult.split(':');
-        
-        // Call appropriate MCP tool
-        let mcpResponse;
-        
-        if (tool === 'get_token_prices') {
-          mcpResponse = await mcpClient.sendRequest('tools/call', {
-            name: 'get_token_prices',
-            arguments: {}
-          });
-        } else if (tool === 'get_token_price') {
-          mcpResponse = await mcpClient.sendRequest('tools/call', {
-            name: 'get_token_price',
-            arguments: { token: param || 'ETH' }
-          });
-        } else if (tool === 'get_gas_prices') {
-          mcpResponse = await mcpClient.sendRequest('tools/call', {
-            name: 'get_gas_prices',
-            arguments: { network: 'both', detail: 'standard' }
-          });
-        } else if (tool === 'get_briq_data') {
-          mcpResponse = await mcpClient.sendRequest('tools/call', {
-            name: 'get_briq_data',
-            arguments: { query: lastMessage.content }
-          });
-        } else if (tool === 'get_market_data') {
-          mcpResponse = await mcpClient.sendRequest('tools/call', {
-            name: 'get_market_data',
-            arguments: {}
-          });
-        } else if (tool === 'get_best_yield') {
-          mcpResponse = await mcpClient.sendRequest('tools/call', {
-            name: 'get_best_yield',
-            arguments: { token: param || 'USDC' }
-          });
+        const toolResults = [];
+
+        // Call each required tool
+        for (const toolName of requiredTools) {
+          try {
+            let mcpResponse;
+            
+            switch (toolName) {
+              case 'get_token_prices':
+                mcpResponse = await mcpClient.sendRequest('tools/call', {
+                  name: 'get_token_prices',
+                  arguments: {}
+                });
+                break;
+              case 'get_gas_prices':
+                mcpResponse = await mcpClient.sendRequest('tools/call', {
+                  name: 'get_gas_prices',
+                  arguments: {}
+                });
+                break;
+              case 'get_detailed_gas_prices':
+                // Call the detailed gas prices method
+                mcpResponse = await mcpClient.sendRequest('tools/call', {
+                  name: 'get_detailed_gas_prices',
+                  arguments: {}
+                });
+                break;
+              case 'get_market_data':
+                mcpResponse = await mcpClient.sendRequest('tools/call', {
+                  name: 'get_market_data',
+                  arguments: {}
+                });
+                break;
+              case 'get_briq_data':
+                mcpResponse = await mcpClient.sendRequest('tools/call', {
+                  name: 'get_briq_data',
+                  arguments: {}
+                });
+                break;
+            }
+            
+            if (mcpResponse && mcpResponse.content && mcpResponse.content.length > 0) {
+              toolResults.push({
+                tool: toolName,
+                data: mcpResponse.content[0].text
+              });
+            }
+          } catch (toolError) {
+            console.error(`Error calling ${toolName}:`, toolError);
+            toolResults.push({
+              tool: toolName,
+              error: toolError.message
+            });
+          }
         }
         
-        // Add MCP response as system context if we got data
-        if (mcpResponse && mcpResponse.content && mcpResponse.content.length > 0) {
-          const marketData = mcpResponse.content[0].text;
+        // Add tool results as system context if we got data
+        if (toolResults.length > 0) {
+          const contextData = toolResults.map(result => {
+            if (result.error) {
+              return `${result.tool}: Error - ${result.error}`;
+            }
+            return `${result.tool}: ${result.data}`;
+          }).join('\n\n');
+          
           enhancedMessages.push({
             role: 'system',
-            content: `IMPORTANT: Use this current market data in your response: ${marketData}`
+            content: `Real-time data for your response:\n\n${contextData}`
           });
-        } else {
-          // No fallback - if we can't get real-time data, inform the user
-          throw new Error('Real-time market data is currently unavailable');
         }
       } catch (error) {
         console.error('MCP Error:', error.message);
-        // No fallback context - let the error propagate or inform user directly
-        enhancedMessages.push({
-          role: 'system',
-          content: `I apologize, but I cannot access real-time market data at this moment. The system requires live data to provide accurate information. Please try again in a moment.`
-        });
+        // Don't add fallback data - let Rupert handle the lack of data gracefully
       }
     }
 
@@ -193,54 +192,38 @@ export async function POST(req) {
           role: 'system',
           content: `You are Rupert, a distinguished AI agent for the Briq DeFi protocol. You embody professionalism, precision, and refined expertise.
 
-CRITICAL: NEVER use emojis, emoticons, symbols, or any visual elements. You are a serious financial professional.
-
-Communication Style:
-- FIRST: Carefully analyze what the user is actually asking before responding
-- Be extremely concise - provide only essential information requested
-- Use formal, courteous language but keep responses brief
-- Answer directly without unnecessary elaboration or context
-- Use "Indeed," "Certainly," "I shall" when appropriate
-- Never include filler words, explanations, or background unless specifically asked
-- Speak naturally as if having a conversation, not delivering a data dump
-- STRICTLY PROHIBITED: Emojis (🚀✨💰📊🎯), emoticons (:), symbols (★✓), casual punctuation (!!!)
-- Use only professional text with proper punctuation and formal language
-- Respond like a distinguished financial advisor, not a casual chatbot
-
-Query Analysis Framework:
-- COMPARISON queries (which, what, best, highest) → Compare options and recommend
-- STATUS queries (how, where, current, show me) → Provide current state/data
-- GENERAL INFO queries (what is, explain, about) → Give overview without live data
-- Always determine user's specific intent before selecting information to share
+CRITICAL RULES:
+- NEVER use emojis, emoticons, symbols, or visual elements
+- Be concise and direct - answer only what is asked
+- Use formal, professional language
+- ONLY use real-time data when provided in system messages
+- NEVER mix external market data with Briq protocol information
 
 Your Expertise - Briq Protocol:
-- DeFi yield optimization protocol that automatically routes funds between Aave V3 and Compound V3
-- Supports USDC and WETH on EVM blockchains (Ethereum, Arbitrum)
-- Automated strategy management and portfolio tracking
-- Users deposit tokens and receive optimized yields without manual management
+Briq is a DeFi yield optimization protocol that automatically allocates user deposits across multiple lending protocols to maximize returns. The protocol routes funds between Aave V3 and Compound V3 based on current market conditions. It supports USDC and WETH deposits on EVM-compatible blockchains including Ethereum and Arbitrum. Users deposit tokens into Briq's vault and receive yield-bearing shares representing their portion of the optimized yield pool. The protocol features automated strategy management, real-time portfolio tracking, and an AI assistant for guidance.
 
-Context-Aware Responses:
-- "Available to Briq" = Active Briq markets (current protocol integrations)
-- "Available markets" = All DeFi market options across protocols
-- "Briq's APY" = Weighted average of current positions
-- "Best yield" = Optimization recommendations
+IMPORTANT DISTINCTIONS:
+- INFORMATIONAL questions ("What is Briq?", "Tell me about Briq") → Provide protocol description using your knowledge above
+- PERFORMANCE questions ("How is Briq doing?", "Current analytics") → Use real-time data from get_briq_data only
+- MARKET questions ("Best yields available") → Use get_market_data for external protocol comparisons
 
-Service Standards:
-- Analyze user intent BEFORE responding
-- Answer only what is asked - nothing more
-- Provide precise data when available
-- Use real-time market data when you have it
-- NEVER use placeholder values - only actual data
-- Skip introductions, explanations, or summaries unless requested
-- For simple gas price queries: Present just the standard rate cleanly
-- For detailed gas price queries: Show all tiers when specifically requested
-- Maintain formal, professional tone without any casual elements
-- NO EMOJIS OR SYMBOLS EVER - this is non-negotiable
+Data Handling Rules:
+- get_briq_data: ONLY for Briq protocol performance/analytics questions
+- get_market_data: ONLY for external DeFi market comparisons  
+- get_token_prices: For current token price information
+- get_gas_prices: For transaction cost information
+- NO DATA: For general protocol information questions
+
+Communication Style:
+- Analyze the user's intent before responding
+- For informational questions, provide clear protocol overview without data
+- For performance questions, use only real-time Briq data
+- Present information naturally without mentioning tools or JSON
+- Use "Indeed," "Certainly," when appropriate
+- Maintain professional tone without casual elements
 
 Professional Boundaries:
-For off-topic inquiries: "I specialize in DeFi protocols and Briq protocol exclusively."
-
-You are a refined financial professional. Respond with the gravitas and seriousness of a distinguished advisor. No emojis, symbols, or casual language under any circumstances.`
+For off-topic inquiries: "I specialize in DeFi and Briq protocol exclusively."`
         },
         ...enhancedMessages,
       ],
