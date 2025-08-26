@@ -7,170 +7,104 @@ const openai = new OpenAI({
 });
 
 /**
- * Determines if a user query requires real-time blockchain data via MCP
- * @param {string} message - User message to analyze
- * @returns {boolean} - Whether MCP should be used
+ * AI-driven context-aware MCP detection
+ * Let the AI decide when it needs real-time data based on conversation context
  */
-function shouldUseMCP(message) {
-  const messageText = message.toLowerCase();
-  
-  // Only use specific phrases that clearly indicate need for real-time data
-  const realTimeDataPhrases = [
-    'current price of', 'price of eth', 'price of weth', 'price of usdc',
-    'current price for', 'price for eth', 'price for weth', 'price for usdc',
-    'what is the current price', 'current token price', 'token price',
-    'gas price', 'gas prices', 'gas cost', 'gas fees', 'transaction cost',
-    'cost to send', 'how much does it cost', 'current token prices', 'token prices',
-    'eth price', 'weth price', 'usdc price', 'briq tvl', 'briq analytics',
-    'briq rewards', 'briq allocations', 'briq performance', 'briq distribution',
-    'briq portfolio', 'briq apy', 'briq yield', 'accrued briq rewards',
-    'currently accrued', 'current briq rewards', 'strategy rewards',
-    'market allocations', 'total value locked', 'current tvl',
-    'aave rewards', 'compound rewards', 'show me briq', 'current gas price',
-    'what is the current', 'how much is', 'current market data',
-    'how is briq', 'briq status', 'briq data', 'briq info'
-  ];
-  
-  return realTimeDataPhrases.some(phrase => messageText.includes(phrase));
+async function shouldUseMCPWithAI(message, messages, openai) {
+  try {
+    // Get recent conversation context
+    const recentMessages = messages.slice(-6).map(m => `${m.role}: ${m.content}`).join('\n');
+    
+    const prompt = `Based on this conversation context, does the user's latest message require real-time blockchain/DeFi data?
+
+Recent conversation:
+${recentMessages}
+
+Latest message: "${message}"
+
+Available real-time data sources:
+- Token prices (ETH, WETH, USDC)
+- Gas prices (Ethereum, Arbitrum)  
+- Briq protocol analytics (TVL, performance, allocations, rewards)
+- DeFi market data (Aave V3, Compound V3)
+
+Respond with only "YES" if real-time data is needed, or "NO" if the question can be answered with general knowledge.
+
+Examples:
+- "What about WETH?" (after discussing token prices) → YES
+- "How is Briq performing?" → YES  
+- "What is DeFi?" → NO
+- "Explain how Aave works" → NO`;
+
+    const response = await openai.chat.completions.create({
+      model: 'gpt-3.5-turbo',
+      messages: [{ role: 'user', content: prompt }],
+      max_tokens: 10,
+      temperature: 0
+    });
+
+    const decision = response.choices[0]?.message?.content?.trim().toUpperCase();
+    return decision === 'YES';
+    
+  } catch (error) {
+    console.error('Error in AI MCP detection:', error);
+    // Fallback to simple keyword detection
+    return message.toLowerCase().includes('price') || 
+           message.toLowerCase().includes('briq') || 
+           message.toLowerCase().includes('gas');
+  }
 }
 
 /**
- * Enhanced query comprehension - determines which MCP tool to use based on user intent
- * @param {string} message - User message to analyze
- * @returns {string|null} - MCP tool name or null if no tool needed
+ * AI-driven tool selection based on conversation context
  */
-function getMCPTool(message) {
-  const messageText = message.toLowerCase();
-  
-  // === INTENT ANALYSIS ===
-  const isComparison = messageText.includes('which') || messageText.includes('what') || 
-                      messageText.includes('best') || messageText.includes('highest') || 
-                      messageText.includes('compare') || messageText.includes('better');
-  
-  const isStatusCheck = messageText.includes('how') || messageText.includes('where') || 
-                       messageText.includes('current') || messageText.includes('show me') || 
-                       messageText.includes('tell me');
-  
-  const isGeneralInfo = (messageText.includes('what is') || messageText.includes('explain') || 
-                        messageText.includes('about')) && !messageText.includes('current') && 
-                        !messageText.includes('data');
-  
-  // === BRIQ PROTOCOL QUERIES ===
-  if (messageText.includes('briq')) {
-    // General info queries - let AI handle with general knowledge
-    if (isGeneralInfo) {
-      const generalPatterns = [
-        'tell me about briq', 'what is briq', 'how does briq work', 'explain briq protocol',
-        'briq overview', 'about briq protocol', 'what does briq do'
-      ];
-      if (generalPatterns.some(pattern => messageText.includes(pattern))) {
-        return null; // Let AI handle with general knowledge
-      }
-    }
+async function getMCPToolWithAI(message, messages, openai) {
+  try {
+    const recentMessages = messages.slice(-6).map(m => `${m.role}: ${m.content}`).join('\n');
     
-    // All other Briq queries use our unified tool
-    return 'get_briq_data';
-  }
-  
-  // === MARKET DATA QUERIES ===
-  if (isComparison || messageText.includes('market')) {
-    const marketDataPatterns = [
-      'market data', 'defi markets', 'aave data', 'compound data',
-      'protocol data', 'lending markets', 'yield markets', 'available markets'
-    ];
-    if (marketDataPatterns.some(pattern => messageText.includes(pattern))) {
-      return 'get_market_data';
-    }
-  }
-  
-  // === BLOCKCHAIN DATA QUERIES ===
-  
-  // Token Prices
-  const pricePatterns = [
-    'eth price', 'usdc price', 'weth price', 'token prices', 'current price of',
-    'price of eth', 'price of usdc', 'price of weth', 'how much is eth', 'how much is usdc',
-    'current price for', 'price for eth', 'price for usdc', 'price for weth',
-    'what is the current price', 'current token price', 'token price'
-  ];
-  if (pricePatterns.some(pattern => messageText.includes(pattern))) {
+    const prompt = `Based on this conversation, which specific tool should be used to get real-time data?
+
+Recent conversation:
+${recentMessages}
+
+Latest message: "${message}"
+
+Available tools:
+- get_token_prices: Get prices for both ETH and USDC
+- get_token_price: Get price for a specific token (ETH, WETH, or USDC)
+- get_gas_prices: Get gas prices for Ethereum and/or Arbitrum
+- get_briq_data: Get Briq protocol analytics (TVL, performance, allocations, rewards)
+- get_market_data: Get DeFi market data from protocols
+- get_best_yield: Get yield optimization recommendations
+
+Respond with only the tool name (e.g., "get_token_price") and if applicable, specify the token (e.g., "get_token_price:WETH").
+
+Examples:
+- "What about WETH?" (after price discussion) → get_token_price:WETH
+- "How is Briq performing?" → get_briq_data
+- "Gas prices?" → get_gas_prices`;
+
+    const response = await openai.chat.completions.create({
+      model: 'gpt-3.5-turbo',
+      messages: [{ role: 'user', content: prompt }],
+      max_tokens: 20,
+      temperature: 0
+    });
+
+    const result = response.choices[0]?.message?.content?.trim();
+    return result || 'get_briq_data'; // Default fallback
+    
+  } catch (error) {
+    console.error('Error in AI tool selection:', error);
+    // Fallback to simple logic
+    if (message.toLowerCase().includes('briq')) return 'get_briq_data';
+    if (message.toLowerCase().includes('gas')) return 'get_gas_prices';
     return 'get_token_prices';
   }
-  
-  // Gas Prices
-  const gasPatterns = [
-    'gas price', 'gas cost', 'gas fees', 'transaction cost',
-    'cost to send', 'ethereum gas', 'arbitrum gas', 'how much gas'
-  ];
-  if (gasPatterns.some(pattern => messageText.includes(pattern))) {
-    return 'get_gas_prices';
-  }
-  
-  return null; // No MCP tool needed
 }
 
 /**
- * Extracts parameters for MCP tools based on user query context
- * @param {string} message - User message to analyze
- * @returns {Object} - Parameters object for MCP tool
- */
-function extractMCPParams(message) {
-  const messageText = message.toLowerCase();
-  const params = {};
-  
-  // For gas price queries, determine which networks to query and detail level
-  if (messageText.includes('gas')) {
-    if (messageText.includes('ethereum') && !messageText.includes('arbitrum')) {
-      params.network = 'ethereum';
-    } else if (messageText.includes('arbitrum') && !messageText.includes('ethereum')) {
-      params.network = 'arbitrum';
-    } else {
-      params.network = 'both'; // Default to both networks
-    }
-    
-    // Determine detail level based on query specificity
-    const isSimpleQuery = (
-      messageText.includes('what is the gas price') ||
-      messageText.includes('whats the gas price') ||
-      messageText.includes('what\'s the gas price') ||
-      messageText.includes('gas price on') ||
-      messageText.includes('current gas price') ||
-      (messageText.includes('gas price') && !messageText.includes('fast') && !messageText.includes('safe') && !messageText.includes('slow'))
-    );
-    
-    const isDetailedQuery = (
-      messageText.includes('fast') || messageText.includes('safe') || messageText.includes('slow') ||
-      messageText.includes('all gas prices') || messageText.includes('gas price breakdown') ||
-      messageText.includes('different gas prices') || messageText.includes('gas price options')
-    );
-    
-    if (isSimpleQuery && !isDetailedQuery) {
-      params.detail = 'simple';
-    } else if (isDetailedQuery) {
-      params.detail = 'detailed';
-    } else {
-      params.detail = 'standard';
-    }
-  }
-  
-  // For best yield queries, determine token preference
-  if (messageText.includes('best') && messageText.includes('yield')) {
-    if (messageText.includes('usdc')) {
-      params.token = 'USDC';
-    } else if (messageText.includes('weth') || messageText.includes('eth')) {
-      params.token = 'WETH';
-    }
-  }
-  
-  // For Briq data queries, pass the full query for natural language processing
-  if (messageText.includes('briq')) {
-    params.query = message; // Pass the full original message
-  }
-  
-  return params;
-}
-
-/**
- * Main chat API endpoint with enhanced MCP integration
+ * Main chat API endpoint with AI-driven context awareness
  */
 export async function POST(req) {
   try {
@@ -183,16 +117,16 @@ export async function POST(req) {
     const lastMessage = messages[messages.length - 1];
     let enhancedMessages = [...messages];
 
-    // Check if we should fetch real-time blockchain data
-    if (lastMessage && shouldUseMCP(lastMessage.content)) {
+    // Check if we should fetch real-time blockchain data using AI context awareness
+    if (lastMessage && await shouldUseMCPWithAI(lastMessage.content, messages, openai)) {
       try {
         // Initialize MCP client and connect to server
         const mcpClient = getSimpleMCPClient();
         await mcpClient.connect();
         
-        // Determine tool and parameters based on user query
-        const tool = getMCPTool(lastMessage.content);
-        const params = extractMCPParams(lastMessage.content);
+        // Determine tool and parameters using AI context awareness
+        const toolResult = await getMCPToolWithAI(lastMessage.content, messages, openai);
+        const [tool, param] = toolResult.split(':');
         
         // Call appropriate MCP tool
         let mcpResponse;
@@ -202,41 +136,20 @@ export async function POST(req) {
             name: 'get_token_prices',
             arguments: {}
           });
+        } else if (tool === 'get_token_price') {
+          mcpResponse = await mcpClient.sendRequest('tools/call', {
+            name: 'get_token_price',
+            arguments: { token: param || 'ETH' }
+          });
         } else if (tool === 'get_gas_prices') {
-          const network = params.network || 'both';
-          const detail = params.detail || 'standard';
           mcpResponse = await mcpClient.sendRequest('tools/call', {
             name: 'get_gas_prices',
-            arguments: { network: network.toLowerCase(), detail }
+            arguments: { network: 'both', detail: 'standard' }
           });
-        } else if (tool === 'get_briq_tvl') {
+        } else if (tool === 'get_briq_data') {
           mcpResponse = await mcpClient.sendRequest('tools/call', {
-            name: 'get_briq_tvl',
-            arguments: {}
-          });
-        } else if (tool === 'get_briq_analytics') {
-          mcpResponse = await mcpClient.sendRequest('tools/call', {
-            name: 'get_briq_analytics',
-            arguments: {}
-          });
-        } else if (tool === 'get_market_allocations') {
-          mcpResponse = await mcpClient.sendRequest('tools/call', {
-            name: 'get_market_allocations',
-            arguments: {}
-          });
-        } else if (tool === 'get_strategy_rewards') {
-          // Determine which strategy based on message content
-          const messageText = lastMessage.content.toLowerCase();
-          let strategy = 'both';
-          if (messageText.includes('aave') && !messageText.includes('compound')) {
-            strategy = 'aave';
-          } else if (messageText.includes('compound') && !messageText.includes('aave')) {
-            strategy = 'compound';
-          }
-          
-          mcpResponse = await mcpClient.sendRequest('tools/call', {
-            name: 'get_strategy_rewards',
-            arguments: { strategy }
+            name: 'get_briq_data',
+            arguments: { query: lastMessage.content }
           });
         } else if (tool === 'get_market_data') {
           mcpResponse = await mcpClient.sendRequest('tools/call', {
@@ -244,15 +157,9 @@ export async function POST(req) {
             arguments: {}
           });
         } else if (tool === 'get_best_yield') {
-          const token = params.token || 'USDC';
           mcpResponse = await mcpClient.sendRequest('tools/call', {
             name: 'get_best_yield',
-            arguments: { token }
-          });
-        } else if (tool === 'get_briq_data') {
-          mcpResponse = await mcpClient.sendRequest('tools/call', {
-            name: 'get_briq_data',
-            arguments: { query: lastMessage.content }
+            arguments: { token: param || 'USDC' }
           });
         }
         

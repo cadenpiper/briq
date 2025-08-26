@@ -7,7 +7,6 @@ import {
   CallToolRequestSchema,
   ListToolsRequestSchema,
 } from '@modelcontextprotocol/sdk/types.js';
-import { request, gql } from 'graphql-request';
 import path from 'path';
 
 // Import services
@@ -146,45 +145,6 @@ class RupertMCPServer {
                 }
               }
             }
-          },
-          {
-            name: 'get_briq_tvl',
-            description: 'Get current Briq protocol Total Value Locked (TVL) from deployed contracts',
-            inputSchema: {
-              type: 'object',
-              properties: {}
-            }
-          },
-          {
-            name: 'get_briq_analytics',
-            description: 'Get comprehensive Briq protocol analytics including TVL, APY, allocations, and rewards',
-            inputSchema: {
-              type: 'object',
-              properties: {}
-            }
-          },
-          {
-            name: 'get_market_allocations',
-            description: 'Get current token allocations across strategies (USDC/WETH distribution)',
-            inputSchema: {
-              type: 'object',
-              properties: {}
-            }
-          },
-          {
-            name: 'get_strategy_rewards',
-            description: 'Get detailed rewards breakdown from Aave and Compound strategies',
-            inputSchema: {
-              type: 'object',
-              properties: {
-                strategy: {
-                  type: 'string',
-                  description: 'Specific strategy to query (optional)',
-                  enum: ['aave', 'compound', 'both'],
-                  default: 'both'
-                }
-              }
-            }
           }
         ]
       };
@@ -216,18 +176,6 @@ class RupertMCPServer {
           
           case 'get_briq_data':
             return await this.briqAnalyticsService.handleBriqQuery(args?.query || '');
-          
-          case 'get_briq_tvl':
-            return await this.briqAnalyticsService.handleGetBriqTVL();
-          
-          case 'get_briq_analytics':
-            return await this.briqAnalyticsService.handleGetBriqAnalytics();
-          
-          case 'get_market_allocations':
-            return await this.briqAnalyticsService.handleGetMarketAllocations();
-          
-          case 'get_strategy_rewards':
-            return await this.briqAnalyticsService.handleGetStrategyRewards(args?.strategy || 'both');
           
           default:
             throw new Error(`Unknown tool: ${name}`);
