@@ -27,7 +27,8 @@ function shouldUseMCP(message) {
     'currently accrued', 'current briq rewards', 'strategy rewards',
     'market allocations', 'total value locked', 'current tvl',
     'aave rewards', 'compound rewards', 'show me briq', 'current gas price',
-    'what is the current', 'how much is', 'current market data'
+    'what is the current', 'how much is', 'current market data',
+    'how is briq', 'briq status', 'briq data', 'briq info'
   ];
   
   return realTimeDataPhrases.some(phrase => messageText.includes(phrase));
@@ -55,80 +56,20 @@ function getMCPTool(message) {
                         !messageText.includes('data');
   
   // === BRIQ PROTOCOL QUERIES ===
-  if (isGeneralInfo && messageText.includes('briq')) {
-    const generalPatterns = [
-      'tell me about briq', 'what is briq', 'how does briq work', 'explain briq protocol',
-      'briq overview', 'about briq protocol', 'what does briq do'
-    ];
-    if (generalPatterns.some(pattern => messageText.includes(pattern))) {
-      return null; // Let AI handle with general knowledge
-    }
-  }
-  
-  // APY Questions - Context-Specific Analysis
-  if (messageText.includes('apy') || messageText.includes('yield')) {
-    if (isComparison && messageText.includes('briq') && 
-        (messageText.includes('available to') || messageText.includes('for briq'))) {
-      return 'get_market_data'; // Show active Briq markets (Aave V3, Compound V3)
-    }
-    else if (isComparison && (messageText.includes('markets') || messageText.includes('protocols')) && 
-             !messageText.includes('briq')) {
-      return 'get_market_data'; // Show all market options
-    }
-    else if (isStatusCheck && messageText.includes('briq') && 
-             (messageText.includes('current') || messageText.includes('average'))) {
-      return 'get_briq_analytics';
-    }
-    else if (isComparison && (messageText.includes('best') || messageText.includes('optimal'))) {
-      return 'get_best_yield';
-    }
-  }
-  
-  // Current Allocations/Distribution - Status Check Intent
-  if (isStatusCheck && messageText.includes('briq')) {
-    const allocationPatterns = [
-      'where is briq allocated', 'how is briq distributed', 'briq current portfolio',
-      'show me briq allocations', 'briq distribution', 'where is briq invested',
-      'briq allocation breakdown', 'how is briq split', 'briq portfolio breakdown'
-    ];
-    if (allocationPatterns.some(pattern => messageText.includes(pattern))) {
-      return 'get_market_allocations';
-    }
-  }
-  
-  // Performance Analytics - Comprehensive Status Check
-  if (isStatusCheck && messageText.includes('briq')) {
-    const analyticsPatterns = [
-      'show me briq analytics', 'briq performance overview', 'how is briq performing',
-      'briq analytics dashboard', 'briq performance data', 'briq metrics',
-      'briq comprehensive data', 'briq full analytics'
-    ];
-    if (analyticsPatterns.some(pattern => messageText.includes(pattern))) {
-      return 'get_briq_analytics';
-    }
-  }
-  
-  // TVL Specific - Direct Value Query
   if (messageText.includes('briq')) {
-    const tvlPatterns = [
-      'briq tvl', 'briq total value locked', 'how much is in briq',
-      'briq total value', 'briq assets under management', 'briq aum'
-    ];
-    if (tvlPatterns.some(pattern => messageText.includes(pattern))) {
-      return 'get_briq_tvl';
+    // General info queries - let AI handle with general knowledge
+    if (isGeneralInfo) {
+      const generalPatterns = [
+        'tell me about briq', 'what is briq', 'how does briq work', 'explain briq protocol',
+        'briq overview', 'about briq protocol', 'what does briq do'
+      ];
+      if (generalPatterns.some(pattern => messageText.includes(pattern))) {
+        return null; // Let AI handle with general knowledge
+      }
     }
-  }
-  
-  // === REWARDS QUERIES ===
-  if (isStatusCheck || messageText.includes('rewards') || messageText.includes('accrued')) {
-    const rewardsPatterns = [
-      'briq rewards', 'accrued rewards', 'current rewards', 'earned rewards',
-      'tell me the currently accrued briq rewards', 'strategy rewards',
-      'aave rewards', 'compound rewards', 'protocol rewards', 'currently accrued'
-    ];
-    if (rewardsPatterns.some(pattern => messageText.includes(pattern))) {
-      return 'get_strategy_rewards';
-    }
+    
+    // All other Briq queries use our unified tool
+    return 'get_briq_data';
   }
   
   // === MARKET DATA QUERIES ===
@@ -220,6 +161,11 @@ function extractMCPParams(message) {
     }
   }
   
+  // For Briq data queries, pass the full query for natural language processing
+  if (messageText.includes('briq')) {
+    params.query = message; // Pass the full original message
+  }
+  
   return params;
 }
 
@@ -302,6 +248,11 @@ export async function POST(req) {
           mcpResponse = await mcpClient.sendRequest('tools/call', {
             name: 'get_best_yield',
             arguments: { token }
+          });
+        } else if (tool === 'get_briq_data') {
+          mcpResponse = await mcpClient.sendRequest('tools/call', {
+            name: 'get_briq_data',
+            arguments: { query: lastMessage.content }
           });
         }
         

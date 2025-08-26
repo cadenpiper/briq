@@ -213,7 +213,7 @@ Make sure contracts are deployed and accessible.`
   async handleGetStrategyRewards(strategy) {
     try {
       const data = await this.getStrategyRewards(strategy);
-      return this.formatter.formatStrategyRewards(data, strategy);
+      return this.formatter.formatRewards(data, strategy);
     } catch (error) {
       return {
         content: [
@@ -225,5 +225,59 @@ Make sure contracts are deployed and accessible.`
         isError: true
       };
     }
+  }
+
+  /**
+   * Handle general Briq data queries with natural language recognition
+   */
+  async handleBriqQuery(query = '') {
+    const queryLower = query.toLowerCase();
+    
+    // TVL related queries
+    if (queryLower.includes('tvl') || queryLower.includes('total value') || queryLower.includes('locked') || 
+        queryLower.includes('how much') || queryLower.includes('value')) {
+      return await this.handleGetBriqTVL();
+    }
+    
+    // Allocation related queries
+    if (queryLower.includes('allocation') || queryLower.includes('distribution') || queryLower.includes('breakdown') ||
+        queryLower.includes('portfolio') || queryLower.includes('position')) {
+      return await this.handleGetMarketAllocations();
+    }
+    
+    // Rewards related queries
+    if (queryLower.includes('reward') || queryLower.includes('earning') || queryLower.includes('yield') ||
+        queryLower.includes('profit') || queryLower.includes('return')) {
+      return await this.handleGetStrategyRewards('both');
+    }
+    
+    // Performance or analytics queries
+    if (queryLower.includes('performance') || queryLower.includes('analytics') || queryLower.includes('overview') ||
+        queryLower.includes('summary') || queryLower.includes('status') || queryLower.includes('how is') ||
+        queryLower.includes('doing')) {
+      return await this.handleGetBriqAnalytics();
+    }
+    
+    // Default to comprehensive analytics if query is unclear
+    if (query.trim() === '' || queryLower.includes('briq')) {
+      return await this.handleGetBriqAnalytics();
+    }
+    
+    // If no specific match, provide helpful guidance
+    return {
+      content: [
+        {
+          type: 'text',
+          text: `I can help you with information about the Briq protocol. Here are some things you can ask me about:
+
+**Protocol Overview**: "How is Briq performing?" or "Show me Briq analytics"
+**Total Value Locked**: "What's the TVL?" or "How much value is locked?"
+**Asset Allocation**: "Show me the portfolio breakdown" or "How are funds allocated?"
+**Strategy Rewards**: "What rewards have we earned?" or "Show me yield performance"
+
+What specific information about Briq would you like to know?`
+        }
+      ]
+    };
   }
 }

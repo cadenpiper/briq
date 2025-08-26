@@ -98,6 +98,21 @@ class RupertMCPServer {
             }
           },
           {
+            name: 'get_token_price',
+            description: 'Get current price for a specific token (ETH, WETH, USDC)',
+            inputSchema: {
+              type: 'object',
+              properties: {
+                token: {
+                  type: 'string',
+                  description: 'Token symbol to get price for',
+                  enum: ['ETH', 'WETH', 'USDC', 'ETHEREUM', 'WRAPPED ETHER', 'USD COIN']
+                }
+              },
+              required: ['token']
+            }
+          },
+          {
             name: 'get_gas_prices',
             description: 'Get current gas prices for Ethereum and/or Arbitrum with USD conversion',
             inputSchema: {
@@ -114,6 +129,20 @@ class RupertMCPServer {
                   description: 'Level of detail in response',
                   enum: ['simple', 'standard', 'detailed'],
                   default: 'standard'
+                }
+              }
+            }
+          },
+          {
+            name: 'get_briq_data',
+            description: 'Get Briq protocol analytics and performance data with natural language queries (e.g., "How is performance?", "What\'s the TVL?", "Show me rewards")',
+            inputSchema: {
+              type: 'object',
+              properties: {
+                query: {
+                  type: 'string',
+                  description: 'Natural language query about Briq protocol data (optional - defaults to overview)',
+                  default: ''
                 }
               }
             }
@@ -176,11 +205,17 @@ class RupertMCPServer {
           case 'get_token_prices':
             return await this.tokenPriceService.handleGetTokenPrices();
           
+          case 'get_token_price':
+            return await this.tokenPriceService.handleGetTokenPrice(args?.token);
+          
           case 'get_gas_prices':
             return await this.gasPriceService.handleGetGasPrices(
               args?.network || 'both', 
               args?.detail || 'standard'
             );
+          
+          case 'get_briq_data':
+            return await this.briqAnalyticsService.handleBriqQuery(args?.query || '');
           
           case 'get_briq_tvl':
             return await this.briqAnalyticsService.handleGetBriqTVL();

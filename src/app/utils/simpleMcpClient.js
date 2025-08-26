@@ -152,6 +152,19 @@ class SimpleMCPClient {
     }
   }
 
+  async getBriqData(query = '') {
+    try {
+      const result = await this.sendRequest('tools/call', {
+        name: 'get_briq_data',
+        arguments: { query }
+      });
+      return result;
+    } catch (error) {
+      console.error('Error getting Briq data:', error);
+      throw error;
+    }
+  }
+
   async disconnect() {
     if (this.serverProcess) {
       this.serverProcess.kill();
