@@ -1,151 +1,89 @@
-# Rupert MCP Server
+# Briq MCP Server
 
-A Model Context Protocol (MCP) server that provides real-time blockchain and DeFi data for the Rupert AI assistant.
-
-## Overview
-
-This MCP server enables Rupert to access current market data including:
-- **Token Prices**: Real-time ETH and USDC prices from Etherscan
-- **Gas Prices**: Current gas costs for Ethereum and Arbitrum with USD conversion
-- **DeFi Markets**: Yield rates and TVL data from Aave V3 and Compound V3 via The Graph
-
-## Features
-
-### 🔗 **Blockchain Data**
-- Real-time token prices from Etherscan API
-- Gas price tracking for Ethereum and Arbitrum networks
-- USD cost calculations for transactions
-
-### 📊 **DeFi Protocol Integration**
-- Market data from Aave V3 and Compound V3
-- Yield optimization recommendations
-- TVL and utilization metrics
-
-### 🌐 **Multi-Network Support**
-- Ethereum mainnet
-- Arbitrum One
-- Unified API endpoints via Etherscan v2
-
-## Available Tools
-
-### `get_token_prices`
-Returns current prices for supported tokens.
-
-**Response:**
-```
-Current Token Prices:
-Ethereum (ETH): $4,479.45
-USD Coin (USDC): $1.00
-```
-
-### `get_gas_prices`
-Returns current gas prices with USD conversion.
-
-**Parameters:**
-- `network`: `ethereum`, `arbitrum`, or `both` (default: `both`)
-
-**Response:**
-```
-Current Gas Prices:
-
-Ethereum:
-  Safe: 0.194 gwei ($0.018 for transfer)
-  Standard: 0.197 gwei ($0.019 for transfer)
-  Fast: 0.217 gwei ($0.020 for transfer)
-  ETH Price: $4479.45
-
-Arbitrum:
-  Safe: 0.194 gwei ($0.018 for transfer)
-  Standard: 0.197 gwei ($0.019 for transfer)
-  Fast: 0.217 gwei ($0.020 for transfer)
-  ETH Price: $4479.45
-```
-
-### `get_market_data`
-Returns DeFi protocol market information.
-
-**Parameters:**
-- `network`: Filter by network (optional)
-- `token`: Filter by token (optional)
-- `protocol`: Filter by protocol (optional)
-
-### `get_best_yield`
-Finds the highest yield opportunities for a token.
-
-**Parameters:**
-- `token`: `USDC` or `WETH` (default: `USDC`)
-
-## Configuration
-
-### Environment Variables
-Required in `.env.local`:
-```env
-ETHERSCAN_API_KEY=your_etherscan_api_key
-NEXT_PUBLIC_GRAPHQL_API_KEY=your_graph_api_key
-```
-
-### Data Sources
-- **Etherscan API**: Token prices and gas data
-- **The Graph**: DeFi protocol data via subgraphs
-- **Supported Networks**: Ethereum, Arbitrum One
-
-## Installation
-
-```bash
-cd mcp-server
-npm install
-```
-
-## Usage
-
-### Standalone Testing
-```bash
-echo '{"jsonrpc": "2.0", "id": 1, "method": "tools/call", "params": {"name": "get_gas_prices", "arguments": {"network": "both"}}}' | node index.js
-```
-
-### Integration with Rupert
-The server is automatically started by the chat API when blockchain-related queries are detected.
+Model Context Protocol server providing real-time blockchain data and DeFi analytics for the Rupert AI assistant.
 
 ## Architecture
 
 ```
-┌─────────────────┐    ┌──────────────────┐    ┌─────────────────┐
-│   Rupert Chat   │───▶│   Chat API       │───▶│   MCP Server    │
-│   Interface     │    │   (route.js)     │    │   (index.js)    │
-└─────────────────┘    └──────────────────┘    └─────────────────┘
-                                                        │
-                                                        ▼
-                                               ┌─────────────────┐
-                                               │  External APIs  │
-                                               │                 │
-                                               │ • Etherscan     │
-                                               │ • The Graph     │
-                                               └─────────────────┘
+mcp-server/
+├── index.js                       # Main MCP server
+├── src/
+│   ├── services/                  # Business logic services
+│   │   ├── GasPriceService.js        # Gas price fetching & formatting
+│   │   ├── TokenPriceService.js      # Token price data
+│   │   ├── BriqAnalyticsService.js   # Briq protocol analytics
+│   │   └── DeFiMarketService.js      # DeFi market data from The Graph
+│   ├── clients/                   # API clients
+│   │   ├── EtherscanClient.js        # Etherscan API wrapper
+│   │   ├── GraphQLClient.js          # The Graph API wrapper
+│   │   └── ViemClient.js             # Blockchain contract interactions
+│   └── formatters/                # Natural language formatters
+│       ├── GasPriceFormatter.js      # Gas price natural language
+│       ├── AnalyticsFormatter.js     # Analytics natural language
+│       └── MarketDataFormatter.js    # Market data natural language
+├── package.json
+└── README.md
 ```
 
-## Error Handling
+## Features
 
-- **API Rate Limits**: Automatic delays between requests
-- **Network Failures**: Graceful fallbacks with typical values
-- **Invalid Responses**: Error messages with context
+### Gas Prices
+- **Smart formatting**: Simple responses for basic queries, detailed for specific requests
+- **Natural language**: "The current gas price on Ethereum is 0.327 gwei, equivalent to $0.030 for a standard transfer."
+- **Multi-network**: Ethereum and Arbitrum support
+- **USD conversion**: Real-time cost calculations
 
-## Development
+### Token Prices
+- **Real-time data**: ETH and USDC prices from CoinMarketCap
+- **Clean formatting**: Professional price display
 
-### Adding New Tools
-1. Add tool definition in `setupToolHandlers()`
-2. Implement handler method
-3. Add parameter extraction logic
-4. Update documentation
+### Briq Protocol Analytics
+- **Live contract data**: Real-time TVL, allocations, and rewards
+- **Comprehensive analytics**: Portfolio breakdown and performance metrics
+- **Strategy tracking**: Aave and Compound strategy monitoring
 
-### Testing
+### DeFi Market Data
+- **The Graph integration**: Live market data from Aave V3 and Compound V3
+- **Yield optimization**: Best yield opportunity recommendations
+- **Multi-network coverage**: Ethereum and Arbitrum markets
+
+## Available Tools
+
+- `get_gas_prices` - Gas prices with smart simple/detailed formatting
+- `get_token_prices` - Real-time ETH/USDC prices
+- `get_briq_tvl` - Briq protocol Total Value Locked
+- `get_briq_analytics` - Comprehensive Briq analytics
+- `get_market_allocations` - Token distribution across strategies
+- `get_strategy_rewards` - Aave & Compound rewards breakdown
+- `get_market_data` - Live DeFi market data
+- `get_best_yield` - Intelligent yield optimization
+
+## Environment Variables
+
+```env
+# Required
+ETHERSCAN_API_KEY=your_etherscan_api_key
+COINMARKETCAP_API_KEY=your_coinmarketcap_api_key
+NEXT_PUBLIC_GRAPHQL_API_KEY=your_graph_api_key
+
+# Optional (for Briq analytics)
+# Requires Hardhat node running on localhost:8545 with deployed contracts
+```
+
+## Usage
+
 ```bash
-# Test token prices
-echo '{"jsonrpc": "2.0", "id": 1, "method": "tools/call", "params": {"name": "get_token_prices", "arguments": {}}}' | node index.js
+# Start the MCP server
+node index.js
 
-# Test gas prices
-echo '{"jsonrpc": "2.0", "id": 2, "method": "tools/call", "params": {"name": "get_gas_prices", "arguments": {"network": "ethereum"}}}' | node index.js
+# Test a tool
+echo '{"jsonrpc": "2.0", "id": 1, "method": "tools/call", "params": {"name": "get_gas_prices", "arguments": {"network": "ethereum", "detail": "simple"}}}' | node index.js
 ```
 
-## License
+## Benefits
 
-Part of the Briq DeFi platform.
+- **Clean Architecture**: Separation of concerns with focused services
+- **Natural Language**: Conversational responses throughout
+- **Maintainable**: Easy to modify or extend individual services
+- **Testable**: Services can be unit tested independently
+- **Scalable**: Simple to add new data sources or tools

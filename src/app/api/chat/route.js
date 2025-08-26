@@ -176,7 +176,7 @@ function extractMCPParams(message) {
   const messageText = message.toLowerCase();
   const params = {};
   
-  // For gas price queries, determine which networks to query
+  // For gas price queries, determine which networks to query and detail level
   if (messageText.includes('gas')) {
     if (messageText.includes('ethereum') && !messageText.includes('arbitrum')) {
       params.network = 'ethereum';
@@ -184,6 +184,30 @@ function extractMCPParams(message) {
       params.network = 'arbitrum';
     } else {
       params.network = 'both'; // Default to both networks
+    }
+    
+    // Determine detail level based on query specificity
+    const isSimpleQuery = (
+      messageText.includes('what is the gas price') ||
+      messageText.includes('whats the gas price') ||
+      messageText.includes('what\'s the gas price') ||
+      messageText.includes('gas price on') ||
+      messageText.includes('current gas price') ||
+      (messageText.includes('gas price') && !messageText.includes('fast') && !messageText.includes('safe') && !messageText.includes('slow'))
+    );
+    
+    const isDetailedQuery = (
+      messageText.includes('fast') || messageText.includes('safe') || messageText.includes('slow') ||
+      messageText.includes('all gas prices') || messageText.includes('gas price breakdown') ||
+      messageText.includes('different gas prices') || messageText.includes('gas price options')
+    );
+    
+    if (isSimpleQuery && !isDetailedQuery) {
+      params.detail = 'simple';
+    } else if (isDetailedQuery) {
+      params.detail = 'detailed';
+    } else {
+      params.detail = 'standard';
     }
   }
   
@@ -234,9 +258,10 @@ export async function POST(req) {
           });
         } else if (tool === 'get_gas_prices') {
           const network = params.network || 'both';
+          const detail = params.detail || 'standard';
           mcpResponse = await mcpClient.sendRequest('tools/call', {
             name: 'get_gas_prices',
-            arguments: { network: network.toLowerCase() }
+            arguments: { network: network.toLowerCase(), detail }
           });
         } else if (tool === 'get_briq_tvl') {
           mcpResponse = await mcpClient.sendRequest('tools/call', {
@@ -319,6 +344,7 @@ Communication Style:
 - Answer directly without unnecessary elaboration or context
 - Use "Indeed," "Certainly," "I shall" when appropriate
 - Never include filler words, explanations, or background unless specifically asked
+- Speak naturally as if having a conversation, not delivering a data dump
 - STRICTLY PROHIBITED: Emojis (🚀✨💰📊🎯), emoticons (:), symbols (★✓), casual punctuation (!!!)
 - Use only professional text with proper punctuation and formal language
 - Respond like a distinguished financial advisor, not a casual chatbot
@@ -348,7 +374,8 @@ Service Standards:
 - Use real-time market data when you have it
 - NEVER use placeholder values - only actual data
 - Skip introductions, explanations, or summaries unless requested
-- For gas prices: Present data cleanly without redundant phrases like "as follows"
+- For simple gas price queries: Present just the standard rate cleanly
+- For detailed gas price queries: Show all tiers when specifically requested
 - Maintain formal, professional tone without any casual elements
 - NO EMOJIS OR SYMBOLS EVER - this is non-negotiable
 
