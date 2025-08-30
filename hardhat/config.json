@@ -27,8 +27,8 @@
       }
     },
     "31337": {
-      "usdcWhale": "0xf89d7b9c864f589bbF53a82105107622B35EaA40",
-      "wethWhale": "0x70d95587d40A2caf56bd97485aB3Eec10Bee6336",
+      "usdcWhale": "0xEe7aE85f2Fe2239E27D9c1E23fFFe168D63b4055",
+      "wethWhale": "0xC6962004f452bE9203591991D15f6b388e09E8D0",
       "aavePoolV3": "0x794a61358D6845594F94dc1DB02A252b5b4814aD",
       "compoundMarketUSDC": "0x9c4ec768c28520B50860ea7a15bd7213a9fF58bf",
       "compoundMarketWETH": "0x6f7D514bbD4aFf3BcD1140B7344b32f063dEe486",

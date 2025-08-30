@@ -70,6 +70,16 @@ export function useContractMarketData({ contracts, vaultAbi, coordinatorAbi, pri
             args: [tokenAddress]
           });
 
+          // Get current strategy assignment for this token
+          const strategyType = await publicClient.readContract({
+            address: contracts.STRATEGY_COORDINATOR,
+            abi: coordinatorAbi,
+            functionName: 'tokenToStrategy',
+            args: [tokenAddress]
+          });
+
+          console.log(`Token ${tokenAddress} strategy type:`, strategyType);
+
           // Determine token symbol and strategy name
           const isUSDC = tokenAddress.toLowerCase() === contracts.USDC.toLowerCase();
           const isWETH = tokenAddress.toLowerCase() === contracts.WETH.toLowerCase();
@@ -79,11 +89,13 @@ export function useContractMarketData({ contracts, vaultAbi, coordinatorAbi, pri
           
           if (isUSDC) {
             tokenSymbol = 'USDC';
-            strategyName = 'Aave';
+            strategyName = strategyType === 0 ? 'Aave' : 'Compound';
           } else if (isWETH) {
             tokenSymbol = 'WETH';
-            strategyName = 'Compound';
+            strategyName = strategyType === 0 ? 'Aave' : 'Compound';
           }
+
+          console.log(`${tokenSymbol} is using ${strategyName} strategy`);
 
           return {
             tokenAddress,

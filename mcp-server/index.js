@@ -14,6 +14,8 @@ import { GasPriceService } from './src/services/GasPriceService.js';
 import { TokenPriceService } from './src/services/TokenPriceService.js';
 import { BriqAnalyticsService } from './src/services/BriqAnalyticsService.js';
 import { DeFiMarketService } from './src/services/DeFiMarketService.js';
+import { StrategyService } from './src/services/StrategyService.js';
+import { AutonomousOptimizer } from './src/services/AutonomousOptimizer.js';
 
 // Load environment variables from both parent directory and hardhat directory
 dotenv.config({ path: path.join(process.cwd(), '..', '.env.local') });
@@ -38,6 +40,8 @@ class RupertMCPServer {
     this.tokenPriceService = new TokenPriceService();
     this.briqAnalyticsService = new BriqAnalyticsService();
     this.defiMarketService = new DeFiMarketService();
+    this.strategyService = new StrategyService();
+    this.autonomousOptimizer = new AutonomousOptimizer(this.strategyService, this.defiMarketService);
 
     this.setupToolHandlers();
     this.setupErrorHandling();
@@ -140,6 +144,54 @@ class RupertMCPServer {
               type: 'object',
               properties: {}
             }
+          },
+          {
+            name: 'get_current_strategies',
+            description: 'Get current strategy assignments and APYs for all tokens',
+            inputSchema: {
+              type: 'object',
+              properties: {}
+            }
+          },
+          {
+            name: 'optimize_strategies',
+            description: 'Analyze market data and set optimal strategies for all tokens',
+            inputSchema: {
+              type: 'object',
+              properties: {}
+            }
+          },
+          {
+            name: 'get_rupert_wallet_status',
+            description: 'Get Rupert wallet address, ETH balance, and network connection status',
+            inputSchema: {
+              type: 'object',
+              properties: {}
+            }
+          },
+          {
+            name: 'start_autonomous_optimization',
+            description: 'Start Rupert autonomous strategy optimization (every 5 minutes)',
+            inputSchema: {
+              type: 'object',
+              properties: {}
+            }
+          },
+          {
+            name: 'stop_autonomous_optimization', 
+            description: 'Stop Rupert autonomous strategy optimization',
+            inputSchema: {
+              type: 'object',
+              properties: {}
+            }
+          },
+          {
+            name: 'get_optimization_status',
+            description: 'Get status of autonomous optimization and last results',
+            inputSchema: {
+              type: 'object',
+              properties: {}
+            }
           }
         ]
       };
@@ -165,6 +217,43 @@ class RupertMCPServer {
           
           case 'get_briq_data':
             return await this.briqAnalyticsService.handleGetBriqAnalytics();
+          
+          case 'get_current_strategies':
+            return await this.strategyService.handleGetCurrentStrategies();
+          
+          case 'optimize_strategies':
+            const marketData = await this.defiMarketService.getAllMarketData();
+            return await this.strategyService.handleSetOptimalStrategies(marketData);
+          
+          case 'get_rupert_wallet_status':
+            return await this.strategyService.handleGetWalletStatus();
+          
+          case 'start_autonomous_optimization':
+            this.autonomousOptimizer.start();
+            return {
+              content: [{
+                type: 'text',
+                text: 'Autonomous optimization started. Rupert will evaluate strategies every 5 minutes.'
+              }]
+            };
+          
+          case 'stop_autonomous_optimization':
+            this.autonomousOptimizer.stop();
+            return {
+              content: [{
+                type: 'text',
+                text: 'Autonomous optimization stopped.'
+              }]
+            };
+          
+          case 'get_optimization_status':
+            const status = this.autonomousOptimizer.getStatus();
+            return {
+              content: [{
+                type: 'text',
+                text: JSON.stringify(status, null, 2)
+              }]
+            };
           
           default:
             throw new Error(`Unknown tool: ${name}`);
@@ -287,6 +376,15 @@ class RupertMCPServer {
   async run() {
     const transport = new StdioServerTransport();
     await this.server.connect(transport);
+    
+    // Auto-start autonomous optimization if strategy service is configured
+    if (this.strategyService.isConfigured) {
+      console.log('🤖 Auto-starting Rupert autonomous optimization...');
+      this.autonomousOptimizer.start();
+    } else {
+      console.log('⚠️ Strategy service not configured - autonomous optimization disabled');
+    }
+    
     // Server running on stdio
   }
 }

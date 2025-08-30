@@ -20,8 +20,10 @@
     "deploy": "npx hardhat run scripts/forking/deploy.js --network localhost",
     "configure": "npx hardhat run scripts/forking/configure.js --network localhost",
     "fund": "npx hardhat run scripts/forking/fundAccount.js --network localhost",
+    "fund-rupert": "npx hardhat run scripts/forking/fundRupert.js --network localhost",
+    "set-rupert": "npx hardhat run scripts/forking/setRupert.js --network localhost",
     "balance": "npx hardhat run scripts/forking/checkBalance.js --network localhost",
-    "setup-fork": "npm run deploy && npm run configure && npm run fund && npm run balance"
+    "setup-fork": "npm run deploy && npm run configure && npm run fund && npm run fund-rupert && npm run set-rupert && npm run balance"
   },
   "devDependencies": {
     "@nomicfoundation/hardhat-chai-matchers": "^2.1.0",

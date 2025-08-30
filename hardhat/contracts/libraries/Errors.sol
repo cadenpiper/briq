@@ -78,6 +78,12 @@ library Errors {
     error OnlyVault();
     
     /**
+     * @notice Thrown when unauthorized addresses attempt restricted operations
+     * @dev Used for access control in strategy management functions
+     */
+    error UnauthorizedAccess();
+    
+    /**
      * @notice Thrown when attempting to set coordinator to the same address
      * @dev Used in strategy contracts when coordinator address is unchanged
      */

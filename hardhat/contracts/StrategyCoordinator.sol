@@ -45,6 +45,9 @@ contract StrategyCoordinator is Ownable, ReentrancyGuard {
     /// @notice Address of the BriqVault contract authorized to call coordinator functions
     address public vault;
     
+    /// @notice Address of Rupert (autonomous optimizer) authorized to change strategies
+    address public rupert;
+    
     /// @notice Aave V3 strategy implementation
     StrategyAave public strategyAave;
     
@@ -131,6 +134,15 @@ contract StrategyCoordinator is Ownable, ReentrancyGuard {
     }
 
     /**
+     * @notice Restricts access to owner or Rupert only
+     * @dev Allows both owner and Rupert to manage strategies
+     */
+    modifier onlyOwnerOrRupert() {
+        if (msg.sender != owner() && msg.sender != rupert) revert Errors.UnauthorizedAccess();
+        _;
+    }
+
+    /**
      * @notice Updates the vault address authorized to use this coordinator
      * @dev Should be called once during deployment to establish the vault relationship
      * 
@@ -147,6 +159,17 @@ contract StrategyCoordinator is Ownable, ReentrancyGuard {
     function updateVaultAddress(address _vault) external onlyOwner {
         if (_vault == address(0)) revert Errors.InvalidAddress();
         vault = _vault;
+    }
+
+    /**
+     * @notice Sets Rupert's address for autonomous strategy management
+     * @dev Allows Rupert to call setStrategyForToken alongside the owner
+     * 
+     * @param _rupert Address of Rupert's wallet
+     */
+    function setRupert(address _rupert) external onlyOwner {
+        if (_rupert == address(0)) revert Errors.InvalidAddress();
+        rupert = _rupert;
     }
 
     /**
@@ -171,7 +194,7 @@ contract StrategyCoordinator is Ownable, ReentrancyGuard {
      * - Validates strategy compatibility before assignment
      * - Owner-only access control
      */
-    function setStrategyForToken(address _token, StrategyType _strategyType) external onlyOwner {
+    function setStrategyForToken(address _token, StrategyType _strategyType) external onlyOwnerOrRupert {
         if (_token == address(0)) revert Errors.InvalidAddress();
         
         // Check if the token is supported by the selected strategy
