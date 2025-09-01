@@ -3,6 +3,7 @@
 import { useRef, useEffect, useState } from 'react';
 import { useChat } from 'ai/react';
 import Layout from '../components/Layout';
+import RupertActions from '../components/RupertActions';
 
 export default function Rupert() {
   const messagesEndRef = useRef(null);
@@ -246,6 +247,11 @@ export default function Rupert() {
                 </div>
               </form>
             </div>
+          </div>
+
+          {/* Recent Actions Section */}
+          <div className="mt-8">
+            <RupertActions />
           </div>
         </div>
       </div>

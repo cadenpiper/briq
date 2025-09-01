@@ -110,7 +110,7 @@ export class StrategyService {
         const apy = await this.contract.getStrategyAPY(address);
         strategies[symbol] = {
           address,
-          currentStrategy: strategyType === 0n ? 'AAVE' : 'COMPOUND',
+          currentStrategy: strategyType === 0n ? 'Aave V3' : 'Compound V3',
           currentAPY: ethers.formatUnits(apy, 2) // Convert from basis points
         };
       } catch (error) {
