@@ -25,11 +25,13 @@ Available tools:
 - get_token_prices: Current token prices (ETH, WETH, USDC)
 - get_gas_prices: Gas costs for Ethereum/Arbitrum networks (standard rates)
 - get_detailed_gas_prices: Detailed gas costs with all tiers (safe, standard, fast)
+- get_current_strategies: Current Briq strategy assignments and APYs for all tokens
 - get_briq_data: Briq protocol analytics (TVL, performance, allocations, rewards)
 - get_market_data: External DeFi market data (Aave V3, Compound V3)
 
 CRITICAL DISTINCTION:
 - INFORMATIONAL questions about Briq (what is, tell me about, explain) → "NONE" (use general knowledge)
+- STRATEGY questions (current strategies, recent changes, what strategies are active) → ["get_current_strategies"]
 - PERFORMANCE questions about Briq (how is it doing, current status, analytics) → ["get_briq_data"]
 
 Gas Price Rules:
@@ -38,6 +40,7 @@ Gas Price Rules:
 
 Rules:
 - "What is Briq?" / "Tell me about Briq" / "Explain Briq" → "NONE" 
+- "Recent strategy changes" / "Current strategies" / "What strategies are active" → ["get_current_strategies"]
 - "How is Briq performing?" / "Briq analytics" / "Current TVL" → ["get_briq_data"]
 - "Best yields available" / "Market opportunities" → ["get_market_data"]
 - "Token prices" → ["get_token_prices"]
@@ -146,6 +149,12 @@ export async function POST(req) {
                   arguments: {}
                 });
                 break;
+              case 'get_current_strategies':
+                mcpResponse = await mcpClient.sendRequest('tools/call', {
+                  name: 'get_current_strategies',
+                  arguments: {}
+                });
+                break;
             }
             
             if (mcpResponse && mcpResponse.content && mcpResponse.content.length > 0) {
@@ -199,15 +208,29 @@ CRITICAL RULES:
 - ONLY use real-time data when provided in system messages
 - NEVER mix external market data with Briq protocol information
 
+CRITICAL DATA HIERARCHY:
+1. ALWAYS use get_current_strategies for actual Briq protocol strategy assignments
+2. Use get_briq_data for actual Briq protocol performance and balances  
+3. Use get_market_data ONLY for external market opportunities, NOT current Briq state
+4. NEVER assume strategy changes based on external market data
+5. When discussing "recent strategy changes" or "current strategies", ONLY reference actual contract state
+
+MANDATORY TOOL USAGE:
+- Questions about "strategy changes", "current strategies", "what strategies are active" MUST call get_current_strategies tool first
+- Questions about "recent changes" MUST call both get_current_strategies and get_briq_data tools
+- DO NOT provide strategy information without calling these tools
+
 Your Expertise - Briq Protocol:
 Briq is a DeFi yield optimization protocol that automatically allocates user deposits across multiple lending protocols to maximize returns. The protocol routes funds between Aave V3 and Compound V3 based on current market conditions. It supports USDC and WETH deposits on EVM-compatible blockchains including Ethereum and Arbitrum. Users deposit tokens into Briq's vault and receive yield-bearing shares representing their portion of the optimized yield pool. The protocol features automated strategy management, real-time portfolio tracking, and an AI assistant for guidance.
 
 IMPORTANT DISTINCTIONS:
 - INFORMATIONAL questions ("What is Briq?", "Tell me about Briq") → Provide protocol description using your knowledge above
+- CURRENT STATE questions ("What strategies are active?", "Recent changes?") → Use get_current_strategies and get_briq_data tools
 - PERFORMANCE questions ("How is Briq doing?", "Current analytics") → Use real-time data from get_briq_data only
 - MARKET questions ("Best yields available") → Use get_market_data for external protocol comparisons
 
 Data Handling Rules:
+- get_current_strategies: ALWAYS use for actual Briq strategy assignments and recent changes
 - get_briq_data: ONLY for Briq protocol performance/analytics questions
 - get_market_data: ONLY for external DeFi market comparisons  
 - get_token_prices: For current token price information
