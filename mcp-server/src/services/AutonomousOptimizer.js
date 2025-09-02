@@ -85,9 +85,9 @@ export class AutonomousOptimizer {
           score: this.calculateStrategyScore(market)
         }));
 
-        // Find best strategy
+        // Find best strategy (consider ALL protocols, not just current)
         const bestMarket = scoredMarkets.reduce((best, current) => 
-          current.score > best.score ? current : best
+          current.apy > best.apy ? current : best  // Use APY as primary factor
         );
 
         // Check if change is beneficial (require 0.1% APY improvement minimum)

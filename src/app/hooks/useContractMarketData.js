@@ -14,7 +14,7 @@ const publicClient = createPublicClient({
  * @param {Object} contracts - Contract addresses
  * @param {Array} abis - Contract ABIs needed
  */
-export function useContractMarketData({ contracts, vaultAbi, coordinatorAbi, priceFeedAbi }) {
+export function useContractMarketData({ contracts, vaultAbi, coordinatorAbi, priceFeedAbi, strategyAaveAbi, strategyCompoundAbi }) {
   const [marketData, setMarketData] = useState({
     markets: [],
     isLoading: true,
@@ -23,7 +23,7 @@ export function useContractMarketData({ contracts, vaultAbi, coordinatorAbi, pri
 
   const fetchMarketData = async () => {
     // Check if contracts object exists and has required properties
-    if (!contracts || !contracts.VAULT || !contracts.STRATEGY_COORDINATOR || !contracts.PRICE_FEED_MANAGER) {
+    if (!contracts || !contracts.VAULT || !contracts.STRATEGY_AAVE || !contracts.STRATEGY_COMPOUND) {
       console.log('Missing contracts:', contracts);
       setMarketData(prev => ({ 
         ...prev, 
@@ -36,86 +36,135 @@ export function useContractMarketData({ contracts, vaultAbi, coordinatorAbi, pri
     try {
       setMarketData(prev => ({ ...prev, isLoading: true, error: null }));
 
-      // 1. Get supported tokens
-      const supportedTokens = await publicClient.readContract({
-        address: contracts.VAULT,
-        abi: vaultAbi,
-        functionName: 'getSupportedTokens'
-      });
+      const markets = [];
 
-      // 2. For each token, get strategy balance, USD value, and APY
-      const marketPromises = supportedTokens.map(async (tokenAddress) => {
+      // Get actual balances from Aave strategy
+      if (strategyAaveAbi) {
         try {
-          // Get strategy balance for this token
-          const balance = await publicClient.readContract({
-            address: contracts.STRATEGY_COORDINATOR,
-            abi: coordinatorAbi,
-            functionName: 'getStrategyBalance',
-            args: [tokenAddress]
+          const [aaveSupportedTokens, aaveAnalyticsArray] = await publicClient.readContract({
+            address: contracts.STRATEGY_AAVE,
+            abi: strategyAaveAbi,
+            functionName: 'getAllTokenAnalytics'
           });
 
-          // Get USD value of the balance
-          const usdValue = balance > 0n ? await publicClient.readContract({
-            address: contracts.PRICE_FEED_MANAGER,
-            abi: priceFeedAbi,
-            functionName: 'getTokenValueInUSD',
-            args: [tokenAddress, balance]
-          }) : 0n;
+          for (let i = 0; i < aaveSupportedTokens.length; i++) {
+            const tokenAddress = aaveSupportedTokens[i];
+            const analytics = aaveAnalyticsArray[i];
+            const currentBalance = analytics[0]; // First element is currentBalance
 
-          // Get APY for this token
-          const apyBasisPoints = await publicClient.readContract({
-            address: contracts.STRATEGY_COORDINATOR,
-            abi: coordinatorAbi,
-            functionName: 'getStrategyAPY',
-            args: [tokenAddress]
-          });
+            if (currentBalance > 0n) {
+              // Determine token symbol
+              const isUSDC = tokenAddress.toLowerCase() === contracts.USDC?.toLowerCase();
+              const isWETH = tokenAddress.toLowerCase() === contracts.WETH?.toLowerCase();
+              
+              let tokenSymbol = 'UNKNOWN';
+              let decimals = 18;
+              
+              if (isUSDC) {
+                tokenSymbol = 'USDC';
+                decimals = 6;
+              } else if (isWETH) {
+                tokenSymbol = 'WETH';
+                decimals = 18;
+              }
 
-          // Get current strategy assignment for this token
-          const strategyType = await publicClient.readContract({
-            address: contracts.STRATEGY_COORDINATOR,
-            abi: coordinatorAbi,
-            functionName: 'tokenToStrategy',
-            args: [tokenAddress]
-          });
+              // Get USD value
+              let usdValue = 0n;
+              try {
+                usdValue = await publicClient.readContract({
+                  address: contracts.PRICE_FEED_MANAGER,
+                  abi: priceFeedAbi,
+                  functionName: 'getTokenValueInUSD',
+                  args: [tokenAddress, currentBalance]
+                });
+              } catch (error) {
+                console.log(`Could not get USD value for Aave ${tokenSymbol}:`, error.message);
+              }
 
-          console.log(`Token ${tokenAddress} strategy type:`, strategyType);
+              // Get APY - same as rewards hooks
+              const currentAPY = analytics[5]; // 6th element is currentAPY (0-indexed)
 
-          // Determine token symbol and strategy name
-          const isUSDC = tokenAddress.toLowerCase() === contracts.USDC.toLowerCase();
-          const isWETH = tokenAddress.toLowerCase() === contracts.WETH.toLowerCase();
-          
-          let tokenSymbol = 'UNKNOWN';
-          let strategyName = 'Unknown';
-          
-          if (isUSDC) {
-            tokenSymbol = 'USDC';
-            strategyName = strategyType === 0 ? 'Aave' : 'Compound';
-          } else if (isWETH) {
-            tokenSymbol = 'WETH';
-            strategyName = strategyType === 0 ? 'Aave' : 'Compound';
+              markets.push({
+                tokenAddress,
+                tokenSymbol,
+                strategyName: 'Aave',
+                balance: currentBalance.toString(),
+                balanceFormatted: parseFloat(formatUnits(currentBalance, decimals)),
+                usdValue: usdValue.toString(),
+                usdValueFormatted: parseFloat(formatUnits(usdValue, 18)),
+                apyBasisPoints: Number(currentAPY),
+                apyFormatted: (Number(currentAPY) / 100).toFixed(2)
+              });
+            }
           }
-
-          console.log(`${tokenSymbol} is using ${strategyName} strategy`);
-
-          return {
-            tokenAddress,
-            tokenSymbol,
-            strategyName,
-            balance: balance.toString(),
-            balanceFormatted: parseFloat(formatUnits(balance, isUSDC ? 6 : 18)),
-            usdValue: usdValue.toString(),
-            usdValueFormatted: parseFloat(formatUnits(usdValue, 18)),
-            apyBasisPoints: Number(apyBasisPoints),
-            apyFormatted: (Number(apyBasisPoints) / 100).toFixed(2) // Convert basis points to percentage
-          };
-
         } catch (error) {
-          console.error(`Error fetching data for token ${tokenAddress}:`, error);
-          return null;
+          console.log('Could not fetch Aave balances:', error.message);
         }
-      });
+      }
 
-      const markets = (await Promise.all(marketPromises)).filter(Boolean);
+      // Get actual balances from Compound strategy
+      if (strategyCompoundAbi) {
+        try {
+          const [compoundSupportedTokens, compoundAnalyticsArray] = await publicClient.readContract({
+            address: contracts.STRATEGY_COMPOUND,
+            abi: strategyCompoundAbi,
+            functionName: 'getAllTokenAnalytics'
+          });
+
+          for (let i = 0; i < compoundSupportedTokens.length; i++) {
+            const tokenAddress = compoundSupportedTokens[i];
+            const analytics = compoundAnalyticsArray[i];
+            const currentBalance = analytics[0]; // First element is currentBalance
+
+            if (currentBalance > 0n) {
+              // Determine token symbol
+              const isUSDC = tokenAddress.toLowerCase() === contracts.USDC?.toLowerCase();
+              const isWETH = tokenAddress.toLowerCase() === contracts.WETH?.toLowerCase();
+              
+              let tokenSymbol = 'UNKNOWN';
+              let decimals = 18;
+              
+              if (isUSDC) {
+                tokenSymbol = 'USDC';
+                decimals = 6;
+              } else if (isWETH) {
+                tokenSymbol = 'WETH';
+                decimals = 18;
+              }
+
+              // Get USD value
+              let usdValue = 0n;
+              try {
+                usdValue = await publicClient.readContract({
+                  address: contracts.PRICE_FEED_MANAGER,
+                  abi: priceFeedAbi,
+                  functionName: 'getTokenValueInUSD',
+                  args: [tokenAddress, currentBalance]
+                });
+              } catch (error) {
+                console.log(`Could not get USD value for Compound ${tokenSymbol}:`, error.message);
+              }
+
+              // Get APY - same as rewards hooks  
+              const currentAPY = analytics[6]; // 7th element is currentAPY for Compound
+
+              markets.push({
+                tokenAddress,
+                tokenSymbol,
+                strategyName: 'Compound',
+                balance: currentBalance.toString(),
+                balanceFormatted: parseFloat(formatUnits(currentBalance, decimals)),
+                usdValue: usdValue.toString(),
+                usdValueFormatted: parseFloat(formatUnits(usdValue, 18)),
+                apyBasisPoints: Number(currentAPY),
+                apyFormatted: (Number(currentAPY) / 100).toFixed(2)
+              });
+            }
+          }
+        } catch (error) {
+          console.log('Could not fetch Compound balances:', error.message);
+        }
+      }
       
       setMarketData({
         markets,
@@ -139,7 +188,7 @@ export function useContractMarketData({ contracts, vaultAbi, coordinatorAbi, pri
     // Refetch every 30 seconds
     const interval = setInterval(fetchMarketData, 30000);
     return () => clearInterval(interval);
-  }, [contracts?.VAULT, contracts?.STRATEGY_COORDINATOR, contracts?.PRICE_FEED_MANAGER]);
+  }, [contracts?.STRATEGY_AAVE, contracts?.STRATEGY_COMPOUND]);
 
   return { ...marketData, refetch: fetchMarketData };
 }

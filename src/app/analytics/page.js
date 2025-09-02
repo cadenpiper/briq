@@ -55,7 +55,9 @@ export default function Analytics() {
     contracts: CONTRACTS,
     vaultAbi: BriqVaultABI,
     coordinatorAbi: StrategyCoordinatorABI,
-    priceFeedAbi: PriceFeedManagerABI
+    priceFeedAbi: PriceFeedManagerABI,
+    strategyAaveAbi: StrategyAaveABI,
+    strategyCompoundAbi: StrategyCompoundABI
   });
 
   // Get Aave rewards data
@@ -165,6 +167,7 @@ export default function Analytics() {
 
   // Prepare pie chart data
   const pieChartData = markets.map((market, index) => ({
+    id: `${market.tokenSymbol}-${market.strategyName}`,
     name: market.tokenSymbol,
     value: market.usdValueFormatted,
     strategy: market.strategyName,
@@ -307,31 +310,25 @@ export default function Analytics() {
             </div>
 
             {/* Market Details with Pie Chart - Full width on mobile */}
-            {markets.length > 0 && (
-              <div className="bg-cream-50 dark:bg-zen-800 rounded-xl p-4 sm:p-6 border border-zen-300 dark:border-zen-600 shadow-sm hover:shadow-md transition-all duration-300 hover:scale-[1.02] flex-1 lg:max-w-md">
+            {markets.length > 0 && !marketsLoading && (
+              <div className="bg-cream-50 dark:bg-zen-800 rounded-xl p-4 sm:p-6 border border-zen-300 dark:border-zen-600 shadow-sm hover:shadow-md transition-all duration-300 hover:scale-[1.02] flex-1 lg:max-w-none">
                 <h3 className="text-sm sm:text-lg font-semibold text-zen-600 dark:text-cream-400 mb-4">
                   Market Allocation
                 </h3>
                 
-                <div className="flex flex-col gap-4 items-center h-full">
-                  {/* Pie Chart - Responsive sizing */}
-                  <div className="flex-shrink-0 w-full flex justify-center">
+                {/* Desktop Layout: Side by Side */}
+                <div className="hidden lg:flex lg:items-center lg:justify-center">
+                  {/* Pie Chart */}
+                  <div className="flex-shrink-0 flex items-center justify-center -mr-32">
                     <div 
-                      className="w-48 h-48 sm:w-56 sm:h-56 lg:w-64 lg:h-64 focus:outline-none" 
+                      className="w-96 h-96 focus:outline-none" 
                       style={{ 
                         filter: 'drop-shadow(0 8px 16px rgba(0, 0, 0, 0.15))',
                         outline: 'none'
                       }}
-                      onMouseLeave={() => {
-                        if (!isMobile) {
-                          setHoveredSegment(null);
-                        }
-                      }}
+                      onMouseLeave={() => setHoveredSegment(null)}
                     >
-                      <ResponsiveContainer width="100%" height="100%">
-                        <PieChart 
-                          style={{ outline: 'none' }}
-                        >
+                        <PieChart width={384} height={384} style={{ outline: 'none' }}>
                           <defs>
                             <linearGradient id="blueGradient" x1="0%" y1="0%" x2="100%" y2="100%">
                               <stop offset="0%" stopColor="#60A5FA" />
@@ -366,6 +363,137 @@ export default function Analytics() {
                             innerRadius="30%"
                             paddingAngle={0}
                             dataKey="value"
+                            onMouseEnter={(data, index) => setHoveredSegment(data)}
+                          >
+                            {pieChartData.map((entry, index) => {
+                              const isHovered = hoveredSegment?.id === entry.id;
+                              return (
+                                <Cell 
+                                  key={`cell-${index}`} 
+                                  fill={pieColors[index % pieColors.length]}
+                                  stroke="transparent"
+                                  strokeWidth={0}
+                                  style={{
+                                    filter: isHovered 
+                                      ? 'drop-shadow(0 4px 8px rgba(0, 0, 0, 0.2))' 
+                                      : 'drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1))',
+                                    transform: isHovered ? 'scale(1.02)' : 'scale(1)',
+                                    transformOrigin: 'center',
+                                    transition: 'all 0.2s ease-in-out',
+                                    cursor: 'pointer'
+                                  }}
+                                />
+                              );
+                            })}
+                          </Pie>
+                          <CenterLabel hoveredData={hoveredSegment} selectedData={null} isMobile={false} />
+                        </PieChart>
+                    </div>
+                  </div>
+
+                  {/* Market Details List */}
+                  <div className="flex-1 ml-48 mr-32">
+                    <div className="space-y-2">
+                      {markets.map((market, index) => {
+                        const allocation = totalMarketValue > 0 ? (market.usdValueFormatted / totalMarketValue * 100) : 0;
+                        const uniqueId = `${market.tokenSymbol}-${market.strategyName}`;
+                        const isHovered = hoveredSegment?.id === uniqueId;
+                        return (
+                          <div 
+                            key={index} 
+                            className={`flex items-center justify-between p-3 bg-zen-100 dark:bg-zen-700 rounded-lg transition-colors duration-200 cursor-pointer ${
+                              isHovered ? 'bg-zen-200 dark:bg-zen-600' : 'hover:bg-zen-200 dark:hover:bg-zen-600'
+                            }`}
+                            onMouseEnter={() => setHoveredSegment({ 
+                              id: uniqueId, 
+                              name: market.tokenSymbol, 
+                              value: market.usdValueFormatted, 
+                              strategy: market.strategyName, 
+                              apy: market.apyFormatted,
+                              color: solidColors[index % solidColors.length]
+                            })}
+                            onMouseLeave={() => setHoveredSegment(null)}
+                          >
+                            <div className="flex items-center space-x-3 flex-1">
+                              <div 
+                                className="w-3 h-3 rounded-full flex-shrink-0 shadow-sm"
+                                style={{ backgroundColor: solidColors[index % solidColors.length] }}
+                              />
+                              <div className="min-w-0 flex-1">
+                                <div className="font-semibold text-sm text-zen-900 dark:text-cream-100 truncate">
+                                  {market.tokenSymbol}
+                                </div>
+                                <div className="text-xs text-zen-500 dark:text-cream-500 truncate">
+                                  via {market.strategyName}
+                                </div>
+                              </div>
+                            </div>
+                            <div className="text-right flex-shrink-0 ml-3">
+                              <div className="font-jetbrains-mono text-sm font-bold text-zen-900 dark:text-cream-100">
+                                ${market.usdValueFormatted.toFixed(2)}
+                              </div>
+                              <div className="text-xs text-zen-500 dark:text-cream-500 whitespace-nowrap">
+                                {allocation.toFixed(1)}% • {market.apyFormatted}% APY
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Mobile Layout: Chart Above, Details Below */}
+                <div className="lg:hidden flex flex-col gap-4 items-center h-full">
+                  {/* Pie Chart - Responsive sizing */}
+                  <div className="flex-shrink-0 w-full flex justify-center">
+                    <div 
+                      className="w-72 h-72 focus:outline-none flex items-center justify-center" 
+                      style={{ 
+                        filter: 'drop-shadow(0 8px 16px rgba(0, 0, 0, 0.15))',
+                        outline: 'none'
+                      }}
+                      onMouseLeave={() => {
+                        if (!isMobile) {
+                          setHoveredSegment(null);
+                        }
+                      }}
+                    >
+                        <PieChart width={288} height={288} style={{ outline: 'none', background: 'transparent' }}>
+                          <defs>
+                            <linearGradient id="blueGradientMobile" x1="0%" y1="0%" x2="100%" y2="100%">
+                              <stop offset="0%" stopColor="#60A5FA" />
+                              <stop offset="100%" stopColor="#1D4ED8" />
+                            </linearGradient>
+                            <linearGradient id="greenGradientMobile" x1="0%" y1="0%" x2="100%" y2="100%">
+                              <stop offset="0%" stopColor="#34D399" />
+                              <stop offset="100%" stopColor="#047857" />
+                            </linearGradient>
+                            <linearGradient id="amberGradientMobile" x1="0%" y1="0%" x2="100%" y2="100%">
+                              <stop offset="0%" stopColor="#FBBF24" />
+                              <stop offset="100%" stopColor="#D97706" />
+                            </linearGradient>
+                            <linearGradient id="violetGradientMobile" x1="0%" y1="0%" x2="100%" y2="100%">
+                              <stop offset="0%" stopColor="#A78BFA" />
+                              <stop offset="100%" stopColor="#7C3AED" />
+                            </linearGradient>
+                            <linearGradient id="redGradientMobile" x1="0%" y1="0%" x2="100%" y2="100%">
+                              <stop offset="0%" stopColor="#F87171" />
+                              <stop offset="100%" stopColor="#DC2626" />
+                            </linearGradient>
+                            <linearGradient id="cyanGradientMobile" x1="0%" y1="0%" x2="100%" y2="100%">
+                              <stop offset="0%" stopColor="#22D3EE" />
+                              <stop offset="100%" stopColor="#0891B2" />
+                            </linearGradient>
+                          </defs>
+                          <Pie
+                            data={pieChartData}
+                            cx="50%"
+                            cy="50%"
+                            outerRadius="80%"
+                            innerRadius="30%"
+                            paddingAngle={0}
+                            dataKey="value"
                             onMouseEnter={(data, index) => {
                               if (!isMobile) {
                                 setHoveredSegment(data);
@@ -384,14 +512,14 @@ export default function Analytics() {
                             }}
                           >
                             {pieChartData.map((entry, index) => {
-                              const isHovered = !isMobile && hoveredSegment?.name === entry.name;
+                              const isHovered = !isMobile && hoveredSegment?.id === entry.id;
                               const isSelected = isMobile && selectedSegment?.name === entry.name;
                               const shouldScale = isHovered || isSelected;
                               
                               return (
                                 <Cell 
                                   key={`cell-${index}`} 
-                                  fill={pieColors[index % pieColors.length]}
+                                  fill={`url(#${['blueGradientMobile', 'greenGradientMobile', 'amberGradientMobile', 'violetGradientMobile', 'redGradientMobile', 'cyanGradientMobile'][index % 6]})`}
                                   stroke="transparent"
                                   strokeWidth={0}
                                   style={{
@@ -401,10 +529,7 @@ export default function Analytics() {
                                     transform: shouldScale ? 'scale(1.02)' : 'scale(1)',
                                     transformOrigin: 'center',
                                     transition: 'all 0.2s ease-in-out',
-                                    cursor: 'pointer',
-                                    outline: 'none !important',
-                                    border: 'none',
-                                    boxShadow: 'none'
+                                    cursor: 'pointer'
                                   }}
                                 />
                               );
@@ -416,7 +541,6 @@ export default function Analytics() {
                             isMobile={isMobile} 
                           />
                         </PieChart>
-                      </ResponsiveContainer>
                     </div>
                   </div>
 
