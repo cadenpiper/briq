@@ -6,11 +6,14 @@ import path from 'path';
 dotenv.config({ path: '../.env.local' });
 dotenv.config({ path: '../hardhat/.env' });
 
-const STRATEGY_COORDINATOR_ABI = [
-  "function getStrategyAPY(address _token) external view returns (uint256)",
-  "function getSupportedTokens() external view returns (address[])",
-  "function setStrategyForToken(address _token, uint8 _strategyType) external",
-  "function tokenToStrategy(address) external view returns (uint8)"
+const STRATEGY_ABI = [
+  "function balanceOf(address _token) external view returns (uint256)",
+  "function getTokenAnalytics(address _token) external view returns (uint256, uint256, uint256, uint256, uint256, uint256, uint256)",
+  "function getCurrentAPY(address _token) external view returns (uint256)"
+];
+
+const COORDINATOR_ABI = [
+  "function setStrategyForToken(address _token, uint8 _strategyType) external"
 ];
 
 const STRATEGY_TYPES = {
@@ -30,6 +33,8 @@ function loadContractAddresses() {
   const chainConfig = config.CHAIN_CONFIG[chainId];
   
   return {
+    strategyAave: deployment.contracts.StrategyAave,
+    strategyCompound: deployment.contracts.StrategyCompoundComet,
     strategyCoordinator: deployment.contracts.StrategyCoordinator,
     tokens: {
       USDC: chainConfig.usdcAddress,
@@ -45,17 +50,17 @@ export class StrategyService {
     
     try {
       const addresses = loadContractAddresses();
+      this.strategyAaveAddress = addresses.strategyAave;
+      this.strategyCompoundAddress = addresses.strategyCompound;
       this.contractAddress = addresses.strategyCoordinator;
       this.tokenAddresses = addresses.tokens;
       
       // Only initialize wallet and contract if private key is present
       if (process.env.RUPERT_PRIVATE_KEY) {
         this.wallet = new ethers.Wallet(process.env.RUPERT_PRIVATE_KEY, this.provider);
-        this.contract = new ethers.Contract(
-          this.contractAddress,
-          STRATEGY_COORDINATOR_ABI,
-          this.wallet
-        );
+        this.strategyAave = new ethers.Contract(this.strategyAaveAddress, STRATEGY_ABI, this.provider);
+        this.strategyCompound = new ethers.Contract(this.strategyCompoundAddress, STRATEGY_ABI, this.provider);
+        this.contract = new ethers.Contract(this.contractAddress, COORDINATOR_ABI, this.wallet);
         this.isConfigured = true;
       } else {
         this.isConfigured = false;
@@ -104,18 +109,53 @@ export class StrategyService {
   async getCurrentStrategies() {
     this.checkConfiguration();
     const strategies = {};
+    
     for (const [symbol, address] of Object.entries(this.tokenAddresses)) {
       try {
-        const strategyType = await this.contract.tokenToStrategy(address);
-        const apy = await this.contract.getStrategyAPY(address);
+        // Check balances in both strategies
+        const aaveBalance = await this.strategyAave.balanceOf(address);
+        const compoundBalance = await this.strategyCompound.balanceOf(address);
+        
+        // Determine current strategy based on where funds are allocated
+        let currentStrategy, currentAPY;
+        
+        if (aaveBalance > 0n && aaveBalance >= compoundBalance) {
+          currentStrategy = 'Aave V3';
+          try {
+            // Try to get APY from analytics
+            const analytics = await this.strategyAave.getTokenAnalytics(address);
+            currentAPY = parseFloat(ethers.formatUnits(analytics[6], 2));
+          } catch (error) {
+            // Fallback: try to get current APY directly from strategy contract
+            try {
+              const apy = await this.strategyAave.getCurrentAPY(address);
+              currentAPY = parseFloat(ethers.formatUnits(apy, 2));
+            } catch (fallbackError) {
+              console.warn(`Could not get Aave APY for ${symbol}, skipping`);
+              continue; // Skip this token entirely if we can't get APY
+            }
+          }
+        } else if (compoundBalance > 0n) {
+          currentStrategy = 'Compound V3';
+          try {
+            const analytics = await this.strategyCompound.getTokenAnalytics(address);
+            currentAPY = parseFloat(ethers.formatUnits(analytics[6], 2));
+          } catch (error) {
+            console.warn(`Could not get Compound APY for ${symbol}, using 0`);
+            currentAPY = 0;
+          }
+        } else {
+          // No funds allocated, skip
+          continue;
+        }
+        
         strategies[symbol] = {
           address,
-          currentStrategy: strategyType === 0n ? 'Aave V3' : 'Compound V3',
-          currentAPY: ethers.formatUnits(apy, 2) // Convert from basis points
+          currentStrategy,
+          currentAPY: currentAPY.toFixed(2)
         };
       } catch (error) {
         console.warn(`Failed to get strategy for ${symbol} (${address}):`, error.message);
-        // Skip tokens that don't have strategies set
         continue;
       }
     }

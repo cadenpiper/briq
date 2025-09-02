@@ -380,7 +380,19 @@ class RupertMCPServer {
     // Auto-start autonomous optimization if strategy service is configured
     if (this.strategyService.isConfigured) {
       console.log('🤖 Auto-starting Rupert autonomous optimization...');
-      this.autonomousOptimizer.start();
+      try {
+        this.autonomousOptimizer.start();
+      } catch (error) {
+        console.error('❌ Failed to start autonomous optimizer:', error.message);
+        console.log('🔄 Retrying in 30 seconds...');
+        setTimeout(() => {
+          try {
+            this.autonomousOptimizer.start();
+          } catch (retryError) {
+            console.error('❌ Retry failed:', retryError.message);
+          }
+        }, 30000);
+      }
     } else {
       console.log('⚠️ Strategy service not configured - autonomous optimization disabled');
     }

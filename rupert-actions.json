@@ -1,3 +1,28 @@
 {
-  "actions": []
+  "actions": [
+    {
+      "type": "strategy_change",
+      "token": "USDC",
+      "currentStrategy": "None",
+      "newStrategy": "Aave V3",
+      "improvement": "3.62",
+      "txHash": "0xb3c44b64a6c8fdbec4fa7cc326ffde4ef1c23a151170646c00cde0864e76a030",
+      "fromPool": "N/A",
+      "toPool": "0x794a61358D6845594F94dc1DB02A252b5b4814aD",
+      "timestamp": "2025-09-02T03:04:55.823Z",
+      "id": 1756782295823
+    },
+    {
+      "type": "strategy_change",
+      "token": "WETH",
+      "currentStrategy": "None",
+      "newStrategy": "Aave V3",
+      "improvement": "3.38",
+      "txHash": "0x9713912ff8e03485d38315d4af44777db37a07f16f303c845cde7f9df486500c",
+      "fromPool": "N/A",
+      "toPool": "0x794a61358D6845594F94dc1DB02A252b5b4814aD",
+      "timestamp": "2025-09-02T03:04:57.962Z",
+      "id": 1756782297962
+    }
+  ]
 }

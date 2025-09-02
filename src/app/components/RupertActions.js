@@ -122,7 +122,7 @@ export default function RupertActions() {
       ) : (
         <div ref={actionsContainerRef} className="space-y-4 max-h-72 overflow-y-auto custom-scrollbar p-6 pt-0 pb-8 mb-2">
           {actions.map((action, index) => (
-            <div key={index} className="p-3 sm:p-4 bg-cream-100 dark:bg-zen-700 rounded-lg border border-cream-200 dark:border-zen-600">
+            <div key={index} className="p-3 sm:p-4 bg-cream-100 dark:bg-zen-700 rounded-lg border border-cream-200 dark:border-zen-600 relative">
               <div className="flex items-start justify-between">
                 <div className="flex items-start sm:items-center space-x-2 sm:space-x-3 flex-1">
                   {getActionIcon(action)}
@@ -150,14 +150,18 @@ export default function RupertActions() {
                   </div>
                 </div>
               </div>
-              <div className="flex items-center justify-between mt-3 ml-8 sm:ml-11">
+              <div className="flex items-end justify-start mt-3 ml-8 sm:ml-11">
                 {action.fromPool && action.toPool && (
                   <div className="flex-1">
                     {action.fromPool !== action.toPool ? (
                       <div className="flex flex-col sm:grid sm:grid-cols-2 gap-1 sm:gap-2 text-xs">
                         <div className="flex items-center space-x-1">
                           <span className="text-zen-500 dark:text-cream-500 font-semibold">From:</span>
-                          <CopyButton text={action.fromPool} className="text-xs" />
+                          {action.fromPool === 'N/A' ? (
+                            <span className="text-xs text-zen-600 dark:text-cream-400">N/A</span>
+                          ) : (
+                            <CopyButton text={action.fromPool} className="text-xs" />
+                          )}
                         </div>
                         <div className="flex items-center space-x-1">
                           <span className="text-zen-500 dark:text-cream-500 font-semibold">To:</span>
@@ -172,19 +176,19 @@ export default function RupertActions() {
                     )}
                   </div>
                 )}
-                
-                {action.txHash && (
-                  <a 
-                    href={`https://arbiscan.io/tx/${action.txHash}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center px-2 sm:px-3 py-1 text-xs font-medium text-white bg-blue-500 hover:bg-blue-600 rounded transition-colors ml-2"
-                  >
-                    <span className="sm:hidden">View Tx</span>
-                    <span className="hidden sm:inline">View Transaction</span>
-                  </a>
-                )}
               </div>
+              
+              {action.txHash && (
+                <a 
+                  href={`https://arbiscan.io/tx/${action.txHash}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="absolute bottom-3 right-3 flex items-center px-2 sm:px-3 py-1 text-xs font-medium text-white bg-blue-500 hover:bg-blue-600 rounded transition-colors"
+                >
+                  <span className="sm:hidden">View Tx</span>
+                  <span className="hidden sm:inline">View Transaction</span>
+                </a>
+              )}
             </div>
           ))}
         </div>

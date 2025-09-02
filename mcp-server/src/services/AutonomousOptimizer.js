@@ -43,6 +43,14 @@ export class AutonomousOptimizer {
   }
 
   // Strategy scoring algorithm
+  getTokenAddress(symbol) {
+    const tokenAddresses = {
+      'USDC': '0xaf88d065e77c8cC2239327C5EDb3A432268e5831',
+      'WETH': '0x82aF49447D8a07e3bd95BD0d56f35241523fBab1'
+    };
+    return tokenAddresses[symbol];
+  }
+
   calculateStrategyScore(market) {
     const apyWeight = 0.6;      // 60% weight on APY
     const tvlWeight = 0.25;     // 25% weight on TVL (higher is better)
@@ -74,46 +82,40 @@ export class AutonomousOptimizer {
 
       const optimizations = [];
 
-      // Evaluate each token
-      for (const [symbol, current] of Object.entries(currentStrategies)) {
-        const tokenMarkets = marketData.filter(m => m.token === symbol);
+      // Analyze all supported tokens and set optimal strategies
+      const supportedTokens = ['USDC', 'WETH'];
+      
+      for (const symbol of supportedTokens) {
+        const tokenMarkets = marketData.filter(m => 
+          m.token === symbol && m.network === 'Arbitrum One'
+        );
+        
         if (tokenMarkets.length === 0) continue;
 
-        // Score each available strategy
-        const scoredMarkets = tokenMarkets.map(market => ({
-          ...market,
-          score: this.calculateStrategyScore(market)
-        }));
-
-        // Find best strategy (consider ALL protocols, not just current)
-        const bestMarket = scoredMarkets.reduce((best, current) => 
-          current.apy > best.apy ? current : best  // Use APY as primary factor
+        // Find best strategy
+        const bestMarket = tokenMarkets.reduce((best, current) => 
+          current.apy > best.apy ? current : best
         );
 
-        // Check if change is beneficial (require 0.1% APY improvement minimum)
-        const currentAPY = parseFloat(current.currentAPY);
-        const apyImprovement = bestMarket.apy - currentAPY;
-        const scoreImprovement = bestMarket.score - this.calculateStrategyScore({
-          apy: currentAPY,
-          tvl: 50000000, // Assume current TVL
-          utilization: 70 // Assume current utilization
-        });
-
-        // Skip if trying to optimize to the same strategy
-        if (bestMarket.protocol === current.currentStrategy) {
-          continue;
-        }
-
-        if (apyImprovement > 0.1 && scoreImprovement > 0.05) {
+        // Check current strategy (if any)
+        const current = currentStrategies[symbol];
+        
+        if (!current || bestMarket.protocol !== current.currentStrategy) {
+          const currentStrategy = current ? current.currentStrategy : 'None';
+          console.log(`🎯 ${symbol}: Setting optimal strategy ${bestMarket.protocol} @ ${bestMarket.apy.toFixed(2)}% APY`);
+          
           optimizations.push({
             token: symbol,
-            currentStrategy: current.currentStrategy,
-            currentAPY: currentAPY,
+            address: this.getTokenAddress(symbol), // Add token address
+            currentStrategy: currentStrategy,
+            currentAPY: current ? parseFloat(current.currentAPY) : 0,
             newStrategy: bestMarket.protocol,
             newAPY: bestMarket.apy,
-            improvement: apyImprovement,
-            reason: `APY improvement: +${apyImprovement.toFixed(2)}%, Score: ${bestMarket.score.toFixed(3)}`
+            improvement: current ? bestMarket.apy - parseFloat(current.currentAPY) : bestMarket.apy,
+            reason: `Optimal strategy selection`
           });
+        } else {
+          console.log(`✅ ${symbol}: Already using optimal strategy ${bestMarket.protocol} @ ${bestMarket.apy.toFixed(2)}% APY`);
         }
       }
 
@@ -125,7 +127,7 @@ export class AutonomousOptimizer {
           const opt = optimizations[i];
           try {
             const strategyType = opt.newStrategy === 'Aave V3' ? 0 : 1;
-            const tokenAddress = currentStrategies[opt.token].address;
+            const tokenAddress = this.getTokenAddress(opt.token);
             
             const tx = await this.strategyService.contract.setStrategyForToken(tokenAddress, strategyType);
             await tx.wait();
@@ -134,7 +136,7 @@ export class AutonomousOptimizer {
             opt.txHash = tx.hash;
             
             // Get pool addresses
-            const fromPool = await this.getPoolAddress(opt.token, opt.currentStrategy);
+            const fromPool = opt.currentStrategy !== 'None' ? await this.getPoolAddress(opt.token, opt.currentStrategy) : 'N/A';
             const toPool = await this.getPoolAddress(opt.token, opt.newStrategy);
             
             console.log(`📍 Pool addresses - From: ${fromPool}, To: ${toPool}`);
