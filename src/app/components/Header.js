@@ -58,9 +58,6 @@ export default function Header() {
               <Link href="/rupert" className="hover-highlight-effect text-zen-800 dark:text-cream-200 hover:text-briq-orange dark:hover:text-briq-orange hover:bg-briq-orange/20 dark:hover:bg-briq-orange/30 px-3 py-2 rounded-md transition-all duration-200 font-light font-lato relative hover:shadow-highlight">
                 Rupert
               </Link>
-              <Link href="/briq" className="hover-highlight-effect text-zen-800 dark:text-cream-200 hover:text-briq-orange dark:hover:text-briq-orange hover:bg-briq-orange/20 dark:hover:bg-briq-orange/30 px-3 py-2 rounded-md transition-all duration-200 font-light font-lato relative hover:shadow-highlight">
-                Briq?
-              </Link>
             </nav>
           </div>
           
@@ -156,13 +153,6 @@ export default function Header() {
                 onClick={closeMobileMenu}
               >
                 Rupert
-              </Link>
-              <Link 
-                href="/briq" 
-                className="block px-3 py-2 rounded-md text-zen-800 dark:text-cream-200 hover:text-briq-orange dark:hover:text-briq-orange hover:bg-briq-orange/20 dark:hover:bg-briq-orange/30 transition-all duration-200 font-light font-lato"
-                onClick={closeMobileMenu}
-              >
-                Briq?
               </Link>
               
               {/* Mobile Theme Toggle at bottom */}
