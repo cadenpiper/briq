@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { useAccount, useReadContract, useWriteContract, useWaitForTransactionReceipt } from 'wagmi';
 import { parseUnits, formatUnits } from 'viem';
 import Layout from '../components/Layout';
+import AnimatedBackground from '../components/AnimatedBackground';
 import { USDCIcon, WETHIcon } from '../components/icons';
 import CopyButton from '../components/CopyButton';
 import { useAaveRewardsAnalytics } from '../hooks/useAaveRewardsAnalytics';
@@ -350,18 +351,19 @@ export default function Portfolio() {
 
   return (
     <Layout>
+      <AnimatedBackground />
       <div className="flex justify-center py-12">
         <div className="text-center max-w-6xl mx-auto px-4 sm:px-6">
           
           {/* Hero Section */}
-          <div className="mb-20">
+          <div className="mb-16 sm:mb-20 lg:mb-24">
             <h1 
-              className="text-5xl md:text-6xl text-zen-900 dark:text-cream-100 font-light mb-6 transition-colors duration-300"
+              className="text-3xl sm:text-4xl md:text-5xl text-foreground font-light mb-4 sm:mb-6 transition-colors duration-300 leading-tight"
               style={{ fontFamily: 'var(--font-jetbrains-mono)', fontWeight: 100 }}
             >
               Portfolio
             </h1>
-            <p className="text-xl text-zen-700 dark:text-cream-300 max-w-3xl mx-auto font-light font-lato">
+            <p className="text-lg sm:text-xl text-foreground/70 max-w-2xl mx-auto font-light font-lato">
               Manage your Briq Vault positions
             </p>
           </div>
@@ -369,21 +371,21 @@ export default function Portfolio() {
           {/* Portfolio Overview - Sleek Horizontal Card */}
           {isConnected && (
             <div className="max-w-6xl mx-auto mb-12">
-              <div className="bg-cream-50 dark:bg-zen-800 rounded-2xl p-6 sm:p-8 border border-cream-200 dark:border-zen-600 shadow-lg backdrop-blur-sm relative min-h-[400px]">
+              <div className="glass-card p-6 sm:p-8 relative min-h-[400px]">
                 {/* Privacy Toggle Button - Top Right */}
                 <button
                   onClick={() => setIsPrivacyMode(!isPrivacyMode)}
-                  className="absolute top-4 right-4 p-2 rounded-lg bg-cream-200 dark:bg-zen-600 hover:bg-cream-300 dark:hover:bg-zen-500 transition-colors duration-200 z-10"
+                  className="absolute top-4 right-4 p-2 rounded-lg glass hover:bg-zen-300/30 dark:hover:bg-zen-500/30 transition-colors duration-200 z-10 backdrop-blur-sm"
                   title={isPrivacyMode ? "Show values" : "Hide values"}
                 >
                   {isPrivacyMode ? (
                     // Eye slash icon (Heroicons - values hidden)
-                    <svg className="w-5 h-5 text-zen-600 dark:text-cream-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-5 h-5 text-foreground/60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3.98 8.223A10.477 10.477 0 001.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.45 10.45 0 0112 4.5c4.756 0 8.773 3.162 10.065 7.498a10.523 10.523 0 01-4.293 5.774M6.228 6.228L3 3m3.228 3.228l3.65 3.65m7.894 7.894L21 21m-3.228-3.228l-3.65-3.65m0 0a3 3 0 11-4.243-4.243m4.242 4.242L9.88 9.88" />
                     </svg>
                   ) : (
                     // Eye icon (Heroicons - values visible)
-                    <svg className="w-5 h-5 text-zen-600 dark:text-cream-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-5 h-5 text-foreground/60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                     </svg>
@@ -392,13 +394,13 @@ export default function Portfolio() {
 
                 {/* Header */}
                 <div className="text-center mb-6">
-                  <h3 className="text-2xl sm:text-3xl font-bold text-zen-900 dark:text-cream-100 mb-4">
+                  <h3 className="text-2xl sm:text-3xl font-bold text-foreground mb-4">
                     Your Portfolio
                   </h3>
                   
                   {/* Portfolio Value - Centered */}
                   <div className="mb-8">
-                    <h4 className="text-sm font-medium text-zen-600 dark:text-cream-400 uppercase tracking-wider mb-3">
+                    <h4 className="text-sm font-medium text-foreground/60 uppercase tracking-wider mb-3">
                       Value
                     </h4>
                     
@@ -421,7 +423,7 @@ export default function Portfolio() {
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                   {/* Left Side - BRIQ Shares */}
                   <div className="flex flex-col items-center space-y-4">
-                    <h4 className="text-sm font-medium text-zen-600 dark:text-cream-400 uppercase tracking-wider text-center">
+                    <h4 className="text-sm font-medium text-foreground/60 uppercase tracking-wider text-center">
                       Your Shares
                     </h4>
                     <div className="flex items-center space-x-3 p-4 bg-cream-100 dark:bg-zen-700 rounded-xl border border-cream-200 dark:border-zen-600 hover:shadow-md transition-all duration-200 w-full max-w-sm min-h-[80px]">
@@ -430,7 +432,7 @@ export default function Portfolio() {
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-baseline justify-between">
-                          <span className="text-xl font-semibold text-zen-900 dark:text-cream-100 font-jetbrains-mono truncate min-w-[120px] text-left">
+                          <span className="text-xl font-semibold text-foreground font-jetbrains-mono truncate min-w-[120px] text-left">
                             {hideValue(formatBalance(sharesBalance, 18), 8)}
                           </span>
                           <span className="text-sm font-medium text-briq-orange ml-2 flex-shrink-0">
@@ -443,7 +445,7 @@ export default function Portfolio() {
 
                   {/* Center - User Rewards */}
                   <div className="flex flex-col items-center space-y-4">
-                    <h4 className="text-sm font-medium text-zen-600 dark:text-cream-400 uppercase tracking-wider text-center">
+                    <h4 className="text-sm font-medium text-foreground/60 uppercase tracking-wider text-center">
                       Available Rewards
                     </h4>
                     
@@ -463,7 +465,7 @@ export default function Portfolio() {
 
                   {/* Right Side - Available Wallet Balance */}
                   <div className="flex flex-col items-center space-y-4">
-                    <h4 className="text-sm font-medium text-zen-600 dark:text-cream-400 uppercase tracking-wider text-center">
+                    <h4 className="text-sm font-medium text-foreground/60 uppercase tracking-wider text-center">
                       Available Wallet Balance
                     </h4>
                     <div className="space-y-3 w-full max-w-sm">
@@ -474,7 +476,7 @@ export default function Portfolio() {
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-baseline justify-between">
-                            <span className="text-lg font-semibold text-zen-900 dark:text-cream-100 font-jetbrains-mono truncate min-w-[100px] text-left">
+                            <span className="text-lg font-semibold text-foreground font-jetbrains-mono truncate min-w-[100px] text-left">
                               {hideValue(formatBalance(usdcBalance, 6), 6)}
                             </span>
                             <span className="text-xs font-medium text-blue-600 dark:text-blue-400 ml-2 flex-shrink-0">
@@ -491,7 +493,7 @@ export default function Portfolio() {
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-baseline justify-between">
-                            <span className="text-lg font-semibold text-zen-900 dark:text-cream-100 font-jetbrains-mono truncate min-w-[100px] text-left">
+                            <span className="text-lg font-semibold text-foreground font-jetbrains-mono truncate min-w-[100px] text-left">
                               {hideValue(formatBalance(wethBalance, 18), 6)}
                             </span>
                             <span className="text-xs font-medium text-purple-600 dark:text-purple-400 ml-2 flex-shrink-0">
@@ -509,26 +511,26 @@ export default function Portfolio() {
 
           {/* Vault Interface Card */}
           {!isConnected ? (
-            <div className="max-w-md mx-auto bg-cream-100 dark:bg-zen-700 rounded-lg p-8 border border-zen-200 dark:border-zen-600 transition-colors duration-300">
-              <h3 className="text-xl font-medium text-zen-900 dark:text-cream-100 mb-4 font-lato">
+            <div className="max-w-md mx-auto glass-card p-8 transition-colors duration-300">
+              <h3 className="text-xl font-medium text-foreground mb-4 font-lato">
                 Connect Wallet
               </h3>
-              <p className="text-zen-600 dark:text-cream-400 font-lato">
+              <p className="text-foreground/60 font-lato">
                 Please connect your wallet to access the vault interface
               </p>
             </div>
           ) : (
-            <div className="max-w-md mx-auto bg-cream-100 dark:bg-zen-700 rounded-lg p-8 border border-zen-200 dark:border-zen-600 transition-colors duration-300">
-              <h3 className="text-xl font-medium text-zen-900 dark:text-cream-100 mb-6 font-lato">
+            <div className="max-w-md mx-auto glass-card p-8 transition-colors duration-300">
+              <h3 className="text-xl font-medium text-foreground mb-6 font-lato">
                 Vault Interface
               </h3>
               
               {/* Deposit/Withdraw Pill Toggle - Website Theme */}
               <div className="mb-6">
-                <div className="relative bg-cream-100 dark:bg-zen-700 rounded-full p-1 border border-cream-200 dark:border-zen-600">
+                <div className="relative bg-zen-100/20 dark:bg-zen-700/20 rounded-full p-1 backdrop-blur-sm">
                   {/* Sliding Background */}
                   <div 
-                    className="absolute bg-cream-50 dark:bg-zen-800 rounded-full shadow-sm transition-all duration-300 ease-out border border-cream-200 dark:border-zen-500"
+                    className="absolute bg-zen-50/30 dark:bg-zen-800/30 rounded-full transition-all duration-300 ease-out backdrop-blur-sm"
                     style={{
                       transform: vaultMode === 'withdraw' ? 'translateX(calc(100% + 8px))' : 'translateX(0%)',
                       top: '4px',
@@ -575,7 +577,7 @@ export default function Portfolio() {
               <div className="space-y-6">
                 {/* Token Selection - Compact Card Style */}
                 <div>
-                  <label className="block text-sm font-medium text-zen-900 dark:text-cream-100 mb-3 font-lato">
+                  <label className="block text-sm font-medium text-foreground mb-3 font-lato">
                     Select Token
                   </label>
                   <div className="grid grid-cols-2 gap-3">
@@ -583,10 +585,10 @@ export default function Portfolio() {
                     <button
                       type="button"
                       onClick={() => setSelectedToken('USDC')}
-                      className={`p-3 rounded-lg border-2 transition-all duration-300 flex items-center gap-3 ${
+                      className={`p-3 rounded-lg transition-all duration-300 flex items-center gap-3 backdrop-blur-sm ${
                         selectedToken === 'USDC'
-                          ? 'bg-blue-50 dark:bg-blue-900/20 border-blue-300 dark:border-blue-600 shadow-md transform scale-[1.02] opacity-100'
-                          : 'bg-zen-200 dark:bg-zen-700 border-zen-300 dark:border-zen-600 opacity-60 hover:opacity-80 hover:bg-zen-100 dark:hover:bg-zen-600'
+                          ? 'bg-blue-50/30 dark:bg-blue-900/10 transform scale-[1.02] opacity-100'
+                          : 'bg-zen-200/20 dark:bg-zen-700/20 opacity-60 hover:opacity-80 hover:bg-zen-100/30 dark:hover:bg-zen-600/30'
                       }`}
                     >
                       <div className="w-6 h-6 flex items-center justify-center flex-shrink-0">
@@ -595,7 +597,7 @@ export default function Portfolio() {
                       <span className={`text-sm font-semibold ${
                         selectedToken === 'USDC' 
                           ? 'text-blue-600 dark:text-blue-400' 
-                          : 'text-zen-600 dark:text-cream-400'
+                          : 'text-foreground/60'
                       }`}>
                         USDC
                       </span>
@@ -605,10 +607,10 @@ export default function Portfolio() {
                     <button
                       type="button"
                       onClick={() => setSelectedToken('WETH')}
-                      className={`p-3 rounded-lg border-2 transition-all duration-300 flex items-center gap-3 ${
+                      className={`p-3 rounded-lg transition-all duration-300 flex items-center gap-3 backdrop-blur-sm ${
                         selectedToken === 'WETH'
-                          ? 'bg-purple-50 dark:bg-purple-900/20 border-purple-300 dark:border-purple-600 shadow-md transform scale-[1.02] opacity-100'
-                          : 'bg-zen-200 dark:bg-zen-700 border-zen-300 dark:border-zen-600 opacity-60 hover:opacity-80 hover:bg-zen-100 dark:hover:bg-zen-600'
+                          ? 'bg-purple-50/30 dark:bg-purple-900/10 transform scale-[1.02] opacity-100'
+                          : 'bg-zen-200/20 dark:bg-zen-700/20 opacity-60 hover:opacity-80 hover:bg-zen-100/30 dark:hover:bg-zen-600/30'
                       }`}
                     >
                       <div className="w-6 h-6 flex items-center justify-center flex-shrink-0">
@@ -617,13 +619,13 @@ export default function Portfolio() {
                       <span className={`text-sm font-semibold ${
                         selectedToken === 'WETH' 
                           ? 'text-purple-600 dark:text-purple-400' 
-                          : 'text-zen-600 dark:text-cream-400'
+                          : 'text-foreground/60'
                       }`}>
                         WETH
                       </span>
                     </button>
                   </div>
-                  <p className="text-sm text-zen-600 dark:text-cream-400 mt-2 font-lato">
+                  <p className="text-sm text-foreground/60 mt-2 font-lato">
                     {vaultMode === 'deposit' ? `Balance: ${getCurrentBalance()} ${selectedToken}` : `Shares: ${formatBalance(sharesBalance, 18)} BRIQ`}
                   </p>
                 </div>
@@ -634,7 +636,7 @@ export default function Portfolio() {
                   <div>
                     <label 
                       htmlFor="amount-input"
-                      className="block text-sm font-medium text-zen-900 dark:text-cream-100 mb-3 font-lato"
+                      className="block text-sm font-medium text-foreground mb-3 font-lato"
                     >
                       Amount to Deposit
                     </label>
@@ -645,7 +647,7 @@ export default function Portfolio() {
                         value={depositAmount}
                         onChange={(e) => setDepositAmount(e.target.value)}
                         placeholder="0.0"
-                        className="w-full p-4 pr-24 border border-zen-300 dark:border-zen-500 rounded-lg bg-cream-50 dark:bg-zen-600 text-zen-900 dark:text-cream-100 transition-colors duration-300 font-lato focus:outline-none focus:ring-2 focus:ring-briq-orange focus:border-transparent [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                        className="w-full p-4 pr-24 rounded-lg bg-zen-50/30 dark:bg-zen-600/30 text-foreground transition-colors duration-300 font-lato focus:outline-none focus:bg-zen-100/50 dark:focus:bg-zen-600/50 backdrop-blur-sm [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                       />
                       {/* USD Value Display */}
                       <div className="absolute inset-y-0 right-0 flex items-center pr-4">
@@ -664,7 +666,7 @@ export default function Portfolio() {
                   <div>
                     <label 
                       htmlFor="shares-input"
-                      className="block text-sm font-medium text-zen-900 dark:text-cream-100 mb-3 font-lato"
+                      className="block text-sm font-medium text-foreground mb-3 font-lato"
                     >
                       Shares to Withdraw
                     </label>
@@ -675,10 +677,10 @@ export default function Portfolio() {
                         value={withdrawShares}
                         onChange={(e) => setWithdrawShares(e.target.value)}
                         placeholder="0.0"
-                        className="w-full p-4 pr-20 border border-zen-300 dark:border-zen-500 rounded-lg bg-cream-50 dark:bg-zen-600 text-zen-900 dark:text-cream-100 transition-colors duration-300 font-lato focus:outline-none focus:ring-2 focus:ring-briq-orange focus:border-transparent [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                        className="w-full p-4 pr-20 border border-zen-300 dark:border-zen-500 rounded-lg bg-cream-50 dark:bg-zen-600 text-foreground transition-colors duration-300 font-lato focus:outline-none focus:ring-2 focus:ring-briq-orange focus:border-transparent [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                       />
                       <div className="absolute inset-y-0 right-0 flex items-center pr-4">
-                        <span className="text-sm font-medium text-zen-600 dark:text-cream-400 font-jetbrains-mono">
+                        <span className="text-sm font-medium text-foreground/60 font-jetbrains-mono">
                           BRIQ
                         </span>
                       </div>
@@ -690,7 +692,7 @@ export default function Portfolio() {
                         <div className="text-sm space-y-1">
                           {/* Full amount available */}
                           <div className="flex justify-between">
-                            <span className="text-zen-600 dark:text-cream-400">Full amount available:</span>
+                            <span className="text-foreground/60">Full amount available:</span>
                             <span className={`font-medium ${withdrawalAvailability[0] ? 'text-green-600 dark:text-green-400' : 'text-yellow-600 dark:text-yellow-400'}`}>
                               {withdrawalAvailability[0] ? 'Yes' : 'No'}
                             </span>
@@ -698,8 +700,8 @@ export default function Portfolio() {
                           
                           {/* Amount requested */}
                           <div className="flex justify-between">
-                            <span className="text-zen-600 dark:text-cream-400">Amount requested:</span>
-                            <span className="font-medium text-zen-900 dark:text-cream-100 font-jetbrains-mono">
+                            <span className="text-foreground/60">Amount requested:</span>
+                            <span className="font-medium text-foreground font-jetbrains-mono">
                               {parseFloat(formatUnits(withdrawalAvailability[2], selectedToken === 'USDC' ? 6 : 18)).toFixed(selectedToken === 'USDC' ? 6 : 8)} {selectedToken}
                             </span>
                           </div>
@@ -707,8 +709,8 @@ export default function Portfolio() {
                           {/* Amount available (only show if can't withdraw full amount) */}
                           {!withdrawalAvailability[0] && (
                             <div className="flex justify-between">
-                              <span className="text-zen-600 dark:text-cream-400">Amount available:</span>
-                              <span className="font-medium text-zen-900 dark:text-cream-100 font-jetbrains-mono">
+                              <span className="text-foreground/60">Amount available:</span>
+                              <span className="font-medium text-foreground font-jetbrains-mono">
                                 {parseFloat(formatUnits(withdrawalAvailability[1], selectedToken === 'USDC' ? 6 : 18)).toFixed(selectedToken === 'USDC' ? 6 : 8)} {selectedToken}
                               </span>
                             </div>
@@ -716,7 +718,7 @@ export default function Portfolio() {
                           
                           {/* USD value */}
                           <div className="flex justify-between">
-                            <span className="text-zen-600 dark:text-cream-400">USD value:</span>
+                            <span className="text-foreground/60">USD value:</span>
                             <span className="font-medium text-briq-orange font-jetbrains-mono">
                               ${withdrawalUsdValue}
                             </span>

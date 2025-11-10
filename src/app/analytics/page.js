@@ -15,6 +15,7 @@ import StrategyAaveArtifact from '../abis/StrategyAave.json';
 import StrategyCompoundArtifact from '../abis/StrategyCompoundComet.json';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
+import AnimatedBackground from '../components/AnimatedBackground';
 
 // Extract ABIs from artifacts
 const BriqVaultABI = BriqVaultArtifact.abi;
@@ -225,24 +226,26 @@ export default function Analytics() {
 
   // Skeleton loading components
   const SkeletonBox = ({ className = "" }) => (
-    <div className={`bg-zen-200 dark:bg-zen-700 rounded animate-pulse ${className}`}></div>
+    <div className={`glass rounded animate-pulse ${className}`}></div>
   );
 
   const SkeletonText = ({ className = "" }) => (
-    <div className={`bg-zen-200 dark:bg-zen-700 rounded animate-pulse ${className}`}></div>
+    <div className={`glass rounded animate-pulse ${className}`}></div>
   );
 
   return (
     <>
       <Header />
-      <div className="min-h-screen bg-cream-100 dark:bg-zen-900 transition-colors duration-300">
+      <AnimatedBackground />
+      <div className="min-h-screen transition-colors duration-300">
         <div className="container mx-auto px-3 sm:px-4 py-4 sm:py-8">
           {/* Page Header */}
-          <div className="mb-6 sm:mb-8 animate-fade-in">
-            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-zen-900 dark:text-cream-100 mb-2">
+          <div className="mb-16 sm:mb-20 lg:mb-24 text-center animate-fade-in">
+            <h1 className="text-3xl sm:text-4xl md:text-5xl text-foreground font-light mb-4 sm:mb-6 transition-colors duration-300 leading-tight"
+                style={{ fontFamily: 'var(--font-jetbrains-mono)', fontWeight: 100 }}>
               Analytics
             </h1>
-            <p className="text-zen-600 dark:text-cream-400 text-sm sm:text-base lg:text-lg">
+            <p className="text-lg sm:text-xl text-foreground/70 max-w-2xl mx-auto font-light font-lato">
               Protocol insights and performance metrics
             </p>
           </div>
@@ -252,28 +255,28 @@ export default function Analytics() {
             {/* Metrics Cards - Stack on mobile, row on larger screens */}
             <div className="flex flex-col sm:flex-row lg:flex-col gap-3 sm:gap-4">
               {/* TVL Card */}
-              <div className="bg-cream-50 dark:bg-zen-800 rounded-xl p-4 sm:p-6 border border-zen-300 dark:border-zen-600 shadow-sm hover:shadow-md transition-all duration-300 hover:scale-[1.02] flex-1 sm:flex-1 lg:flex-none">
+              <div className="glass-card p-4 sm:p-6 hover:scale-[1.02] transition-all duration-300 flex-1 sm:flex-1 lg:flex-none">
                 <div className="flex flex-col">
-                  <h2 className="text-sm sm:text-lg font-semibold text-zen-600 dark:text-cream-400 mb-2 sm:mb-3">
+                  <h2 className="text-sm sm:text-lg font-semibold text-foreground/60 mb-2 sm:mb-3">
                     TVL
                   </h2>
-                  <div className="text-2xl sm:text-3xl lg:text-4xl font-bold text-zen-900 dark:text-cream-100 font-jetbrains-mono">
+                  <div className="text-2xl sm:text-3xl lg:text-4xl font-bold text-foreground font-jetbrains-mono">
                     {marketsLoading ? (
                       <SkeletonText className="h-8 sm:h-10 w-24 sm:w-32" />
                     ) : (
                       tvl
                     )}
                   </div>
-                  <div className="text-xs text-zen-500 dark:text-cream-500 mt-1 sm:mt-2">
+                  <div className="text-xs text-foreground/50 mt-1 sm:mt-2">
                     Total Value Locked
                   </div>
                 </div>
               </div>
 
               {/* Average APY Card */}
-              <div className="bg-cream-50 dark:bg-zen-800 rounded-xl p-4 sm:p-6 border border-zen-300 dark:border-zen-600 shadow-sm hover:shadow-md transition-all duration-300 hover:scale-[1.02] flex-1 sm:flex-1 lg:flex-none">
+              <div className="glass-card p-4 sm:p-6 hover:scale-[1.02] transition-all duration-300 flex-1 sm:flex-1 lg:flex-none">
                 <div className="flex flex-col">
-                  <h2 className="text-sm sm:text-lg font-semibold text-zen-600 dark:text-cream-400 mb-2 sm:mb-3">
+                  <h2 className="text-sm sm:text-lg font-semibold text-foreground/60 mb-2 sm:mb-3">
                     Average APY
                   </h2>
                   <div className="text-2xl sm:text-3xl lg:text-4xl font-bold text-green-600 font-jetbrains-mono">
@@ -283,26 +286,26 @@ export default function Analytics() {
                       weightedAverageAPY
                     )}
                   </div>
-                  <div className="text-xs text-zen-500 dark:text-cream-500 mt-1 sm:mt-2">
+                  <div className="text-xs text-foreground/50 mt-1 sm:mt-2">
                     Weighted by TVL
                   </div>
                 </div>
               </div>
 
               {/* Total Rewards Card */}
-              <div className="bg-cream-50 dark:bg-zen-800 rounded-xl p-4 sm:p-6 border border-zen-300 dark:border-zen-600 shadow-sm hover:shadow-md transition-all duration-300 hover:scale-[1.02] flex-1 sm:flex-1 lg:flex-none">
+              <div className="glass-card p-4 sm:p-6 hover:scale-[1.02] transition-all duration-300 flex-1 sm:flex-1 lg:flex-none">
                 <div className="flex flex-col">
-                  <h2 className="text-sm sm:text-lg font-semibold text-zen-600 dark:text-cream-400 mb-2 sm:mb-3">
+                  <h2 className="text-sm sm:text-lg font-semibold text-foreground/60 mb-2 sm:mb-3">
                     Total Rewards
                   </h2>
-                  <div className="text-2xl sm:text-3xl lg:text-4xl font-bold text-briq-orange dark:text-orange-400 font-jetbrains-mono">
+                  <div className="text-2xl sm:text-3xl lg:text-4xl font-bold text-accent font-jetbrains-mono">
                     {(aaveRewardsLoading || compoundRewardsLoading) ? (
                       <SkeletonText className="h-8 sm:h-10 w-24 sm:w-28" />
                     ) : (
                       totalRewards
                     )}
                   </div>
-                  <div className="text-xs text-zen-500 dark:text-cream-500 mt-1 sm:mt-2">
+                  <div className="text-xs text-foreground/50 mt-1 sm:mt-2">
                     Aave + Compound
                   </div>
                 </div>
@@ -311,8 +314,8 @@ export default function Analytics() {
 
             {/* Market Details with Pie Chart - Full width on mobile */}
             {markets.length > 0 && !marketsLoading && (
-              <div className="bg-cream-50 dark:bg-zen-800 rounded-xl p-4 sm:p-6 border border-zen-300 dark:border-zen-600 shadow-sm hover:shadow-md transition-all duration-300 hover:scale-[1.02] flex-1 lg:max-w-none">
-                <h3 className="text-sm sm:text-lg font-semibold text-zen-600 dark:text-cream-400 mb-4">
+              <div className="glass-card p-4 sm:p-6 hover:scale-[1.02] transition-all duration-300 flex-1 lg:max-w-none">
+                <h3 className="text-sm sm:text-lg font-semibold text-foreground/60 mb-4">
                   Market Allocation
                 </h3>
                 
@@ -401,8 +404,8 @@ export default function Analytics() {
                         return (
                           <div 
                             key={index} 
-                            className={`flex items-center justify-between p-3 bg-zen-100 dark:bg-zen-700 rounded-lg transition-colors duration-200 cursor-pointer ${
-                              isHovered ? 'bg-zen-200 dark:bg-zen-600' : 'hover:bg-zen-200 dark:hover:bg-zen-600'
+                            className={`flex items-center justify-between p-3 glass rounded-lg transition-colors duration-200 cursor-pointer backdrop-blur-sm ${
+                              isHovered ? 'bg-zen-200/30 dark:bg-zen-600/30' : 'hover:bg-foreground/5'
                             }`}
                             onMouseEnter={() => setHoveredSegment({ 
                               id: uniqueId, 
@@ -420,19 +423,19 @@ export default function Analytics() {
                                 style={{ backgroundColor: solidColors[index % solidColors.length] }}
                               />
                               <div className="min-w-0 flex-1">
-                                <div className="font-semibold text-sm text-zen-900 dark:text-cream-100 truncate">
+                                <div className="font-semibold text-sm text-foreground truncate">
                                   {market.tokenSymbol}
                                 </div>
-                                <div className="text-xs text-zen-500 dark:text-cream-500 truncate">
+                                <div className="text-xs text-foreground/50 truncate">
                                   via {market.strategyName}
                                 </div>
                               </div>
                             </div>
                             <div className="text-right flex-shrink-0 ml-3">
-                              <div className="font-jetbrains-mono text-sm font-bold text-zen-900 dark:text-cream-100">
+                              <div className="font-jetbrains-mono text-sm font-bold text-foreground">
                                 ${market.usdValueFormatted.toFixed(2)}
                               </div>
-                              <div className="text-xs text-zen-500 dark:text-cream-500 whitespace-nowrap">
+                              <div className="text-xs text-foreground/50 whitespace-nowrap">
                                 {allocation.toFixed(1)}% • {market.apyFormatted}% APY
                               </div>
                             </div>
@@ -550,7 +553,7 @@ export default function Analytics() {
                       {marketsLoading ? (
                         // Skeleton loading for market items
                         Array.from({ length: 2 }).map((_, index) => (
-                          <div key={index} className="flex items-center justify-between p-2 sm:p-3 bg-zen-100 dark:bg-zen-700 rounded-lg">
+                          <div key={index} className="flex items-center justify-between p-2 sm:p-3 glass rounded-lg backdrop-blur-sm">
                             <div className="flex items-center space-x-2 min-w-0 flex-1">
                               <SkeletonBox className="w-3 h-3 rounded-full" />
                               <div className="min-w-0 flex-1">
@@ -568,26 +571,26 @@ export default function Analytics() {
                         markets.map((market, index) => {
                           const allocation = totalMarketValue > 0 ? (market.usdValueFormatted / totalMarketValue * 100) : 0;
                           return (
-                            <div key={index} className="flex items-center justify-between p-2 sm:p-3 bg-zen-100 dark:bg-zen-700 rounded-lg hover:bg-zen-200 dark:hover:bg-zen-600 transition-colors duration-200">
+                            <div key={index} className="flex items-center justify-between p-2 sm:p-3 glass rounded-lg hover:bg-foreground/5 transition-colors duration-200 backdrop-blur-sm">
                               <div className="flex items-center space-x-2 min-w-0 flex-1">
                                 <div 
                                   className="w-3 h-3 rounded-full flex-shrink-0 shadow-sm"
                                   style={{ backgroundColor: solidColors[index % solidColors.length] }}
                                 />
                                 <div className="min-w-0 flex-1">
-                                  <div className="font-semibold text-xs sm:text-sm text-zen-900 dark:text-cream-100 truncate">
+                                  <div className="font-semibold text-xs sm:text-sm text-foreground truncate">
                                     {market.tokenSymbol}
                                   </div>
-                                  <div className="text-xs text-zen-500 dark:text-cream-500 truncate">
+                                  <div className="text-xs text-foreground/50 truncate">
                                     via {market.strategyName}
                                   </div>
                                 </div>
                               </div>
                               <div className="text-right flex-shrink-0 ml-1">
-                                <div className="font-jetbrains-mono text-xs sm:text-sm font-bold text-zen-900 dark:text-cream-100">
+                                <div className="font-jetbrains-mono text-xs sm:text-sm font-bold text-foreground">
                                   ${market.usdValueFormatted.toFixed(2)}
                                 </div>
-                                <div className="text-xs text-zen-500 dark:text-cream-500 whitespace-nowrap">
+                                <div className="text-xs text-foreground/50 whitespace-nowrap">
                                   {allocation.toFixed(1)}% • {market.apyFormatted}% APY
                                 </div>
                               </div>
@@ -604,8 +607,8 @@ export default function Analytics() {
 
           {/* Aave Rewards Details */}
           {aaveTokenRewards.length > 0 && (
-            <div className="bg-cream-50 dark:bg-zen-800 rounded-xl p-4 sm:p-6 border border-zen-300 dark:border-zen-600 shadow-sm hover:shadow-md transition-all duration-300 hover:scale-[1.02] mb-6 sm:mb-8">
-              <h3 className="text-sm sm:text-lg font-semibold text-zen-600 dark:text-cream-400 mb-4 sm:mb-6">
+            <div className="glass-card p-4 sm:p-6 hover:scale-[1.02] transition-all duration-300 mb-6 sm:mb-8">
+              <h3 className="text-sm sm:text-lg font-semibold text-foreground/60 mb-4 sm:mb-6">
                 Aave Strategy Rewards
               </h3>
               <div className="space-y-4 sm:space-y-6">
@@ -615,10 +618,10 @@ export default function Analytics() {
                     <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 sm:gap-0">
                       <div className="flex items-center space-x-3">
                         <div className="flex flex-col">
-                          <span className="font-semibold text-base sm:text-lg text-zen-900 dark:text-cream-100">
+                          <span className="font-semibold text-base sm:text-lg text-foreground">
                             {token.tokenSymbol} Rewards
                           </span>
-                          <span className="text-xs sm:text-sm text-zen-500 dark:text-cream-500">
+                          <span className="text-xs sm:text-sm text-foreground/50">
                             Current APY: {token.currentAPYFormatted}%
                           </span>
                         </div>
@@ -627,7 +630,7 @@ export default function Analytics() {
                         <div className="font-jetbrains-mono text-lg sm:text-xl font-bold text-blue-200 dark:text-blue-800">
                           {token.accruedRewardsFormatted.toFixed(6)} {token.tokenSymbol}
                         </div>
-                        <div className="text-xs sm:text-sm text-zen-500 dark:text-cream-500">
+                        <div className="text-xs sm:text-sm text-foreground/50">
                           ${token.rewardsUSD.toFixed(2)} USD (Interest)
                         </div>
                       </div>
@@ -635,9 +638,9 @@ export default function Analytics() {
                     
                     {/* Analytics Details - Mobile Optimized */}
                     <div className="grid grid-cols-1 gap-3 sm:gap-4 text-sm">
-                      <div className="bg-zen-100 dark:bg-zen-700 p-3 rounded">
-                        <div className="text-zen-500 dark:text-cream-500 text-xs sm:text-sm">Current Balance</div>
-                        <div className="font-semibold text-zen-900 dark:text-cream-100 text-sm sm:text-base">
+                      <div className="glass p-3 rounded backdrop-blur-sm">
+                        <div className="text-foreground/50 text-xs sm:text-sm">Current Balance</div>
+                        <div className="font-semibold text-foreground text-sm sm:text-base">
                           {token.currentBalanceFormatted.toFixed(4)} {token.tokenSymbol}
                         </div>
                       </div>
@@ -645,19 +648,19 @@ export default function Analytics() {
                     
                     {/* Reward Type - Single colored box for Aave */}
                     <div className="grid grid-cols-1 gap-3 sm:gap-4 text-sm">
-                      <div className="bg-blue-50 dark:bg-blue-900/20 p-3 sm:p-4 rounded-lg border border-blue-200 dark:border-blue-800 hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors duration-200">
+                      <div className="bg-blue-50/30 dark:bg-blue-900/10 p-3 sm:p-4 rounded-lg hover:bg-blue-100/30 dark:hover:bg-blue-900/20 transition-colors duration-200 backdrop-blur-sm">
                         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 sm:gap-0">
                           <div>
-                            <div className="text-zen-900 dark:text-cream-100 font-medium text-sm sm:text-base">aToken Interest Rewards</div>
-                            <div className="text-xs text-zen-500 dark:text-cream-500 mt-1">
+                            <div className="text-foreground font-medium text-sm sm:text-base">aToken Interest Rewards</div>
+                            <div className="text-xs text-foreground/50 mt-1">
                               Automatic rebasing rewards from Aave lending
                             </div>
                           </div>
                           <div className="text-left sm:text-right">
-                            <div className="font-semibold text-zen-900 dark:text-cream-100 text-base sm:text-lg">
+                            <div className="font-semibold text-foreground text-base sm:text-lg">
                               {token.accruedRewardsFormatted.toFixed(6)} {token.tokenSymbol}
                             </div>
-                            <div className="text-xs text-zen-500 dark:text-cream-500">
+                            <div className="text-xs text-foreground/50">
                               ${token.rewardsUSD.toFixed(2)} USD
                             </div>
                           </div>
@@ -667,7 +670,7 @@ export default function Analytics() {
                     
                     {/* Divider */}
                     {index < aaveTokenRewards.length - 1 && (
-                      <div className="border-b border-zen-200 dark:border-zen-700 pt-3" />
+                      <div className="border-b border-foreground/20 pt-3" />
                     )}
                   </div>
                 ))}
@@ -677,8 +680,8 @@ export default function Analytics() {
 
           {/* Compound Rewards Details */}
           {compoundTokenRewards.length > 0 && (
-            <div className="bg-cream-50 dark:bg-zen-800 rounded-xl p-4 sm:p-6 border border-zen-300 dark:border-zen-600 shadow-sm hover:shadow-md transition-all duration-300 hover:scale-[1.02]">
-              <h3 className="text-sm sm:text-lg font-semibold text-zen-600 dark:text-cream-400 mb-4 sm:mb-6">
+            <div className="glass-card p-4 sm:p-6 hover:scale-[1.02] transition-all duration-300">
+              <h3 className="text-sm sm:text-lg font-semibold text-foreground/60 mb-4 sm:mb-6">
                 Compound Strategy Rewards
               </h3>
               <div className="space-y-4 sm:space-y-6">
@@ -688,10 +691,10 @@ export default function Analytics() {
                     <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 sm:gap-0">
                       <div className="flex items-center space-x-3">
                         <div className="flex flex-col">
-                          <span className="font-semibold text-base sm:text-lg text-zen-900 dark:text-cream-100">
+                          <span className="font-semibold text-base sm:text-lg text-foreground">
                             {token.tokenSymbol} Rewards
                           </span>
-                          <span className="text-xs sm:text-sm text-zen-500 dark:text-cream-500">
+                          <span className="text-xs sm:text-sm text-foreground/50">
                             Current APY: {token.currentAPYFormatted}%
                           </span>
                         </div>
@@ -713,7 +716,7 @@ export default function Analytics() {
                             )}
                           </div>
                         )}
-                        <div className="text-xs sm:text-sm text-zen-500 dark:text-cream-500">
+                        <div className="text-xs sm:text-sm text-foreground/50">
                           {compoundRewardsLoading ? (
                             <SkeletonText className="h-3 sm:h-4 w-24 sm:w-28" />
                           ) : (
@@ -725,9 +728,9 @@ export default function Analytics() {
                     
                     {/* Analytics Details - Mobile Optimized */}
                     <div className="grid grid-cols-1 gap-3 sm:gap-4 text-sm">
-                      <div className="bg-zen-100 dark:bg-zen-700 p-3 rounded">
-                        <div className="text-zen-500 dark:text-cream-500 text-xs sm:text-sm">Current Balance</div>
-                        <div className="font-semibold text-zen-900 dark:text-cream-100 text-sm sm:text-base">
+                      <div className="glass p-3 rounded backdrop-blur-sm">
+                        <div className="text-foreground/50 text-xs sm:text-sm">Current Balance</div>
+                        <div className="font-semibold text-foreground text-sm sm:text-base">
                           {token.currentBalanceFormatted.toFixed(4)} {token.tokenSymbol}
                         </div>
                       </div>
@@ -735,15 +738,15 @@ export default function Analytics() {
                     
                     {/* Reward Types Breakdown - Mobile Optimized */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 text-sm">
-                      <div className="bg-green-50 dark:bg-green-900/20 p-3 rounded-lg border border-green-200 dark:border-green-800 hover:bg-green-100 dark:hover:bg-green-900/30 transition-colors duration-200">
-                        <div className="text-zen-900 dark:text-cream-100 font-medium text-sm sm:text-base">Interest Rewards</div>
-                        <div className="font-semibold text-zen-900 dark:text-cream-100 text-sm sm:text-base mt-1">
+                      <div className="bg-green-50/30 dark:bg-green-900/10 p-3 rounded-lg hover:bg-green-100/30 dark:hover:bg-green-900/20 transition-colors duration-200 backdrop-blur-sm">
+                        <div className="text-foreground font-medium text-sm sm:text-base">Interest Rewards</div>
+                        <div className="font-semibold text-foreground text-sm sm:text-base mt-1">
                           {token.interestRewardsFormatted.toFixed(6)} {token.tokenSymbol}
                         </div>
                       </div>
-                      <div className="bg-green-100 dark:bg-green-800/20 p-3 rounded-lg border border-green-300 dark:border-green-700 hover:bg-green-200 dark:hover:bg-green-800/30 transition-colors duration-200">
-                        <div className="text-zen-900 dark:text-cream-100 font-medium text-sm sm:text-base">Protocol Rewards</div>
-                        <div className="font-semibold text-zen-900 dark:text-cream-100 text-sm sm:text-base mt-1">
+                      <div className="bg-green-100/30 dark:bg-green-800/10 p-3 rounded-lg hover:bg-green-200/30 dark:hover:bg-green-800/20 transition-colors duration-200 backdrop-blur-sm">
+                        <div className="text-foreground font-medium text-sm sm:text-base">Protocol Rewards</div>
+                        <div className="font-semibold text-foreground text-sm sm:text-base mt-1">
                           {token.protocolRewardsFormatted.toFixed(6)} COMP
                         </div>
                       </div>
@@ -751,7 +754,7 @@ export default function Analytics() {
                     
                     {/* Divider */}
                     {index < compoundTokenRewards.length - 1 && (
-                      <div className="border-b border-zen-200 dark:border-zen-700 pt-3" />
+                      <div className="border-b border-foreground/20 pt-3" />
                     )}
                   </div>
                 ))}

@@ -4,6 +4,7 @@ import { useRef, useEffect, useState } from 'react';
 import { useChat } from 'ai/react';
 import Layout from '../components/Layout';
 import RupertActions from '../components/RupertActions';
+import AnimatedBackground from '../components/AnimatedBackground';
 
 export default function Rupert() {
   const messagesEndRef = useRef(null);
@@ -103,35 +104,36 @@ export default function Rupert() {
 
   return (
     <Layout>
+      <AnimatedBackground />
       <div className="flex justify-center py-12">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 w-full">
+        <div className="text-center max-w-4xl mx-auto px-4 sm:px-6 w-full">
           
-          {/* Page Header */}
-          <div className="text-center mb-12">
+          {/* Hero Section */}
+          <div className="mb-16 sm:mb-20 lg:mb-24">
             <h1 
-              className="text-5xl md:text-6xl text-zen-900 dark:text-cream-100 font-light mb-6 transition-colors duration-300"
+              className="text-3xl sm:text-4xl md:text-5xl text-foreground font-light mb-4 sm:mb-6 transition-colors duration-300 leading-tight"
               style={{ fontFamily: 'var(--font-jetbrains-mono)', fontWeight: 100 }}
             >
               Rupert
             </h1>
-            <p className="text-xl text-zen-700 dark:text-cream-300 max-w-2xl mx-auto font-light font-lato">
+            <p className="text-lg sm:text-xl text-foreground/70 max-w-2xl mx-auto font-light font-lato">
               Your AI-powered DeFi agent for yield optimization and strategy guidance
             </p>
           </div>
 
           {/* Chat Container */}
-          <div className="w-full max-w-4xl h-[700px] sm:h-[700px] h-[80vh] bg-cream-50 dark:bg-zen-800 rounded-2xl border border-cream-200 dark:border-zen-600 shadow-lg backdrop-blur-sm overflow-hidden flex flex-col">
+          <div className="glass-card p-0 w-full max-w-4xl h-[700px] sm:h-[700px] h-[80vh] overflow-hidden flex flex-col">
             
             {/* Chat Header */}
-            <div className="bg-cream-100 dark:bg-zen-700 px-6 py-4 border-b border-cream-200 dark:border-zen-600">
+            <div className="glass px-6 py-4 backdrop-blur-sm">
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-3">
-                  <h3 className="font-semibold text-zen-900 dark:text-cream-100 font-lato">
+                  <h3 className="font-semibold text-foreground font-lato">
                     Rupert
                   </h3>
                   <div className="flex items-center space-x-2">
                     <div className="w-2 h-2 bg-green-600 rounded-full animate-pulse"></div>
-                    <span className="text-sm text-zen-600 dark:text-cream-400">Online</span>
+                    <span className="text-sm text-foreground/60">Online</span>
                   </div>
                 </div>
                 
@@ -139,7 +141,7 @@ export default function Rupert() {
                 <button
                   onClick={clearChat}
                   disabled={isResetting}
-                  className="flex items-center justify-center space-x-2 px-4 py-2 text-sm bg-briq-orange text-zen-900 dark:text-cream-100 rounded hover:bg-[#e6692a] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  className="flex items-center justify-center space-x-2 px-4 py-2 text-sm bg-briq-orange text-foreground rounded hover:bg-[#e6692a] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                   title="Reset chat conversation"
                 >
                   <svg 
@@ -158,7 +160,7 @@ export default function Rupert() {
             {/* Messages Area */}
             <div 
               ref={chatContainerRef}
-              className="flex-1 overflow-y-auto p-6 space-y-6 bg-cream-50 dark:bg-zen-800 custom-scrollbar"
+              className="flex-1 overflow-y-auto p-6 space-y-6 bg-transparent custom-scrollbar"
             >
               {messages.map((message) => (
                 <div
@@ -167,10 +169,10 @@ export default function Rupert() {
                 >
                   <div className="max-w-[80%]">
                     <div
-                      className={`p-4 rounded-2xl shadow-sm border ${
+                      className={`p-4 rounded-2xl backdrop-blur-sm ${
                         message.role === 'user'
-                          ? 'bg-zen-600 dark:bg-zen-700 text-cream-100 dark:text-cream-100 border-zen-500 dark:border-zen-600'
-                          : 'bg-cream-100 dark:bg-zen-700 text-zen-900 dark:text-cream-100 border-cream-200 dark:border-zen-600'
+                          ? 'bg-zen-600/80 dark:bg-zen-700/80 text-cream-100 dark:text-cream-100'
+                          : 'bg-zen-100/60 dark:bg-zen-700/60 text-foreground'
                       }`}
                     >
                       <p className="text-base leading-relaxed whitespace-pre-wrap font-lato">
@@ -185,7 +187,7 @@ export default function Rupert() {
               {isLoading && (
                 <div className="flex justify-start">
                   <div className="max-w-[80%]">
-                    <div className="bg-cream-100 dark:bg-zen-700 text-zen-900 dark:text-cream-100 p-4 rounded-2xl">
+                    <div className="bg-zen-100/60 dark:bg-zen-700/60 text-foreground p-4 rounded-2xl backdrop-blur-sm">
                       <div className="flex items-center space-x-1">
                         <span className="text-base font-lato animate-pulse">.</span>
                         <span className="text-base font-lato animate-pulse" style={{ animationDelay: '0.2s' }}>.</span>
@@ -200,14 +202,14 @@ export default function Rupert() {
             </div>
 
             {/* Input Area */}
-            <div className="flex-shrink-0 bg-cream-100 dark:bg-zen-700 px-6 py-4">
+            <div className="flex-shrink-0 bg-zen-100/10 dark:bg-zen-700/10 px-6 py-4 backdrop-blur-sm">
               <form onSubmit={handleSubmit} className="flex space-x-4">
                 <div className="flex-1 relative">
                   <input
                     value={input}
                     onChange={handleInputChange}
                     placeholder="Ask Rupert anything..."
-                    className="w-full p-4 pr-12 border border-cream-300 dark:border-zen-600 rounded-xl bg-cream-50 dark:bg-zen-800 text-zen-900 dark:text-cream-100 placeholder-zen-500 dark:placeholder-cream-400 focus:outline-none focus:ring-2 focus:ring-briq-orange focus:border-transparent transition-all duration-300 font-lato"
+                    className="w-full p-4 pr-12 border-0 rounded-xl bg-zen-100/30 dark:bg-zen-800/30 text-foreground placeholder-zen-500 dark:placeholder-cream-400 focus:outline-none focus:bg-zen-100/50 dark:focus:bg-zen-800/50 transition-all duration-300 font-lato backdrop-blur-sm"
                     disabled={isLoading}
                   />
                   
