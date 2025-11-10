@@ -46,8 +46,8 @@ export default function Header() {
             
             {/* Desktop Navigation - Left side after logo */}
             <nav className="hidden md:flex items-center ml-8 space-x-8">
-              <Link href="/portfolio" className="hover-highlight-effect text-zen-800 dark:text-cream-200 hover:text-briq-orange dark:hover:text-briq-orange hover:bg-briq-orange/20 dark:hover:bg-briq-orange/30 px-3 py-2 rounded-md transition-all duration-200 font-light font-lato relative hover:shadow-highlight">
-                Portfolio
+              <Link href="/dashboard" className="hover-highlight-effect text-zen-800 dark:text-cream-200 hover:text-briq-orange dark:hover:text-briq-orange hover:bg-briq-orange/20 dark:hover:bg-briq-orange/30 px-3 py-2 rounded-md transition-all duration-200 font-light font-lato relative hover:shadow-highlight">
+                Dashboard
               </Link>
               <Link href="/markets" className="hover-highlight-effect text-zen-800 dark:text-cream-200 hover:text-briq-orange dark:hover:text-briq-orange hover:bg-briq-orange/20 dark:hover:bg-briq-orange/30 px-3 py-2 rounded-md transition-all duration-200 font-light font-lato relative hover:shadow-highlight">
                 Markets
@@ -127,11 +127,11 @@ export default function Header() {
               </div>
               
               <Link 
-                href="/portfolio" 
+                href="/dashboard" 
                 className="block px-3 py-2 rounded-md text-zen-800 dark:text-cream-200 hover:text-briq-orange dark:hover:text-briq-orange hover:bg-briq-orange/20 dark:hover:bg-briq-orange/30 transition-all duration-200 font-light font-lato"
                 onClick={closeMobileMenu}
               >
-                Portfolio
+                Dashboard
               </Link>
               <Link 
                 href="/markets" 

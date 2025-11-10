@@ -22,6 +22,10 @@ import {
     mainnet,
     arbitrum,
 } from "wagmi/chains";
+import {
+    QueryClientProvider,
+    QueryClient,
+} from "@tanstack/react-query";
 
 // Define localhost chain with proper configuration
 const localhost = {
@@ -38,11 +42,6 @@ const localhost = {
     },
   },
 };
-import {
-    QueryClientProvider,
-    QueryClient,
-} from "@tanstack/react-query";
-import { safe } from "wagmi/connectors";
 
 const queryClient = new QueryClient();
 
@@ -72,22 +71,24 @@ const config = getDefaultConfig({
 })
 
 const Providers = ({ children }) => {
-    return <WagmiProvider config={config}>
-        <QueryClientProvider client={queryClient}>
-            <RainbowKitProvider
-                coolMode
-                theme={darkTheme({
-                    accentColor: '#FF7A2F',
-                    accentColorForeground: 'white',
-                    borderRadius: 'large',
-                    fontStack: 'system',
-                    overlayBlur: 'small',
-                })}
-            >
-                {children}
-            </RainbowKitProvider>
-        </QueryClientProvider>
-    </WagmiProvider>;
+    return (
+        <WagmiProvider config={config}>
+            <QueryClientProvider client={queryClient}>
+                <RainbowKitProvider
+                    coolMode
+                    theme={darkTheme({
+                        accentColor: '#FF7A2F',
+                        accentColorForeground: 'white',
+                        borderRadius: 'large',
+                        fontStack: 'system',
+                        overlayBlur: 'small',
+                    })}
+                >
+                    {children}
+                </RainbowKitProvider>
+            </QueryClientProvider>
+        </WagmiProvider>
+    );
 };
 
 export default Providers;
