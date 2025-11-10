@@ -1,11 +1,16 @@
 @import "tailwindcss";
 
 :root {
-  --background: #DBC9A6; /* cream-100 - much darker */
-  --foreground: #171717; /* zen-900 - dark grey */
+  --background: #F5F5F4; /* slightly darker warm gray */
+  --foreground: #1C1917; /* warm dark gray */
   --accent: #FF7A2F; /* briq-orange */
-  --scrollbar-track: #D1BE95; /* cream-200 */
-  --scrollbar-thumb: #374151; /* zen-600 */
+  --scrollbar-track: #E7E5E4; /* light warm gray */
+  --scrollbar-thumb: #78716C; /* medium warm gray */
+  
+  /* Glass effect variables */
+  --glass-bg: rgba(245, 245, 244, 0.1);
+  --glass-border: rgba(120, 113, 108, 0.2);
+  --glass-shadow: rgba(28, 25, 23, 0.1);
 }
 
 @theme inline {
@@ -19,19 +24,50 @@
 }
 
 .dark {
-  --background: #171717; /* zen-900 - dark grey */
-  --foreground: #D1BE95; /* cream-200 - much darker */
+  --background: #292524; /* warm charcoal */
+  --foreground: #FAFAF9; /* warm off-white */
   --accent: #FF7A2F; /* briq-orange */
-  --scrollbar-track: #2A2A2A; /* zen-700 */
-  --scrollbar-thumb: #D1BE95; /* cream-200 */
+  --scrollbar-track: #44403C; /* dark warm gray */
+  --scrollbar-thumb: #A8A29E; /* light warm gray */
+  
+  /* Dark mode glass variables */
+  --glass-bg: rgba(41, 37, 36, 0.4);
+  --glass-border: rgba(168, 162, 158, 0.1);
+  --glass-shadow: rgba(0, 0, 0, 0.3);
 }
 
 body {
-  background: var(--background);
+  background: #E7E5E4;
   color: var(--foreground);
   font-family: var(--font-lato), sans-serif;
   font-weight: 300;
-  transition: background-color 0.3s ease, color 0.3s ease;
+  transition: color 0.3s ease;
+}
+
+.dark body {
+  background: #0F0F0F;
+}
+
+html {
+  background: var(--background);
+}
+
+@keyframes pulse-opacity {
+  0%, 100% {
+    opacity: 0.1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+@keyframes gentle-pulse {
+  0%, 100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
 }
 
 /* Custom Scrollbar Styles */
@@ -200,4 +236,38 @@ svg:focus, svg *:focus {
 
 .animate-slide-down {
   animation: slide-down 0.2s ease-out;
+}
+
+/* Glass morphism utility classes */
+.glass {
+  background: var(--glass-bg);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--glass-border);
+  box-shadow: 0 8px 32px var(--glass-shadow);
+}
+
+.glass-card {
+  background: var(--glass-bg);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--glass-border);
+  box-shadow: 0 8px 32px var(--glass-shadow);
+  border-radius: 0.75rem;
+}
+
+.glass-button {
+  background: rgba(255, 122, 47, 0.1);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 122, 47, 0.2);
+  box-shadow: 0 8px 32px var(--glass-shadow);
+  border-radius: 0.5rem;
+  transition: all 0.3s ease;
+}
+
+.glass-button:hover {
+  background: rgba(255, 122, 47, 0.2);
+  border-color: rgba(255, 122, 47, 0.4);
+  transform: translateY(-1px);
 }
