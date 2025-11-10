@@ -146,7 +146,7 @@ export default function MarketTable() {
   const getSortIcon = (columnKey) => {
     if (sortConfig.key !== columnKey) {
       return (
-        <svg className="w-4 h-4 text-zen-400 dark:text-cream-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg className="w-4 h-4 text-foreground/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
         </svg>
       );
@@ -154,13 +154,13 @@ export default function MarketTable() {
     
     if (sortConfig.direction === 'desc') {
       return (
-        <svg className="w-4 h-4 text-briq-orange" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg className="w-4 h-4 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
         </svg>
       );
     } else {
       return (
-        <svg className="w-4 h-4 text-briq-orange" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg className="w-4 h-4 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 10l7-7m0 0l7 7m-7-7v18" />
         </svg>
       );
@@ -174,7 +174,7 @@ export default function MarketTable() {
     <div className="space-y-4">
       <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 justify-start">
         <div className="space-y-2 flex-shrink-0 w-full sm:w-auto">
-          <label htmlFor="network-select" className="block text-sm font-medium text-zen-900 dark:text-cream-100">
+          <label htmlFor="network-select" className="block text-sm font-medium text-foreground">
             Network
           </label>
           <div className="relative inline-block w-full sm:w-auto">
@@ -187,7 +187,7 @@ export default function MarketTable() {
                   e.target.value = 'Select';
                 }
               }}
-              className="bg-cream-100 dark:bg-zen-700 border border-cream-300 dark:border-zen-600 text-zen-900 dark:text-cream-100 px-4 py-3 pr-10 rounded-lg focus:outline-none transition-all duration-200 appearance-none cursor-pointer w-full sm:w-[140px] relative z-10 text-base sm:text-sm"
+              className="glass text-foreground px-4 py-3 pr-10 rounded-lg focus:outline-none focus:border-accent/50 transition-all duration-200 appearance-none cursor-pointer w-full sm:w-[140px] relative z-10 text-base sm:text-sm"
               style={{ fontWeight: 'normal' }}
               defaultValue="Select"
             >
@@ -199,7 +199,7 @@ export default function MarketTable() {
               ))}
             </select>
             <div className="absolute top-1/2 right-3 transform -translate-y-1/2 pointer-events-none z-20">
-              <svg className="w-4 h-4 text-zen-700 dark:text-cream-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-4 h-4 text-foreground/70" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
               </svg>
             </div>
@@ -207,11 +207,11 @@ export default function MarketTable() {
           {selectedNetworks.length > 0 && (
             <div className="flex flex-wrap gap-2 mt-2 justify-start sm:justify-center sm:max-w-[140px]">
               {selectedNetworks.map((network) => (
-                <div key={network} className="flex items-center bg-briq-orange/20 text-briq-orange border border-briq-orange/40 px-2 py-1 rounded text-sm font-medium">
+                <div key={network} className="flex items-center bg-accent/20 text-accent border border-accent/40 px-2 py-1 rounded text-sm font-medium">
                   <button
                     type="button"
                     onClick={() => removeNetwork(network)}
-                    className="mr-1 hover:bg-briq-orange/30 rounded-full p-1 transition-colors duration-200"
+                    className="mr-1 hover:bg-accent/30 rounded-full p-1 transition-colors duration-200"
                     aria-label={`Remove ${network} network filter`}
                   >
                     <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -226,7 +226,7 @@ export default function MarketTable() {
         </div>
 
         <div className="space-y-2 flex-shrink-0 w-full sm:w-auto">
-          <label htmlFor="asset-select" className="block text-sm font-medium text-zen-900 dark:text-cream-100">
+          <label htmlFor="asset-select" className="block text-sm font-medium text-foreground">
             Asset
           </label>
           <div className="relative inline-block w-full sm:w-auto">
@@ -239,7 +239,7 @@ export default function MarketTable() {
                   e.target.value = 'Select';
                 }
               }}
-              className="bg-cream-100 dark:bg-zen-700 border border-cream-300 dark:border-zen-600 text-zen-900 dark:text-cream-100 px-4 py-3 pr-10 rounded-lg focus:outline-none transition-all duration-200 appearance-none cursor-pointer w-full sm:w-[140px] relative z-10 text-base sm:text-sm"
+              className="glass text-foreground px-4 py-3 pr-10 rounded-lg focus:outline-none focus:border-accent/50 transition-all duration-200 appearance-none cursor-pointer w-full sm:w-[140px] relative z-10 text-base sm:text-sm"
               style={{ fontWeight: 'normal' }}
               defaultValue="Select"
             >
@@ -251,7 +251,7 @@ export default function MarketTable() {
               ))}
             </select>
             <div className="absolute top-1/2 right-3 transform -translate-y-1/2 pointer-events-none z-20">
-              <svg className="w-4 h-4 text-zen-700 dark:text-cream-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-4 h-4 text-foreground/70" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
               </svg>
             </div>
@@ -259,11 +259,11 @@ export default function MarketTable() {
           {selectedTokens.length > 0 && (
             <div className="flex flex-wrap gap-2 mt-2 justify-start sm:justify-center sm:max-w-[140px]">
               {selectedTokens.map((token) => (
-                <div key={token} className="flex items-center bg-briq-orange/20 text-briq-orange border border-briq-orange/40 px-2 py-1 rounded text-sm font-medium">
+                <div key={token} className="flex items-center bg-accent/20 text-accent border border-accent/40 px-2 py-1 rounded text-sm font-medium">
                   <button
                     type="button"
                     onClick={() => removeToken(token)}
-                    className="mr-1 hover:bg-briq-orange/30 rounded-full p-1 transition-colors duration-200"
+                    className="mr-1 hover:bg-accent/30 rounded-full p-1 transition-colors duration-200"
                     aria-label={`Remove ${token} asset filter`}
                   >
                     <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -278,12 +278,12 @@ export default function MarketTable() {
         </div>
       </div>
 
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between bg-cream-50 dark:bg-zen-800 rounded-lg px-4 py-3 border border-cream-200 dark:border-zen-600 gap-3 sm:gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between glass-card px-4 py-3 gap-3 sm:gap-4">
         <div className="flex items-center justify-center sm:justify-start space-x-3">
           {subgraphLoading ? (
             <>
-              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-briq-orange"></div>
-              <span className="text-sm text-zen-600 dark:text-cream-300">Loading market data...</span>
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-accent"></div>
+              <span className="text-sm text-foreground/60">Loading market data...</span>
             </>
           ) : subgraphError ? (
             <>
@@ -295,14 +295,14 @@ export default function MarketTable() {
           ) : subgraphData && subgraphData.length > 0 ? (
             <>
               <div className="h-4 w-4 rounded-full bg-green-500"></div>
-              <span className="text-sm text-zen-600 dark:text-cream-300">
+              <span className="text-sm text-foreground/60">
                 Live data from The Graph
               </span>
             </>
           ) : (
             <>
               <div className="h-4 w-4 rounded-full bg-yellow-500"></div>
-              <span className="text-sm text-zen-600 dark:text-cream-300">No market data available</span>
+              <span className="text-sm text-foreground/60">No market data available</span>
             </>
           )}
         </div>
@@ -310,7 +310,7 @@ export default function MarketTable() {
         <button
           onClick={refetch}
           disabled={subgraphLoading}
-          className="flex items-center justify-center space-x-2 px-4 py-2 text-sm bg-briq-orange text-zen-900 dark:text-cream-100 rounded hover:bg-[#e6692a] disabled:opacity-50 disabled:cursor-not-allowed transition-colors w-full sm:w-auto"
+          className="glass-button flex items-center justify-center space-x-2 px-4 py-2 text-sm text-foreground disabled:opacity-50 disabled:cursor-not-allowed w-full sm:w-auto"
         >
           <svg 
             className={`w-4 h-4 ${subgraphLoading ? 'animate-spin' : ''}`} 
@@ -325,26 +325,26 @@ export default function MarketTable() {
       </div>
 
       {/* Markets Table - Desktop */}
-      <div className="hidden md:block bg-cream-100 dark:bg-zen-700 rounded-lg border border-cream-300 dark:border-zen-600 overflow-hidden">
+      <div className="hidden md:block glass-card overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-cream-200 dark:bg-zen-600">
+          <table className="w-full border-collapse border-spacing-0">
+            <thead className="glass">
               <tr>
-                <th className="px-6 py-4 text-center text-sm font-medium text-zen-900 dark:text-cream-100">
+                <th className="px-6 py-4 text-center text-sm font-medium text-foreground">
                   Protocols
                 </th>
                 {showNetworkColumn && (
-                  <th className="px-6 py-4 text-center text-sm font-medium text-zen-900 dark:text-cream-100">
+                  <th className="px-6 py-4 text-center text-sm font-medium text-foreground">
                     Network
                   </th>
                 )}
                 {showTokenColumn && (
-                  <th className="px-6 py-4 text-center text-sm font-medium text-zen-900 dark:text-cream-100">
+                  <th className="px-6 py-4 text-center text-sm font-medium text-foreground">
                     Token
                   </th>
                 )}
                 <th 
-                  className="px-6 py-4 text-center text-sm font-medium text-zen-900 dark:text-cream-100 cursor-pointer hover:bg-cream-300 dark:hover:bg-zen-500 transition-colors duration-200"
+                  className="px-6 py-4 text-center text-sm font-medium text-foreground cursor-pointer hover:bg-foreground/5 transition-colors duration-200"
                   onClick={() => handleSort('apy')}
                 >
                   <div className="flex items-center justify-center gap-2">
@@ -353,7 +353,7 @@ export default function MarketTable() {
                   </div>
                 </th>
                 <th 
-                  className="px-6 py-4 text-center text-sm font-medium text-zen-900 dark:text-cream-100 cursor-pointer hover:bg-cream-300 dark:hover:bg-zen-500 transition-colors duration-200"
+                  className="px-6 py-4 text-center text-sm font-medium text-foreground cursor-pointer hover:bg-foreground/5 transition-colors duration-200"
                   onClick={() => handleSort('tvl')}
                 >
                   <div className="flex items-center justify-center gap-2">
@@ -362,7 +362,7 @@ export default function MarketTable() {
                   </div>
                 </th>
                 <th 
-                  className="px-6 py-4 text-center text-sm font-medium text-zen-900 dark:text-cream-100 cursor-pointer hover:bg-cream-300 dark:hover:bg-zen-500 transition-colors duration-200"
+                  className="px-6 py-4 text-center text-sm font-medium text-foreground cursor-pointer hover:bg-foreground/5 transition-colors duration-200"
                   onClick={() => handleSort('utilization')}
                 >
                   <div className="flex items-center justify-center gap-2">
@@ -370,32 +370,28 @@ export default function MarketTable() {
                     {getSortIcon('utilization')}
                   </div>
                 </th>
-                <th className="px-6 py-4 text-center text-sm font-medium text-zen-900 dark:text-cream-100">
+                <th className="px-6 py-4 text-center text-sm font-medium text-foreground">
                   Health
                 </th>
-                <th className="px-6 py-4 text-center text-sm font-medium text-zen-900 dark:text-cream-100">
+                <th className="px-6 py-4 text-center text-sm font-medium text-foreground">
                   Status
                 </th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-cream-300 dark:divide-zen-600">
-              {/* Dividing line between headers and data */}
-              <tr className="border-t border-cream-300 dark:border-zen-600">
-                <td colSpan={6 + (showNetworkColumn ? 1 : 0) + (showTokenColumn ? 1 : 0)} className="h-0"></td>
-              </tr>
+            <tbody className="space-y-1">
               {sortedMarkets.map((market, index) => (
                 <tr 
                   key={index}
-                  className="hover:bg-cream-200 dark:hover:bg-zen-600 transition-colors duration-200"
+                  className="hover:bg-foreground/5 transition-colors duration-200"
                 >
-                  <td className="px-6 py-4 text-sm font-medium text-zen-900 dark:text-cream-100 text-center">
+                  <td className="px-6 py-4 text-sm font-medium text-foreground text-center">
                     <div className="flex items-center justify-center gap-2">
                       <ProtocolIcon protocol={market.protocol} size={20} />
                       <span>{market.protocol}</span>
                     </div>
                   </td>
                   {showNetworkColumn && (
-                    <td className="px-6 py-4 text-sm text-zen-700 dark:text-cream-200 text-center">
+                    <td className="px-6 py-4 text-sm text-foreground/70 text-center">
                       <div className="flex items-center justify-center gap-2">
                         <NetworkIcon network={market.network} size={20} />
                         <span>{market.network}</span>
@@ -403,7 +399,7 @@ export default function MarketTable() {
                     </td>
                   )}
                   {showTokenColumn && (
-                    <td className="px-6 py-4 text-sm text-zen-700 dark:text-cream-200 text-center">
+                    <td className="px-6 py-4 text-sm text-foreground/70 text-center">
                       <div className="flex items-center justify-center gap-2">
                         <TokenIcon token={market.token} size={20} />
                         <span>{market.token}</span>
@@ -411,14 +407,14 @@ export default function MarketTable() {
                     </td>
                   )}
                   <td className="px-6 py-4 text-sm text-center">
-                    <span className="bg-briq-orange/20 text-briq-orange px-2 py-1 rounded-full font-medium">
+                    <span className="bg-accent/20 text-accent px-2 py-1 rounded-full font-medium">
                       {formatAPY(market.apyValue)}
                     </span>
                   </td>
-                  <td className="px-6 py-4 text-sm text-zen-700 dark:text-cream-200 text-center">
+                  <td className="px-6 py-4 text-sm text-foreground/70 text-center">
                     {formatTVL(market.tvlValue)}
                   </td>
-                  <td className="px-6 py-4 text-sm text-zen-700 dark:text-cream-200 text-center">
+                  <td className="px-6 py-4 text-sm text-foreground/70 text-center">
                     {formatUtilization(market.utilizationValue)}
                   </td>
                   <td className="px-6 py-4 text-sm text-center">
@@ -445,15 +441,15 @@ export default function MarketTable() {
       {/* Markets Cards - Mobile */}
       <div className="md:hidden space-y-4">
         {/* Mobile Sort Controls */}
-        <div className="flex items-center justify-between bg-cream-50 dark:bg-zen-800 rounded-lg px-4 py-3 border border-cream-200 dark:border-zen-600">
-          <span className="text-sm font-medium text-zen-900 dark:text-cream-100">Sort by:</span>
+        <div className="flex items-center justify-between glass-card px-4 py-3">
+          <span className="text-sm font-medium text-foreground">Sort by:</span>
           <div className="flex gap-2">
             <button
               onClick={() => handleSort('apy')}
               className={`px-3 py-1 rounded text-sm font-medium transition-colors ${
                 sortConfig.key === 'apy' 
-                  ? 'bg-briq-orange text-zen-900 dark:text-cream-100' 
-                  : 'bg-cream-200 dark:bg-zen-600 text-zen-700 dark:text-cream-300 hover:bg-cream-300 dark:hover:bg-zen-500'
+                  ? 'bg-accent text-foreground' 
+                  : 'glass text-foreground/70 hover:bg-foreground/5'
               }`}
             >
               APY {sortConfig.key === 'apy' && (sortConfig.direction === 'desc' ? '↓' : '↑')}
@@ -462,8 +458,8 @@ export default function MarketTable() {
               onClick={() => handleSort('tvl')}
               className={`px-3 py-1 rounded text-sm font-medium transition-colors ${
                 sortConfig.key === 'tvl' 
-                  ? 'bg-briq-orange text-zen-900 dark:text-cream-100' 
-                  : 'bg-cream-200 dark:bg-zen-600 text-zen-700 dark:text-cream-300 hover:bg-cream-300 dark:hover:bg-zen-500'
+                  ? 'bg-accent text-foreground' 
+                  : 'glass text-foreground/70 hover:bg-foreground/5'
               }`}
             >
               TVL {sortConfig.key === 'tvl' && (sortConfig.direction === 'desc' ? '↓' : '↑')}
@@ -472,8 +468,8 @@ export default function MarketTable() {
               onClick={() => handleSort('utilization')}
               className={`px-3 py-1 rounded text-sm font-medium transition-colors ${
                 sortConfig.key === 'utilization' 
-                  ? 'bg-briq-orange text-zen-900 dark:text-cream-100' 
-                  : 'bg-cream-200 dark:bg-zen-600 text-zen-700 dark:text-cream-300 hover:bg-cream-300 dark:hover:bg-zen-500'
+                  ? 'bg-accent text-foreground' 
+                  : 'glass text-foreground/70 hover:bg-foreground/5'
               }`}
             >
               Util {sortConfig.key === 'utilization' && (sortConfig.direction === 'desc' ? '↓' : '↑')}
@@ -483,14 +479,14 @@ export default function MarketTable() {
 
         {/* Market Cards */}
         {sortedMarkets.map((market, index) => (
-          <div key={index} className="bg-cream-100 dark:bg-zen-700 rounded-lg border border-cream-300 dark:border-zen-600 p-4 space-y-3">
+          <div key={index} className="glass-card p-4 space-y-3">
             {/* Header Row */}
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <ProtocolIcon protocol={market.protocol} size={24} />
                 <div>
-                  <div className="font-medium text-zen-900 dark:text-cream-100">{market.protocol}</div>
-                  <div className="text-sm text-zen-600 dark:text-cream-400 flex items-center gap-2">
+                  <div className="font-medium text-foreground">{market.protocol}</div>
+                  <div className="text-sm text-foreground/60 flex items-center gap-2">
                     <NetworkIcon network={market.network} size={16} />
                     <span>{market.network}</span>
                     <span>•</span>
@@ -514,22 +510,22 @@ export default function MarketTable() {
             </div>
 
             {/* Metrics Row */}
-            <div className="grid grid-cols-3 gap-4 pt-2 border-t border-cream-200 dark:border-zen-600">
+            <div className="grid grid-cols-3 gap-4 pt-2 border-t border-foreground/20">
               <div className="text-center">
-                <div className="text-xs text-zen-500 dark:text-cream-500 mb-1">APY</div>
-                <div className="bg-briq-orange/20 text-briq-orange px-2 py-1 rounded-full font-medium text-sm">
+                <div className="text-xs text-foreground/50 mb-1">APY</div>
+                <div className="bg-accent/20 text-accent px-2 py-1 rounded-full font-medium text-sm">
                   {formatAPY(market.apyValue)}
                 </div>
               </div>
               <div className="text-center">
-                <div className="text-xs text-zen-500 dark:text-cream-500 mb-1">TVL</div>
-                <div className="text-sm font-medium text-zen-900 dark:text-cream-100">
+                <div className="text-xs text-foreground/50 mb-1">TVL</div>
+                <div className="text-sm font-medium text-foreground">
                   {formatTVL(market.tvlValue)}
                 </div>
               </div>
               <div className="text-center">
-                <div className="text-xs text-zen-500 dark:text-cream-500 mb-1">Utilization</div>
-                <div className="text-sm font-medium text-zen-900 dark:text-cream-100">
+                <div className="text-xs text-foreground/50 mb-1">Utilization</div>
+                <div className="text-sm font-medium text-foreground">
                   {formatUtilization(market.utilizationValue)}
                 </div>
               </div>

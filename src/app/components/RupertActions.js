@@ -77,17 +77,17 @@ export default function RupertActions() {
 
   if (loading) {
     return (
-      <div className="bg-cream-50 dark:bg-zen-800 rounded-2xl border border-cream-200 dark:border-zen-600 p-6">
-        <h3 className="text-lg font-semibold text-zen-900 dark:text-cream-100 mb-4 font-lato">
+      <div className="glass-card p-6">
+        <h3 className="text-lg font-semibold text-foreground mb-4 font-lato">
           Recent Actions
         </h3>
         <div className="animate-pulse space-y-3">
           {[1, 2, 3].map((i) => (
             <div key={i} className="flex items-center space-x-3">
-              <div className="w-8 h-8 bg-cream-200 dark:bg-zen-700 rounded-full"></div>
+              <div className="w-8 h-8 glass rounded-full"></div>
               <div className="flex-1 space-y-2">
-                <div className="h-4 bg-cream-200 dark:bg-zen-700 rounded w-3/4"></div>
-                <div className="h-3 bg-cream-200 dark:bg-zen-700 rounded w-1/2"></div>
+                <div className="h-4 glass rounded w-3/4"></div>
+                <div className="h-3 glass rounded w-1/2"></div>
               </div>
             </div>
           ))}
@@ -97,51 +97,51 @@ export default function RupertActions() {
   }
 
   return (
-    <div className="bg-cream-50 dark:bg-zen-800 rounded-2xl border border-cream-200 dark:border-zen-600">
+    <div className="glass-card">
       <div className="flex items-center justify-between mb-4 p-6 pb-0">
-        <h3 className="text-lg font-semibold text-zen-900 dark:text-cream-100 font-lato">
+        <h3 className="text-lg font-semibold text-foreground font-lato">
           Rupert's Recent Actions
         </h3>
         <div className="flex items-center space-x-2">
           <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-          <span className="text-sm text-zen-600 dark:text-cream-400">Live</span>
+          <span className="text-sm text-foreground/60">Live</span>
         </div>
       </div>
 
       {actions.length === 0 ? (
         <div className="text-center py-8 px-6">
-          <div className="w-12 h-12 bg-cream-200 dark:bg-zen-700 rounded-full flex items-center justify-center mx-auto mb-3">
-            <svg className="w-6 h-6 text-zen-400 dark:text-cream-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div className="w-12 h-12 glass rounded-full flex items-center justify-center mx-auto mb-3">
+            <svg className="w-6 h-6 text-foreground/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
             </svg>
           </div>
-          <p className="text-zen-600 dark:text-cream-400 text-sm">
+          <p className="text-foreground/60 text-sm">
             No recent actions. Rupert is monitoring markets...
           </p>
         </div>
       ) : (
         <div ref={actionsContainerRef} className="space-y-4 max-h-72 overflow-y-auto custom-scrollbar p-6 pt-0 pb-8 mb-2">
           {actions.map((action, index) => (
-            <div key={index} className="p-3 sm:p-4 bg-cream-100 dark:bg-zen-700 rounded-lg border border-cream-200 dark:border-zen-600 relative">
+            <div key={index} className="p-3 sm:p-4 glass rounded-lg relative">
               <div className="flex items-start justify-between">
                 <div className="flex items-start sm:items-center space-x-2 sm:space-x-3 flex-1">
                   {getActionIcon(action)}
                   <div className="flex-1 min-w-0">
                     <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
                       <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-2">
-                        <p className="text-sm font-semibold text-zen-900 dark:text-cream-100">
+                        <p className="text-sm font-semibold text-foreground">
                           {action.token} Strategy Change
                         </p>
                         <span className="text-xs font-medium text-green-600 mt-1 sm:mt-0">
                           +{action.improvement}% APY
                         </span>
                       </div>
-                      <span className="text-xs text-zen-500 dark:text-cream-500 mt-1 sm:mt-0">
+                      <span className="text-xs text-foreground/50 mt-1 sm:mt-0">
                         {formatTime(action.timestamp)}
                       </span>
                     </div>
                     <div className="flex items-center justify-between mt-1">
-                      <div className="text-xs text-zen-600 dark:text-cream-400 flex items-center space-x-1">
+                      <div className="text-xs text-foreground/60 flex items-center space-x-1">
                         <span>{action.currentStrategy}</span>
                         <span>→</span>
                         <span>{action.newStrategy}</span>
@@ -156,21 +156,21 @@ export default function RupertActions() {
                     {action.fromPool !== action.toPool ? (
                       <div className="flex flex-col sm:grid sm:grid-cols-2 gap-1 sm:gap-2 text-xs">
                         <div className="flex items-center space-x-1">
-                          <span className="text-zen-500 dark:text-cream-500 font-semibold">From:</span>
+                          <span className="text-foreground/50 font-semibold">From:</span>
                           {action.fromPool === 'N/A' ? (
-                            <span className="text-xs text-zen-600 dark:text-cream-400">N/A</span>
+                            <span className="text-xs text-foreground/60">N/A</span>
                           ) : (
                             <CopyButton text={action.fromPool} className="text-xs" />
                           )}
                         </div>
                         <div className="flex items-center space-x-1">
-                          <span className="text-zen-500 dark:text-cream-500 font-semibold">To:</span>
+                          <span className="text-foreground/50 font-semibold">To:</span>
                           <CopyButton text={action.toPool} className="text-xs" />
                         </div>
                       </div>
                     ) : (
                       <div className="flex items-center space-x-1">
-                        <span className="text-xs text-zen-500 dark:text-cream-500 font-semibold">Pool:</span>
+                        <span className="text-xs text-foreground/50 font-semibold">Pool:</span>
                         <CopyButton text={action.fromPool} className="text-xs" />
                       </div>
                     )}
