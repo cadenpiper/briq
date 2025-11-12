@@ -11,6 +11,7 @@ export default function Rupert() {
   const chatContainerRef = useRef(null);
   const [isResetting, setIsResetting] = useState(false);
   const [isClient, setIsClient] = useState(false);
+  const [isInputCollapsed, setIsInputCollapsed] = useState(false);
   
   // Ensure client-side rendering to prevent hydration issues
   useEffect(() => {
@@ -88,6 +89,35 @@ export default function Rupert() {
       chatContainer.removeEventListener('wheel', handleWheel);
     };
   }, []);
+
+  // Auto-resize input field
+  const handleInputResize = (e) => {
+    if (!isInputCollapsed) {
+      e.target.style.height = 'auto';
+      e.target.style.height = Math.min(e.target.scrollHeight, 200) + 'px';
+    }
+  };
+
+  // Toggle input collapse
+  const toggleInputCollapse = () => {
+    const textarea = document.querySelector('textarea');
+    if (isInputCollapsed) {
+      // Expanding - from collapsed to full height
+      const targetHeight = Math.min(textarea.scrollHeight, 200);
+      textarea.style.height = '56px';
+      requestAnimationFrame(() => {
+        textarea.style.height = targetHeight + 'px';
+      });
+    } else {
+      // Collapsing - from current height to collapsed
+      const currentHeight = textarea.scrollHeight;
+      textarea.style.height = currentHeight + 'px';
+      requestAnimationFrame(() => {
+        textarea.style.height = '56px';
+      });
+    }
+    setIsInputCollapsed(!isInputCollapsed);
+  };
 
   // Clear chat history and reset conversation
   const clearChat = () => {
@@ -191,51 +221,76 @@ export default function Rupert() {
             </div>
 
             {/* Input Area */}
-            <div className="flex-shrink-0 bg-zen-100/10 dark:bg-zen-700/10 px-6 py-4 backdrop-blur-sm">
-              <form onSubmit={handleSubmit} className="flex space-x-4">
+            <div className="flex-shrink-0 bg-zen-100/10 dark:bg-zen-700/10 px-6 pt-3 pb-2 backdrop-blur-sm">
+              <form onSubmit={handleSubmit} className="flex items-end space-x-4">
                 <div className="flex-1 relative">
-                  <input
-                    value={input}
-                    onChange={handleInputChange}
-                    placeholder="Ask Rupert anything..."
-                    className="w-full p-4 pr-12 border-0 rounded-xl bg-zen-100/30 dark:bg-zen-800/30 text-foreground placeholder-zen-500 dark:placeholder-cream-400 focus:outline-none focus:bg-zen-100/50 dark:focus:bg-zen-800/50 transition-all duration-300 font-lato backdrop-blur-sm"
-                    disabled={isLoading}
-                  />
-                  
-                  {/* Send Button */}
-                  <button
-                    type="submit"
-                    disabled={isLoading || !input.trim()}
-                    className="absolute bg-blue-500 hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-full flex items-center justify-center transition-colors duration-200"
-                    style={{ 
-                      right: '12px',
-                      top: '50%',
-                      transform: 'translateY(-50%)',
-                      width: '28px',
-                      height: '28px',
-                      minWidth: '28px',
-                      minHeight: '28px',
-                      maxWidth: '28px',
-                      maxHeight: '28px'
-                    }}
-                  >
-                    <svg
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
+                  <textarea
+                      value={input}
+                      onChange={(e) => {
+                        handleInputChange(e);
+                        handleInputResize(e);
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' && !e.shiftKey) {
+                          e.preventDefault();
+                          handleSubmit(e);
+                        }
+                      }}
+                      placeholder="Ask Rupert anything..."
+                      className="w-full px-3 py-3 pr-12 border-0 rounded-xl bg-zen-100/30 dark:bg-zen-800/30 text-foreground placeholder-zen-500 dark:placeholder-cream-400 focus:outline-none focus:bg-zen-100/50 dark:focus:bg-zen-800/50 transition-all duration-300 font-lato backdrop-blur-sm resize-none overflow-y-auto hidden-scrollbar"
+                      style={{ minHeight: '56px', maxHeight: '200px', transition: 'height 0.2s ease-out', scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+                      rows={1}
+                      disabled={isLoading}
+                    />
+                    
+                    {/* Collapse/Expand Button */}
+                    {(input.includes('\n') || (typeof document !== 'undefined' && document.querySelector('textarea')?.scrollHeight > 56)) ? (
+                      <button
+                        type="button"
+                        onClick={toggleInputCollapse}
+                        className="absolute left-1/2 transform -translate-x-1/2 -top-6 text-zen-600 hover:text-zen-800 dark:text-zen-400 dark:hover:text-zen-200 transition-colors bg-zen-200/80 dark:bg-zen-700/80 rounded-full p-2 shadow-sm border border-zen-300/50 dark:border-zen-600/50"
+                        title={isInputCollapsed ? "Expand input" : "Collapse input"}
+                      >
+                        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
+                                d={isInputCollapsed ? "M19 9l-7 7-7-7" : "M5 15l7-7 7 7"} />
+                        </svg>
+                      </button>
+                    ) : null}
+                    
+                    {/* Send Button */}
+                    <button
+                      type="submit"
+                      disabled={isLoading || !input.trim()}
+                      className="absolute bg-blue-500 hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-full flex items-center justify-center transition-colors duration-200"
                       style={{ 
-                        width: '14px', 
-                        height: '14px',
-                        minWidth: '14px',
-                        minHeight: '14px',
-                        maxWidth: '14px',
-                        maxHeight: '14px'
+                        right: '12px',
+                        top: '12px',
+                        width: '28px',
+                        height: '28px',
+                        minWidth: '28px',
+                        minHeight: '28px',
+                        maxWidth: '28px',
+                        maxHeight: '28px'
                       }}
                     >
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 10l7-7m0 0l7 7m-7-7v18" />
-                    </svg>
-                  </button>
-                </div>
+                      <svg
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                        style={{ 
+                          width: '14px', 
+                          height: '14px',
+                          minWidth: '14px',
+                          minHeight: '14px',
+                          maxWidth: '14px',
+                          maxHeight: '14px'
+                        }}
+                      >
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 10l7-7m0 0l7 7m-7-7v18" />
+                      </svg>
+                    </button>
+                  </div>
               </form>
             </div>
           </div>

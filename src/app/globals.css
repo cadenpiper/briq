@@ -95,6 +95,16 @@ html {
   scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
 }
 
+/* Hidden scrollbar - allows scrolling but hides the scrollbar */
+.hidden-scrollbar {
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE and Edge */
+}
+
+.hidden-scrollbar::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, Opera */
+}
+
 .font-jetbrains-mono {
   font-family: var(--font-jetbrains-mono);
 }
