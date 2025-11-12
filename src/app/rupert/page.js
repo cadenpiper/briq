@@ -175,7 +175,7 @@ export default function Rupert() {
                           : 'bg-zen-100/60 dark:bg-zen-700/60 text-foreground'
                       }`}
                     >
-                      <p className="text-base leading-relaxed whitespace-pre-wrap font-lato">
+                      <p className="text-base leading-relaxed whitespace-pre-wrap font-lato text-left">
                         {message.content}
                       </p>
                     </div>
