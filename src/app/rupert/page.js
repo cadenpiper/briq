@@ -105,24 +105,13 @@ export default function Rupert() {
   return (
     <Layout>
       <AnimatedBackground />
-      <div className="flex justify-center py-12">
-        <div className="text-center max-w-4xl mx-auto px-4 sm:px-6 w-full">
+      <div className="flex justify-center py-6">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 w-full">
           
-          {/* Hero Section */}
-          <div className="mb-16 sm:mb-20 lg:mb-24">
-            <h1 
-              className="text-3xl sm:text-4xl md:text-5xl text-foreground font-light mb-4 sm:mb-6 transition-colors duration-300 leading-tight"
-              style={{ fontFamily: 'var(--font-jetbrains-mono)', fontWeight: 100 }}
-            >
-              Rupert
-            </h1>
-            <p className="text-lg sm:text-xl text-foreground/70 max-w-2xl mx-auto font-light font-lato">
-              Your AI-powered DeFi agent for yield optimization and strategy guidance
-            </p>
-          </div>
+
 
           {/* Chat Container */}
-          <div className="glass-card p-0 w-full max-w-4xl h-[700px] sm:h-[700px] h-[80vh] overflow-hidden flex flex-col">
+          <div className="glass-card p-0 w-full max-w-4xl h-[calc(100vh-8rem)] overflow-hidden flex flex-col">
             
             {/* Chat Header */}
             <div className="glass px-6 py-4 backdrop-blur-sm">
@@ -171,7 +160,7 @@ export default function Rupert() {
                     <div
                       className={`p-4 rounded-2xl backdrop-blur-sm ${
                         message.role === 'user'
-                          ? 'bg-zen-600/80 dark:bg-zen-700/80 text-cream-100 dark:text-cream-100'
+                          ? 'bg-blue-500 text-white'
                           : 'bg-zen-100/60 dark:bg-zen-700/60 text-foreground'
                       }`}
                     >
