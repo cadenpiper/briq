@@ -237,8 +237,8 @@ export default function Rupert() {
                         }
                       }}
                       placeholder="Ask Rupert anything..."
-                      className="w-full px-3 py-3 pr-12 border-0 rounded-xl bg-zen-100/30 dark:bg-zen-800/30 text-foreground placeholder-zen-500 dark:placeholder-cream-400 focus:outline-none focus:bg-zen-100/50 dark:focus:bg-zen-800/50 transition-all duration-300 font-lato backdrop-blur-sm resize-none overflow-y-auto hidden-scrollbar"
-                      style={{ minHeight: '56px', maxHeight: '200px', transition: 'height 0.2s ease-out', scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+                      className="w-full px-3 pr-12 border-0 rounded-xl bg-zen-100/30 dark:bg-zen-800/30 text-foreground placeholder-zen-500 dark:placeholder-cream-400 focus:outline-none focus:bg-zen-100/50 dark:focus:bg-zen-800/50 transition-all duration-300 font-lato backdrop-blur-sm resize-none overflow-y-auto hidden-scrollbar"
+                      style={{ paddingTop: '14px', paddingBottom: '14px', minHeight: '56px', maxHeight: '200px', transition: 'height 0.2s ease-out', scrollbarWidth: 'none', msOverflowStyle: 'none' }}
                       rows={1}
                       disabled={isLoading}
                     />
@@ -265,7 +265,7 @@ export default function Rupert() {
                       className="absolute bg-blue-500 hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-full flex items-center justify-center transition-colors duration-200"
                       style={{ 
                         right: '12px',
-                        top: '12px',
+                        top: '14px',
                         width: '28px',
                         height: '28px',
                         minWidth: '28px',
