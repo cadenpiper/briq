@@ -4,6 +4,7 @@ pragma solidity ^0.8.28;
 import "./StrategyCoordinator.sol";
 import "./BriqShares.sol";
 import "./PriceFeedManager.sol";
+import "./BriqTimelock.sol";
 import { Errors } from "./libraries/Errors.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
@@ -38,6 +39,19 @@ contract BriqVault is Ownable, ReentrancyGuard {
     
     /// @notice Price feed manager for USD conversions
     PriceFeedManager public priceFeedManager;
+    
+    /// @notice Timelock controller for critical operations
+    address public timelock;
+
+    /**
+     * @notice Modifier to allow only owner or timelock to call critical functions
+     */
+    modifier onlyOwnerOrTimelock() {
+        if (msg.sender != owner() && msg.sender != timelock) {
+            revert Errors.UnauthorizedAccess();
+        }
+        _;
+    }
 
     /**
      * @notice Emitted when a user deposits tokens into the vault
@@ -63,15 +77,23 @@ contract BriqVault is Ownable, ReentrancyGuard {
      * @param _coordinator Address of the StrategyCoordinator contract
      * @param _briqShares Address of the BriqShares token contract
      * @param _priceFeedManager Address of the PriceFeedManager contract
+     * @param _timelock Address of the BriqTimelock contract
      */
-    constructor(address _coordinator, address _briqShares, address _priceFeedManager) Ownable(msg.sender) {
-        if (_coordinator == address(0) || _briqShares == address(0) || _priceFeedManager == address(0)) {
+    constructor(
+        address _coordinator, 
+        address _briqShares, 
+        address _priceFeedManager,
+        address _timelock
+    ) Ownable(msg.sender) {
+        if (_coordinator == address(0) || _briqShares == address(0) || 
+            _priceFeedManager == address(0) || _timelock == address(0)) {
             revert Errors.InvalidAddress();
         }
 
         strategyCoordinator = StrategyCoordinator(_coordinator);
         briqShares = BriqShares(_briqShares);
         priceFeedManager = PriceFeedManager(_priceFeedManager);
+        timelock = _timelock;
     }
 
     /**
@@ -226,10 +248,10 @@ contract BriqVault is Ownable, ReentrancyGuard {
     }
 
     /**
-     * @notice Updates the price feed manager (owner only)
+     * @notice Updates the price feed manager (owner or timelock only)
      * @param _newPriceFeedManager Address of the new price feed manager
      */
-    function updatePriceFeedManager(address _newPriceFeedManager) external onlyOwner {
+    function updatePriceFeedManager(address _newPriceFeedManager) external onlyOwnerOrTimelock {
         if (_newPriceFeedManager == address(0)) revert Errors.InvalidAddress();
         priceFeedManager = PriceFeedManager(_newPriceFeedManager);
     }

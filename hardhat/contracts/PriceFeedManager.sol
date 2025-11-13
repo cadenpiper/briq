@@ -13,12 +13,28 @@ contract PriceFeedManager is Ownable {
     
     mapping(address => AggregatorV3Interface) public priceFeeds;
     mapping(address => uint8) public tokenDecimals;
+    
+    /// @notice Timelock controller for critical operations
+    address public timelock;
 
     event PriceFeedUpdated(address indexed token, address indexed priceFeed, uint8 decimals);
 
-    constructor() Ownable(msg.sender) {}
+    /**
+     * @notice Modifier to allow only owner or timelock to call critical functions
+     */
+    modifier onlyOwnerOrTimelock() {
+        if (msg.sender != owner() && msg.sender != timelock) {
+            revert Errors.UnauthorizedAccess();
+        }
+        _;
+    }
 
-    function setPriceFeed(address _token, address _priceFeed, uint8 _decimals) external onlyOwner {
+    constructor(address _timelock) Ownable(msg.sender) {
+        if (_timelock == address(0)) revert Errors.InvalidAddress();
+        timelock = _timelock;
+    }
+
+    function setPriceFeed(address _token, address _priceFeed, uint8 _decimals) external onlyOwnerOrTimelock {
         if (_token == address(0) || _priceFeed == address(0)) revert Errors.InvalidAddress();
         
         priceFeeds[_token] = AggregatorV3Interface(_priceFeed);

@@ -1,6 +1,6 @@
 const { expect } = require("chai");
 const { ethers } = require("hardhat");
-const { loadFixture } = require("@nomicfoundation/hardhat-toolbox/network-helpers");
+const { loadFixture, time } = require("@nomicfoundation/hardhat-toolbox/network-helpers");
 const fs = require('fs');
 
 describe("BriqVault - Complete Protocol", function () {
@@ -28,7 +28,14 @@ describe("BriqVault - Complete Protocol", function () {
 
     // Deploy PriceFeedManager (core protocol component)
     const PriceFeedManager = await ethers.getContractFactory("PriceFeedManager");
-    const priceFeedManager = await PriceFeedManager.deploy();
+    
+    // Deploy BriqTimelock first
+    const BriqTimelock = await ethers.getContractFactory("BriqTimelock");
+    const timelock = await BriqTimelock.deploy(owner.address);
+    await timelock.waitForDeployment();
+    
+    // Deploy PriceFeedManager with timelock
+    const priceFeedManager = await PriceFeedManager.deploy(await timelock.getAddress());
     await priceFeedManager.waitForDeployment();
 
     // Deploy BriqShares
@@ -49,7 +56,8 @@ describe("BriqVault - Complete Protocol", function () {
     const StrategyCoordinator = await ethers.getContractFactory("StrategyCoordinator");
     const strategyCoordinator = await StrategyCoordinator.deploy(
       await strategyAave.getAddress(),
-      await strategyCompound.getAddress()
+      await strategyCompound.getAddress(),
+      await timelock.getAddress()
     );
     await strategyCoordinator.waitForDeployment();
 
@@ -58,7 +66,8 @@ describe("BriqVault - Complete Protocol", function () {
     const briqVault = await BriqVault.deploy(
       await strategyCoordinator.getAddress(),
       await briqShares.getAddress(),
-      await priceFeedManager.getAddress()
+      await priceFeedManager.getAddress(),
+      await timelock.getAddress()
     );
     await briqVault.waitForDeployment();
 
@@ -123,6 +132,7 @@ describe("BriqVault - Complete Protocol", function () {
       strategyAave, 
       strategyCompound, 
       priceFeedManager,
+      timelock,
       owner, 
       user1, 
       user2, 
@@ -473,6 +483,125 @@ describe("BriqVault - Complete Protocol", function () {
       
       expect(vaultTokens.length).to.equal(coordinatorTokens.length);
       expect(vaultTokens).to.deep.equal(coordinatorTokens);
+    });
+  });
+
+  describe("Timelock Integration", function () {
+    const DELAY = 48 * 60 * 60; // 48 hours
+
+    it("should allow owner to call updatePriceFeedManager directly", async function () {
+      const { briqVault, user1 } = await loadFixture(deployBriqVaultFixture);
+      
+      // Owner should be able to call updatePriceFeedManager immediately
+      await expect(
+        briqVault.updatePriceFeedManager(user1.address)
+      ).to.not.be.reverted;
+    });
+
+    it("should allow timelock to call updatePriceFeedManager after delay", async function () {
+      const { briqVault, timelock, user1 } = await loadFixture(deployBriqVaultFixture);
+      
+      const data = briqVault.interface.encodeFunctionData(
+        "updatePriceFeedManager", 
+        [user1.address]
+      );
+
+      // Schedule the transaction
+      await timelock.schedule(
+        await briqVault.getAddress(),
+        0,
+        data,
+        ethers.ZeroHash,
+        ethers.ZeroHash,
+        DELAY
+      );
+
+      // Fast forward time
+      await time.increase(DELAY + 1);
+
+      // Execute the transaction
+      await expect(
+        timelock.execute(
+          await briqVault.getAddress(),
+          0,
+          data,
+          ethers.ZeroHash,
+          ethers.ZeroHash
+        )
+      ).to.not.be.reverted;
+    });
+
+    it("should reject unauthorized calls to updatePriceFeedManager", async function () {
+      const { briqVault, user1 } = await loadFixture(deployBriqVaultFixture);
+      
+      await expect(
+        briqVault.connect(user1).updatePriceFeedManager(user1.address)
+      ).to.be.revertedWithCustomError(briqVault, "UnauthorizedAccess");
+    });
+
+    it("should prevent execution before timelock delay", async function () {
+      const { briqVault, timelock, user1 } = await loadFixture(deployBriqVaultFixture);
+      
+      const data = briqVault.interface.encodeFunctionData(
+        "updatePriceFeedManager", 
+        [user1.address]
+      );
+
+      // Schedule the transaction
+      await timelock.schedule(
+        await briqVault.getAddress(),
+        0,
+        data,
+        ethers.ZeroHash,
+        ethers.ZeroHash,
+        DELAY
+      );
+
+      // Try to execute immediately (should fail)
+      await expect(
+        timelock.execute(
+          await briqVault.getAddress(),
+          0,
+          data,
+          ethers.ZeroHash,
+          ethers.ZeroHash
+        )
+      ).to.be.reverted;
+    });
+
+    it("should allow PriceFeedManager timelock integration", async function () {
+      const { priceFeedManager, timelock, user1 } = await loadFixture(deployBriqVaultFixture);
+      
+      const mockPriceFeed = "0x1234567890123456789012345678901234567890";
+      
+      const data = priceFeedManager.interface.encodeFunctionData(
+        "setPriceFeed", 
+        [user1.address, mockPriceFeed, 8]
+      );
+
+      // Schedule the transaction
+      await timelock.schedule(
+        await priceFeedManager.getAddress(),
+        0,
+        data,
+        ethers.ZeroHash,
+        ethers.ZeroHash,
+        DELAY
+      );
+
+      // Fast forward time
+      await time.increase(DELAY + 1);
+
+      // Execute the transaction
+      await expect(
+        timelock.execute(
+          await priceFeedManager.getAddress(),
+          0,
+          data,
+          ethers.ZeroHash,
+          ethers.ZeroHash
+        )
+      ).to.not.be.reverted;
     });
   });
 });

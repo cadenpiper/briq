@@ -1,6 +1,6 @@
 const { expect } = require("chai");
 const { ethers } = require("hardhat");
-const { loadFixture } = require("@nomicfoundation/hardhat-toolbox/network-helpers");
+const { loadFixture, time } = require("@nomicfoundation/hardhat-toolbox/network-helpers");
 const fs = require('fs');
 
 describe("StrategyCoordinator", function () {
@@ -34,11 +34,17 @@ describe("StrategyCoordinator", function () {
     const strategyCompound = await StrategyCompoundComet.deploy();
     await strategyCompound.waitForDeployment();
 
-    // Deploy StrategyCoordinator
+    // Deploy BriqTimelock
+    const BriqTimelock = await ethers.getContractFactory("BriqTimelock");
+    const timelock = await BriqTimelock.deploy(owner.address);
+    await timelock.waitForDeployment();
+
+    // Deploy StrategyCoordinator with timelock
     const StrategyCoordinator = await ethers.getContractFactory("StrategyCoordinator");
     const strategyCoordinator = await StrategyCoordinator.deploy(
       await strategyAave.getAddress(),
-      await strategyCompound.getAddress()
+      await strategyCompound.getAddress(),
+      await timelock.getAddress()
     );
     await strategyCoordinator.waitForDeployment();
 
@@ -75,6 +81,7 @@ describe("StrategyCoordinator", function () {
       strategyCoordinator, 
       strategyAave, 
       strategyCompound, 
+      timelock,
       owner, 
       vault, 
       user, 
@@ -290,6 +297,124 @@ describe("StrategyCoordinator", function () {
       // Should return valid APY value
       expect(usdcAPY).to.be.gte(0);
       expect(usdcAPY).to.be.lte(5000);
+    });
+  });
+
+  describe("Timelock Integration", function () {
+    const DELAY = 48 * 60 * 60; // 48 hours
+
+    it("should allow owner to call updateVaultAddress directly", async function () {
+      const { strategyCoordinator, vault } = await loadFixture(deployStrategyCoordinatorFixture);
+      
+      await expect(
+        strategyCoordinator.updateVaultAddress(vault.address)
+      ).to.not.be.reverted;
+    });
+
+    it("should allow timelock to call updateVaultAddress after delay", async function () {
+      const { strategyCoordinator, timelock, vault } = await loadFixture(deployStrategyCoordinatorFixture);
+      
+      const data = strategyCoordinator.interface.encodeFunctionData(
+        "updateVaultAddress", 
+        [vault.address]
+      );
+
+      // Schedule the transaction
+      await timelock.schedule(
+        await strategyCoordinator.getAddress(),
+        0,
+        data,
+        ethers.ZeroHash,
+        ethers.ZeroHash,
+        DELAY
+      );
+
+      // Fast forward time
+      await time.increase(DELAY + 1);
+
+      // Execute the transaction
+      await expect(
+        timelock.execute(
+          await strategyCoordinator.getAddress(),
+          0,
+          data,
+          ethers.ZeroHash,
+          ethers.ZeroHash
+        )
+      ).to.not.be.reverted;
+    });
+
+    it("should allow owner to call setRupert directly", async function () {
+      const { strategyCoordinator, user } = await loadFixture(deployStrategyCoordinatorFixture);
+      
+      await expect(
+        strategyCoordinator.setRupert(user.address)
+      ).to.not.be.reverted;
+    });
+
+    it("should reject unauthorized calls to protected functions", async function () {
+      const { strategyCoordinator, user, vault } = await loadFixture(deployStrategyCoordinatorFixture);
+      
+      await expect(
+        strategyCoordinator.connect(user).updateVaultAddress(vault.address)
+      ).to.be.revertedWithCustomError(strategyCoordinator, "UnauthorizedAccess");
+
+      await expect(
+        strategyCoordinator.connect(user).setRupert(user.address)
+      ).to.be.revertedWithCustomError(strategyCoordinator, "UnauthorizedAccess");
+    });
+
+    it("should allow Rupert to manage strategies without timelock", async function () {
+      const { strategyCoordinator, owner, user } = await loadFixture(deployStrategyCoordinatorFixture);
+      
+      // Set Rupert address
+      await strategyCoordinator.setRupert(user.address);
+
+      // Rupert should be able to call setStrategyForToken immediately
+      await expect(
+        strategyCoordinator.connect(user).setStrategyForToken(USDC_ADDRESS, 0) // AAVE strategy
+      ).to.not.be.reverted;
+    });
+
+    it("should allow owner to call emergencyWithdraw immediately (access control)", async function () {
+      const { strategyCoordinator, user } = await loadFixture(deployStrategyCoordinatorFixture);
+      
+      // Test that unauthorized user cannot call emergency withdraw
+      await expect(
+        strategyCoordinator.connect(user).emergencyWithdraw(USDC_ADDRESS)
+      ).to.be.revertedWithCustomError(strategyCoordinator, "OwnableUnauthorizedAccount");
+      
+      // This confirms emergencyWithdraw uses onlyOwner (immediate access) not timelock
+    });
+
+    it("should prevent execution before timelock delay", async function () {
+      const { strategyCoordinator, timelock, vault } = await loadFixture(deployStrategyCoordinatorFixture);
+      
+      const data = strategyCoordinator.interface.encodeFunctionData(
+        "updateVaultAddress", 
+        [vault.address]
+      );
+
+      // Schedule the transaction
+      await timelock.schedule(
+        await strategyCoordinator.getAddress(),
+        0,
+        data,
+        ethers.ZeroHash,
+        ethers.ZeroHash,
+        DELAY
+      );
+
+      // Try to execute immediately (should fail)
+      await expect(
+        timelock.execute(
+          await strategyCoordinator.getAddress(),
+          0,
+          data,
+          ethers.ZeroHash,
+          ethers.ZeroHash
+        )
+      ).to.be.reverted;
     });
   });
 });

@@ -74,6 +74,19 @@ contract StrategyCoordinator is Ownable, ReentrancyGuard {
     
     /// @notice Mapping to track if token is in the array (for gas optimization)
     mapping(address => bool) private tokenInList;
+    
+    /// @notice Timelock controller for critical operations
+    address public timelock;
+
+    /**
+     * @notice Modifier to allow only owner or timelock to call critical functions
+     */
+    modifier onlyOwnerOrTimelock() {
+        if (msg.sender != owner() && msg.sender != timelock) {
+            revert Errors.UnauthorizedAccess();
+        }
+        _;
+    }
 
     /**
      * @notice Emitted when a token's strategy assignment is updated
@@ -115,13 +128,15 @@ contract StrategyCoordinator is Ownable, ReentrancyGuard {
      */
     constructor(
         address _strategyAave,
-        address _strategyCompound
+        address _strategyCompound,
+        address _timelock
     ) Ownable(msg.sender) {
-        if ( _strategyAave == address(0) || _strategyCompound == address(0)) 
+        if (_strategyAave == address(0) || _strategyCompound == address(0) || _timelock == address(0)) 
             revert Errors.InvalidAddress();
         
         strategyAave = StrategyAave(_strategyAave);
         strategyCompound = StrategyCompoundComet(_strategyCompound);
+        timelock = _timelock;
     }
 
     /**
@@ -156,7 +171,7 @@ contract StrategyCoordinator is Ownable, ReentrancyGuard {
      * - Updates the vault address
      * - Enables vault to call deposit/withdraw functions
      */
-    function updateVaultAddress(address _vault) external onlyOwner {
+    function updateVaultAddress(address _vault) external onlyOwnerOrTimelock {
         if (_vault == address(0)) revert Errors.InvalidAddress();
         vault = _vault;
     }
@@ -167,7 +182,7 @@ contract StrategyCoordinator is Ownable, ReentrancyGuard {
      * 
      * @param _rupert Address of Rupert's wallet
      */
-    function setRupert(address _rupert) external onlyOwner {
+    function setRupert(address _rupert) external onlyOwnerOrTimelock {
         if (_rupert == address(0)) revert Errors.InvalidAddress();
         rupert = _rupert;
     }
