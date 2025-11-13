@@ -4,11 +4,13 @@ import { useState, useMemo, useEffect } from 'react';
 import { formatAPY, formatTVL, formatUtilization } from '../utils/formatters';
 import { useSubgraphMarketData } from '../hooks/useSubgraphMarketData';
 import { ProtocolIcon, TokenIcon, NetworkIcon } from './icons';
+import CustomDropdown from './CustomDropdown';
 
 export default function MarketTable() {
   const [selectedNetworks, setSelectedNetworks] = useState([]);
   const [selectedTokens, setSelectedTokens] = useState([]);
   const [sortConfig, setSortConfig] = useState({ key: 'apy', direction: 'desc' });
+  const [searchQuery, setSearchQuery] = useState('');
 
   const { data: subgraphData, loading: subgraphLoading, error: subgraphError, refetch } = useSubgraphMarketData();
 
@@ -53,15 +55,15 @@ export default function MarketTable() {
   const getHealthStyle = (health) => {
     switch (health) {
       case 'Great':
-        return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200';
+        return 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200 border border-emerald-200 dark:border-emerald-700 shadow-sm';
       case 'Good':
-        return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200';
+        return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 border border-blue-200 dark:border-blue-700 shadow-sm';
       case 'Fair':
-        return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200';
+        return 'bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200 border border-amber-200 dark:border-amber-700 shadow-sm';
       case 'Poor':
-        return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200';
+        return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200 border border-red-200 dark:border-red-700 shadow-sm';
       default:
-        return 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200';
+        return 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200 border border-gray-200 dark:border-gray-700 shadow-sm';
     }
   };
 
@@ -95,10 +97,22 @@ export default function MarketTable() {
         ? ['USDC', 'WETH'] 
         : selectedTokens;
 
-      return subgraphData.filter(market => 
+      let filteredMarkets = subgraphData.filter(market => 
         networksToShow.includes(market.network) && 
         tokensToShow.includes(market.token)
       );
+
+      // Apply search filter
+      if (searchQuery.trim()) {
+        const query = searchQuery.toLowerCase();
+        filteredMarkets = filteredMarkets.filter(market =>
+          market.protocol.toLowerCase().includes(query) ||
+          market.token.toLowerCase().includes(query) ||
+          market.network.toLowerCase().includes(query)
+        );
+      }
+
+      return filteredMarkets;
     }
 
     return [];
@@ -134,7 +148,7 @@ export default function MarketTable() {
         return bValue - aValue;
       }
     });
-  }, [selectedNetworks, selectedTokens, sortConfig, subgraphData]);
+  }, [selectedNetworks, selectedTokens, sortConfig, subgraphData, searchQuery]);
 
   const handleSort = (key) => {
     setSortConfig(prevConfig => ({
@@ -173,109 +187,79 @@ export default function MarketTable() {
   return (
     <div className="space-y-4">
       <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 justify-start">
-        <div className="space-y-2 flex-shrink-0 w-full sm:w-auto">
-          <label htmlFor="network-select" className="block text-sm font-medium text-foreground">
-            Network
-          </label>
-          <div className="relative inline-block w-full sm:w-auto">
-            <select
-              id="network-select"
-              name="network-select"
-              onChange={(e) => {
-                if (e.target.value && e.target.value !== 'Select') {
-                  handleNetworkSelect(e.target.value);
-                  e.target.value = 'Select';
-                }
-              }}
-              className="glass text-foreground px-4 py-3 pr-10 rounded-lg focus:outline-none focus:border-accent/50 transition-all duration-200 appearance-none cursor-pointer w-full sm:w-[140px] relative z-10 text-base sm:text-sm"
-              style={{ fontWeight: 'normal' }}
-              defaultValue="Select"
-            >
-              <option value="Select" disabled>Select</option>
-              {networks.filter(network => !selectedNetworks.includes(network)).map((network) => (
-                <option key={network} value={network}>
-                  {network}
-                </option>
-              ))}
-            </select>
-            <div className="absolute top-1/2 right-3 transform -translate-y-1/2 pointer-events-none z-20">
-              <svg className="w-4 h-4 text-foreground/70" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+        {/* Search Bar */}
+        <div className="flex-shrink-0 w-full sm:w-auto">
+          <div className="relative">
+            <input
+              type="text"
+              placeholder="Search markets..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="glass text-foreground px-4 py-3 pl-10 pr-4 rounded-lg focus:outline-none focus:border-accent/50 transition-all duration-200 w-full sm:w-[200px] text-base sm:text-sm"
+            />
+            <div className="absolute left-3 top-1/2 transform -translate-y-1/2">
+              <svg className="w-4 h-4 text-foreground/50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
               </svg>
             </div>
           </div>
-          {selectedNetworks.length > 0 && (
-            <div className="flex flex-wrap gap-2 mt-2 justify-start sm:justify-center sm:max-w-[140px]">
-              {selectedNetworks.map((network) => (
-                <div key={network} className="flex items-center bg-accent/20 text-accent border border-accent/40 px-2 py-1 rounded text-sm font-medium">
-                  <button
-                    type="button"
-                    onClick={() => removeNetwork(network)}
-                    className="mr-1 hover:bg-accent/30 rounded-full p-1 transition-colors duration-200"
-                    aria-label={`Remove ${network} network filter`}
-                  >
-                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                  </button>
-                  <span>{getNetworkAbbreviation(network)}</span>
-                </div>
-              ))}
-            </div>
-          )}
         </div>
 
-        <div className="space-y-2 flex-shrink-0 w-full sm:w-auto">
-          <label htmlFor="asset-select" className="block text-sm font-medium text-foreground">
-            Asset
-          </label>
-          <div className="relative inline-block w-full sm:w-auto">
-            <select
-              id="asset-select"
-              name="asset-select"
-              onChange={(e) => {
-                if (e.target.value && e.target.value !== 'Select') {
-                  handleTokenSelect(e.target.value);
-                  e.target.value = 'Select';
-                }
-              }}
-              className="glass text-foreground px-4 py-3 pr-10 rounded-lg focus:outline-none focus:border-accent/50 transition-all duration-200 appearance-none cursor-pointer w-full sm:w-[140px] relative z-10 text-base sm:text-sm"
-              style={{ fontWeight: 'normal' }}
-              defaultValue="Select"
-            >
-              <option value="Select" disabled>Select</option>
-              {tokens.filter(token => !selectedTokens.includes(token)).map((token) => (
-                <option key={token} value={token}>
-                  {token}
-                </option>
-              ))}
-            </select>
-            <div className="absolute top-1/2 right-3 transform -translate-y-1/2 pointer-events-none z-20">
-              <svg className="w-4 h-4 text-foreground/70" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-              </svg>
-            </div>
+        <CustomDropdown
+          options={networks}
+          onSelect={handleNetworkSelect}
+          selectedItems={selectedNetworks}
+          placeholder="Network"
+        />
+        
+        {/* Selected Networks Display */}
+        {selectedNetworks.length > 0 && (
+          <div className="flex flex-wrap gap-2 mt-2 justify-start sm:justify-center sm:max-w-[140px]">
+            {selectedNetworks.map((network) => (
+              <div key={network} className="flex items-center bg-accent/20 text-accent border border-accent/40 px-2 py-1 rounded text-sm font-medium">
+                <button
+                  type="button"
+                  onClick={() => removeNetwork(network)}
+                  className="mr-1 hover:bg-accent/30 rounded-full p-1 transition-colors duration-200"
+                  aria-label={`Remove ${network} network filter`}
+                >
+                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+                <span>{getNetworkAbbreviation(network)}</span>
+              </div>
+            ))}
           </div>
-          {selectedTokens.length > 0 && (
-            <div className="flex flex-wrap gap-2 mt-2 justify-start sm:justify-center sm:max-w-[140px]">
-              {selectedTokens.map((token) => (
-                <div key={token} className="flex items-center bg-accent/20 text-accent border border-accent/40 px-2 py-1 rounded text-sm font-medium">
-                  <button
-                    type="button"
-                    onClick={() => removeToken(token)}
-                    className="mr-1 hover:bg-accent/30 rounded-full p-1 transition-colors duration-200"
-                    aria-label={`Remove ${token} asset filter`}
-                  >
-                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                  </button>
-                  <span>{token}</span>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
+        )}
+
+        <CustomDropdown
+          options={tokens}
+          onSelect={handleTokenSelect}
+          selectedItems={selectedTokens}
+          placeholder="Asset"
+        />
+        
+        {/* Selected Tokens Display */}
+        {selectedTokens.length > 0 && (
+          <div className="flex flex-wrap gap-2 mt-2 justify-start sm:justify-center sm:max-w-[140px]">
+            {selectedTokens.map((token) => (
+              <div key={token} className="flex items-center bg-accent/20 text-accent border border-accent/40 px-2 py-1 rounded text-sm font-medium">
+                <button
+                  type="button"
+                  onClick={() => removeToken(token)}
+                  className="mr-1 hover:bg-accent/30 rounded-full p-1 transition-colors duration-200"
+                  aria-label={`Remove ${token} asset filter`}
+                >
+                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+                <span>{token}</span>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between glass-card px-4 py-3 gap-3 sm:gap-4">
@@ -325,9 +309,9 @@ export default function MarketTable() {
       </div>
 
       {/* Markets Table - Desktop */}
-      <div className="hidden md:block glass-card overflow-hidden">
+      <div className="hidden md:block glass-card overflow-hidden w-full">
         <div className="overflow-x-auto">
-          <table className="w-full border-collapse border-spacing-0">
+          <table className="w-full border-collapse border-spacing-0" style={{ tableLayout: 'fixed', width: '100%' }}>
             <thead className="glass">
               <tr>
                 <th className="px-6 py-4 text-center text-sm font-medium text-foreground">
@@ -382,7 +366,7 @@ export default function MarketTable() {
               {sortedMarkets.map((market, index) => (
                 <tr 
                   key={index}
-                  className="hover:bg-foreground/5 transition-colors duration-200"
+                  className="hover:bg-accent/5 hover:shadow-lg hover:shadow-accent/10 transition-all duration-300 cursor-pointer group"
                 >
                   <td className="px-6 py-4 text-sm font-medium text-foreground text-center">
                     <div className="flex items-center justify-center gap-2">
@@ -407,7 +391,7 @@ export default function MarketTable() {
                     </td>
                   )}
                   <td className="px-6 py-4 text-sm text-center">
-                    <span className="bg-accent/20 text-accent px-2 py-1 rounded-full font-medium">
+                    <span className="bg-accent/20 text-accent px-3 py-1.5 rounded-full font-semibold border border-accent/30 shadow-sm group-hover:bg-accent/30 group-hover:shadow-md transition-all duration-300">
                       {formatAPY(market.apyValue)}
                     </span>
                   </td>
@@ -513,7 +497,7 @@ export default function MarketTable() {
             <div className="grid grid-cols-3 gap-4 pt-2 border-t border-foreground/20">
               <div className="text-center">
                 <div className="text-xs text-foreground/50 mb-1">APY</div>
-                <div className="bg-accent/20 text-accent px-2 py-1 rounded-full font-medium text-sm">
+                <div className="bg-accent/20 text-accent px-3 py-1.5 rounded-full font-semibold text-sm border border-accent/30 shadow-sm">
                   {formatAPY(market.apyValue)}
                 </div>
               </div>
