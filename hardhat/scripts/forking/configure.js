@@ -12,9 +12,9 @@
  * Requires deployment.json from the deploy script and config.json for network settings.
  */
 
-const { ethers } = require("hardhat");
-const fs = require('fs');
-const { updateFrontendAddresses } = require('./updateFrontendAddresses');
+import { ethers } from "hardhat";
+import fs from 'fs';
+import { updateFrontendAddresses } from './updateFrontendAddresses.js';
 
 async function main() {
   console.log("⚙️  Configuring Briq Protocol with Chainlink Price Feeds\n");

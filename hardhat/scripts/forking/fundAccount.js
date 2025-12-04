@@ -9,8 +9,8 @@
  * Whale addresses are configured in config.json for each supported network.
  */
 
-const { ethers } = require("hardhat");
-const fs = require('fs');
+import { ethers } from "hardhat";
+import fs from 'fs';
 
 async function main() {
   console.log("💰 Funding hardhat accounts 0 and 1\n");

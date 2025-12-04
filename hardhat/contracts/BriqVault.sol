@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: UNLICENSED
+// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
 import "./StrategyCoordinator.sol";
@@ -7,8 +7,10 @@ import "./PriceFeedManager.sol";
 import "./BriqTimelock.sol";
 import { Errors } from "./libraries/Errors.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+import "@openzeppelin/contracts/utils/Pausable.sol";
 
 /**
  * @title BriqVault
@@ -26,22 +28,31 @@ import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
  * 
  * Security Features:
  * - ReentrancyGuard protection on deposit/withdraw functions
- * - Owner-only administrative functions
+ * - Pausable functionality for emergency situations
+ * - Owner/timelock administrative functions
  * - USD-normalized share calculations prevent token-specific advantages
+ * - Slippage protection for withdrawals
  */
-contract BriqVault is Ownable, ReentrancyGuard {
+contract BriqVault is Ownable, ReentrancyGuard, Pausable {
+    using SafeERC20 for IERC20;
     
     /// @notice Strategy coordinator contract that manages fund deployment
-    StrategyCoordinator public strategyCoordinator;
+    StrategyCoordinator public immutable strategyCoordinator;
     
     /// @notice Shares token contract representing vault ownership
-    BriqShares public briqShares;
+    BriqShares public immutable briqShares;
     
     /// @notice Price feed manager for USD conversions
-    PriceFeedManager public priceFeedManager;
+    PriceFeedManager public immutable priceFeedManager;
     
     /// @notice Timelock controller for critical operations
-    address public timelock;
+    address public immutable timelock;
+    
+    /// @notice Maximum slippage tolerance in basis points (default: 0.2% = 20 bp for lending)
+    uint256 public maxSlippageBps = 20;
+    
+    /// @notice Basis points denominator (10000 = 100%)
+    uint256 public constant BPS_DENOMINATOR = 10000;
 
     /**
      * @notice Modifier to allow only owner or timelock to call critical functions
@@ -71,6 +82,15 @@ contract BriqVault is Ownable, ReentrancyGuard {
      * @param sharesBurned Amount of shares burned from the user
      */
     event UserWithdrew(address indexed user, address indexed token, uint256 amount, uint256 sharesBurned);
+    
+    /**
+     * @notice Emitted when slippage tolerance is updated
+     * @param oldSlippage Previous slippage tolerance in basis points
+     * @param newSlippage New slippage tolerance in basis points
+     */
+    event SlippageUpdated(uint256 oldSlippage, uint256 newSlippage);
+    
+
 
     /**
      * @notice Initializes the BriqVault contract
@@ -109,13 +129,14 @@ contract BriqVault is Ownable, ReentrancyGuard {
      * - Token must have a configured price feed
      * - User must have approved the vault to spend the tokens
      * - Token must be supported by the strategy coordinator
+     * - Contract must not be paused
      */
-    function deposit(address _token, uint256 _amount) external nonReentrant {
+    function deposit(address _token, uint256 _amount) external nonReentrant whenNotPaused {
         if (_amount == 0) revert Errors.InvalidAmount();
         if (!priceFeedManager.hasPriceFeed(_token)) revert Errors.PriceFeedNotFound();
 
         // Transfer tokens from user to vault
-        IERC20(_token).transferFrom(msg.sender, address(this), _amount);
+        IERC20(_token).safeTransferFrom(msg.sender, address(this), _amount);
 
         // Get USD value of deposit using Chainlink price feeds
         uint256 depositUsdValue = priceFeedManager.getTokenValueInUSD(_token, _amount);
@@ -125,7 +146,7 @@ contract BriqVault is Ownable, ReentrancyGuard {
         uint256 totalShares = briqShares.totalSupply();
 
         // Approve and deposit tokens to StrategyCoordinator
-        IERC20(_token).approve(address(strategyCoordinator), _amount);
+        IERC20(_token).safeIncreaseAllowance(address(strategyCoordinator), _amount);
         strategyCoordinator.deposit(_token, _amount);
 
         // Calculate shares based on USD value
@@ -147,12 +168,13 @@ contract BriqVault is Ownable, ReentrancyGuard {
     /**
      * @notice Withdraws tokens from the vault by burning user shares
      * @dev Calculates the user's proportional share of the specific token
-     *      and withdraws the corresponding amount.
+     *      and withdraws the corresponding amount with slippage protection.
      * 
      * @param _token Address of the token to withdraw
      * @param _shares Amount of shares to burn for withdrawal
+     * @param _minAmountOut Minimum amount of tokens to receive (slippage protection)
      */
-    function withdraw(address _token, uint256 _shares) external nonReentrant {
+    function withdraw(address _token, uint256 _shares, uint256 _minAmountOut) external nonReentrant whenNotPaused {
         if (_shares == 0) revert Errors.InvalidAmount();
 
         // Validate user has sufficient shares
@@ -188,6 +210,11 @@ contract BriqVault is Ownable, ReentrancyGuard {
             }
         }
 
+        // Slippage protection
+        if (actualAmount < _minAmountOut) {
+            revert Errors.SlippageExceeded();
+        }
+
         // Burn the actual shares (might be less than requested)
         briqShares.burn(msg.sender, actualShares);
 
@@ -195,9 +222,34 @@ contract BriqVault is Ownable, ReentrancyGuard {
         strategyCoordinator.withdraw(_token, actualAmount);
 
         // Transfer tokens to user
-        IERC20(_token).transfer(msg.sender, actualAmount);
+        IERC20(_token).safeTransfer(msg.sender, actualAmount);
 
         emit UserWithdrew(msg.sender, _token, actualAmount, actualShares);
+    }
+
+    /**
+     * @notice Withdraws tokens without slippage protection (for backward compatibility)
+     * @param _token Address of the token to withdraw
+     * @param _shares Amount of shares to burn for withdrawal
+     */
+    /**
+     * @notice Emergency withdrawal function (owner/timelock only)
+     * @param _token Address of the token to withdraw
+     * @param _amount Amount of tokens to withdraw
+     * @param _recipient Address to receive the tokens
+     */
+    function emergencyWithdraw(address _token, uint256 _amount, address _recipient) external onlyOwnerOrTimelock {
+        if (_recipient == address(0)) revert Errors.InvalidAddress();
+        if (_amount == 0) revert Errors.InvalidAmount();
+        
+        // Withdraw from strategies if needed
+        uint256 vaultBalance = IERC20(_token).balanceOf(address(this));
+        if (vaultBalance < _amount) {
+            uint256 needed = _amount - vaultBalance;
+            strategyCoordinator.withdraw(_token, needed);
+        }
+        
+        IERC20(_token).safeTransfer(_recipient, _amount);
     }
 
     /**
@@ -248,11 +300,29 @@ contract BriqVault is Ownable, ReentrancyGuard {
     }
 
     /**
-     * @notice Updates the price feed manager (owner or timelock only)
-     * @param _newPriceFeedManager Address of the new price feed manager
+     * @notice Updates the maximum slippage tolerance (owner or timelock only)
+     * @param _newSlippageBps New slippage tolerance in basis points (max 300 = 3%)
      */
-    function updatePriceFeedManager(address _newPriceFeedManager) external onlyOwnerOrTimelock {
-        if (_newPriceFeedManager == address(0)) revert Errors.InvalidAddress();
-        priceFeedManager = PriceFeedManager(_newPriceFeedManager);
+    function updateMaxSlippage(uint256 _newSlippageBps) external onlyOwnerOrTimelock {
+        if (_newSlippageBps > 300) revert Errors.InvalidAmount(); // Max 3% slippage for volatility
+        
+        uint256 oldSlippage = maxSlippageBps;
+        maxSlippageBps = _newSlippageBps;
+        
+        emit SlippageUpdated(oldSlippage, _newSlippageBps);
+    }
+
+    /**
+     * @notice Pauses the contract (owner or timelock only)
+     */
+    function pause() external onlyOwnerOrTimelock {
+        _pause();
+    }
+
+    /**
+     * @notice Unpauses the contract (owner or timelock only)
+     */
+    function unpause() external onlyOwnerOrTimelock {
+        _unpause();
     }
 }

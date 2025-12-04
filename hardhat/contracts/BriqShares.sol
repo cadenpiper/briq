@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: UNLICENSED
+// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
@@ -21,11 +21,21 @@ import "@openzeppelin/contracts/access/Ownable.sol";
  * - Only vault can mint/burn shares
  * - Owner-only vault address updates
  * - Standard ERC20 protections
+ * - Custom errors for gas efficiency
  */
 contract BriqShares is ERC20, Ownable {
     
     /// @notice Address of the vault contract authorized to mint/burn shares
     address public vault;
+
+    /// @notice Thrown when vault address is zero
+    error InvalidVaultAddress();
+    
+    /// @notice Thrown when caller is not the vault
+    error OnlyVault();
+
+    /// @notice Emitted when vault address is set
+    event VaultSet(address indexed vault);
 
     /**
      * @notice Initializes the BriqShares token contract
@@ -54,15 +64,17 @@ contract BriqShares is ERC20, Ownable {
      * Effects:
      * - Sets the vault address
      * - Transfers ownership to the vault contract
+     * - Emits VaultSet event
      * 
      * Security:
      * - Only owner can call this function
      * - Validates vault address is not zero
      */
     function setVault(address _vault) external onlyOwner {
-        require(_vault != address(0), "Invalid vault address");
+        if (_vault == address(0)) revert InvalidVaultAddress();
         vault = _vault;
         transferOwnership(_vault);
+        emit VaultSet(_vault);
     }
 
     /**
@@ -84,7 +96,7 @@ contract BriqShares is ERC20, Ownable {
      * - Emits Transfer event (from ERC20)
      */
     function mint(address _to, uint256 _amount) external {
-        require(msg.sender == vault, "Only vault can mint");
+        if (msg.sender != vault) revert OnlyVault();
         _mint(_to, _amount);
     }
 
@@ -107,7 +119,7 @@ contract BriqShares is ERC20, Ownable {
      * - Emits Transfer event (from ERC20)
      */
     function burn(address _from, uint256 _amount) external {
-        require(msg.sender == vault, "Only vault can burn");
+        if (msg.sender != vault) revert OnlyVault();
         _burn(_from, _amount);
     }
 }

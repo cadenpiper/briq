@@ -1,55 +1,47 @@
 {
-  "name": "briq",
+  "name": "briq-core",
   "version": "1.0.0",
-  "description": "",
-  "homepage": "https://github.com/cadenpiper/briq#readme",
-  "bugs": {
-    "url": "https://github.com/cadenpiper/briq/issues"
-  },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/cadenpiper/briq.git"
-  },
-  "license": "ISC",
-  "author": "",
-  "type": "commonjs",
+  "description": "Smart contracts for Briq DeFi yield optimization protocol",
   "main": "index.js",
   "scripts": {
     "test": "npx hardhat test",
+    "test:coverage": "npx hardhat coverage",
+    "compile": "npx hardhat compile",
+    "clean": "npx hardhat clean",
     "node": "npx hardhat node",
-    "deploy": "npx hardhat run scripts/forking/deploy.js --network localhost",
-    "configure": "npx hardhat run scripts/forking/configure.js --network localhost",
-    "fund": "npx hardhat run scripts/forking/fundAccount.js --network localhost",
-    "fund-rupert": "npx hardhat run scripts/forking/fundRupert.js --network localhost",
-    "set-rupert": "npx hardhat run scripts/forking/setRupert.js --network localhost",
-    "balance": "npx hardhat run scripts/forking/checkBalance.js --network localhost",
+    "deploy": "npx hardhat run scripts/forking/deploy.ts --network hardhat",
+    "configure": "npx hardhat run scripts/forking/configure.js --network hardhat",
+    "fund": "npx hardhat run scripts/forking/fundAccount.js --network hardhat",
+    "fund-rupert": "npx hardhat run scripts/forking/fundRupert.js --network hardhat",
+    "set-rupert": "npx hardhat run scripts/forking/setRupert.js --network hardhat",
+    "balance": "npx hardhat run scripts/forking/checkBalance.js --network hardhat",
     "setup-fork": "npm run deploy && npm run configure && npm run fund && npm run fund-rupert && npm run set-rupert && npm run balance"
   },
+  "keywords": [
+    "defi",
+    "yield",
+    "optimization",
+    "ethereum",
+    "arbitrum"
+  ],
+  "author": "Briq Protocol",
+  "license": "UNLICENSED",
+  "type": "module",
   "devDependencies": {
-    "@nomicfoundation/hardhat-chai-matchers": "^2.1.0",
-    "@nomicfoundation/hardhat-ethers": "^3.1.0",
-    "@nomicfoundation/hardhat-ignition": "^0.15.13",
-    "@nomicfoundation/hardhat-ignition-ethers": "^0.15.14",
-    "@nomicfoundation/hardhat-network-helpers": "^1.1.0",
-    "@nomicfoundation/hardhat-toolbox": "^6.1.0",
-    "@nomicfoundation/hardhat-verify": "^2.1.1",
-    "@nomicfoundation/ignition-core": "^0.15.13",
-    "@typechain/ethers-v6": "^0.5.1",
-    "@typechain/hardhat": "^9.1.0",
-    "@types/chai": "^4.3.20",
-    "@types/mocha": "^10.0.10",
-    "@types/node": "^24.2.1",
-    "dotenv": "^17.2.0",
-    "ethers": "^6.15.0",
-    "hardhat": "^2.22.19",
-    "hardhat-gas-reporter": "^1.0.10",
-    "solidity-coverage": "^0.8.16",
-    "ts-node": "^10.9.2",
-    "typechain": "^8.3.2"
+    "@nomicfoundation/hardhat-ignition": "^3.0.5",
+    "@nomicfoundation/hardhat-network-helpers": "^3.0.3",
+    "@nomicfoundation/hardhat-toolbox-viem": "^5.0.1",
+    "@types/node": "^22.19.1",
+    "forge-std": "github:foundry-rs/forge-std#v1.9.7",
+    "hardhat": "^3.0.14",
+    "typescript": "~5.8.0",
+    "viem": "^2.39.0"
   },
   "dependencies": {
     "@aave/core-v3": "^1.19.3",
-    "@chainlink/contracts": "^1.4.0",
-    "@openzeppelin/contracts": "^5.4.0"
+    "@chainlink/contracts": "^1.5.0",
+    "@nomicfoundation/hardhat-keystore": "^3.0.3",
+    "@openzeppelin/contracts": "^5.4.0",
+    "@pythnetwork/pyth-sdk-solidity": "^4.2.0"
   }
 }

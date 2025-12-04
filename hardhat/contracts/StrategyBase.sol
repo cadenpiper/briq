@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: UNLICENSED
+// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
 /**
@@ -20,6 +20,9 @@ pragma solidity ^0.8.28;
  */
 abstract contract StrategyBase {
     
+    // Custom Errors
+    error OnlyCoordinator();
+    
     /// @notice Address of the StrategyCoordinator contract authorized to call strategy functions
     address public coordinator;
 
@@ -29,7 +32,7 @@ abstract contract StrategyBase {
      *      strategy operations, maintaining proper access control in the system.
      */
     modifier onlyCoordinator() {
-        require(msg.sender == coordinator, "Only Coordinator");
+        if (msg.sender != coordinator) revert OnlyCoordinator();
         _;
     }
 

@@ -1,39 +1,13 @@
 {
   "CHAIN_CONFIG": {
-    "1": {
-      "usdcWhale": "0x55FE002aefF02F77364de339a1292923A15844B8",
-      "wethWhale": "0x312e67b47A2A29AE200184949093D92369F80B53",
-      "aavePoolV3": "0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2",
-      "compoundMarketUSDC": "0xc3d688B66703497DAA19211EEdff47f25384cdc3",
-      "compoundMarketWETH": "0xA17581A9E3356d9A858b789D68B4d866e593aE94",
-      "usdcAddress": "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
-      "wethAddress": "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2",
-      "priceFeeds": {
-        "USDC": "0x8fFfFfd4AfB6115b954Bd326cbe7B4BA576818f6",
-        "WETH": "0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419"
-      }
-    },
-    "42161": {
-      "usdcWhale": "0xc4E3787a516874156Aa798b46be891d83ccdF809",
-      "wethWhale": "0x70d95587d40A2caf56bd97485aB3Eec10Bee6336",
-      "aavePoolV3": "0x794a61358D6845594F94dc1DB02A252b5b4814aD",
-      "compoundMarketUSDC": "0x9c4ec768c28520B50860ea7a15bd7213a9fF58bf",
-      "compoundMarketWETH": "0x6f7D514bbD4aFf3BcD1140B7344b32f063dEe486",
-      "usdcAddress": "0xaf88d065e77c8cC2239327C5EDb3A432268e5831",
-      "wethAddress": "0x82aF49447D8a07e3bd95BD0d56f35241523fBab1",
-      "priceFeeds": {
-        "USDC": "0x50834F3163758fcC1Df9973b6e91f0F0F0434aD3",
-        "WETH": "0x639Fe6ab55C921f74e7fac1ee960C0B6293ba612"
-      }
-    },
     "31337": {
-      "usdcWhale": "0xEe7aE85f2Fe2239E27D9c1E23fFFe168D63b4055",
-      "wethWhale": "0xC6962004f452bE9203591991D15f6b388e09E8D0",
       "aavePoolV3": "0x794a61358D6845594F94dc1DB02A252b5b4814aD",
-      "compoundMarketUSDC": "0x9c4ec768c28520B50860ea7a15bd7213a9fF58bf",
+      "compoundMarketUSDC": "0xA5EDBDD9646f8dFF606d7448e414884C7d905dCA",
       "compoundMarketWETH": "0x6f7D514bbD4aFf3BcD1140B7344b32f063dEe486",
       "usdcAddress": "0xaf88d065e77c8cC2239327C5EDb3A432268e5831",
       "wethAddress": "0x82aF49447D8a07e3bd95BD0d56f35241523fBab1",
+      "usdcWhale": "0x47c031236e19d024b42f8AE6780E44A573170703",
+      "wethWhale": "0x489ee077994B6658eAfA855C308275EAd8097C4A",
       "priceFeeds": {
         "USDC": "0x50834F3163758fcC1Df9973b6e91f0F0F0434aD3",
         "WETH": "0x639Fe6ab55C921f74e7fac1ee960C0B6293ba612"

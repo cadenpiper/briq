@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: UNLICENSED
+// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
 import "./StrategyBase.sol";
@@ -6,6 +6,7 @@ import "./strategies/StrategyAave.sol";
 import "./strategies/StrategyCompoundComet.sol";
 import { Errors } from "./libraries/Errors.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 
@@ -41,6 +42,7 @@ interface IPriceFeedManager {
  * - Custom error handling for gas efficiency
  */
 contract StrategyCoordinator is Ownable, ReentrancyGuard {
+    using SafeERC20 for IERC20;
     
     /// @notice Address of the BriqVault contract authorized to call coordinator functions
     address public vault;
@@ -49,10 +51,10 @@ contract StrategyCoordinator is Ownable, ReentrancyGuard {
     address public rupert;
     
     /// @notice Aave V3 strategy implementation
-    StrategyAave public strategyAave;
+    StrategyAave public immutable strategyAave;
     
     /// @notice Compound V3 (Comet) strategy implementation
-    StrategyCompoundComet public strategyCompound;
+    StrategyCompoundComet public immutable strategyCompound;
 
     /**
      * @notice Enumeration of available strategy types
@@ -76,7 +78,7 @@ contract StrategyCoordinator is Ownable, ReentrancyGuard {
     mapping(address => bool) private tokenInList;
     
     /// @notice Timelock controller for critical operations
-    address public timelock;
+    address public immutable timelock;
 
     /**
      * @notice Modifier to allow only owner or timelock to call critical functions
@@ -234,7 +236,7 @@ contract StrategyCoordinator is Ownable, ReentrancyGuard {
     /**
      * @notice Deposits tokens into the assigned strategy for yield generation
      * @dev Routes tokens to the appropriate strategy based on the token's configuration.
-     *      Handles token transfers and strategy interaction.
+     *      Handles token transfers and strategy interaction with failure handling.
      * 
      * @param _token Address of the token to deposit
      * @param _amount Amount of tokens to deposit
@@ -243,44 +245,125 @@ contract StrategyCoordinator is Ownable, ReentrancyGuard {
      * - Can only be called by the vault contract
      * - Token must be supported by the coordinator
      * - Amount must be greater than 0
-     * - Strategy must be properly configured for the token
+     * - At least one strategy must be available for the token
      * 
      * Effects:
      * - Transfers tokens from vault to coordinator
-     * - Approves and deposits tokens to the assigned strategy
-     * - Emits Deposit event
+     * - Attempts deposit to assigned strategy
+     * - Falls back to alternative strategy if primary fails
+     * - Emits Deposit event with actual strategy used
      * 
      * Security:
      * - Protected by onlyVault modifier
      * - Protected by nonReentrant modifier
+     * - Strategy failure isolation prevents total deposit failure
      * - Validates token support and amount
+     * 
+     * Failure Handling:
+     * - Primary strategy failure triggers fallback to alternative strategy
+     * - Graceful degradation when strategies are paused or failing
+     * - Ensures deposits succeed even if preferred strategy is unavailable
      */
     function deposit(address _token, uint256 _amount) external onlyVault nonReentrant {
         if (!supportedTokens[_token]) revert Errors.UnsupportedToken();
         if (_amount == 0) revert Errors.InvalidAmount();
 
         StrategyType strategyType = tokenToStrategy[_token];
+        StrategyType actualStrategy = strategyType;
+        bool depositSuccessful = false;
         
         // Transfer tokens from vault to coordinator
-        IERC20(_token).transferFrom(vault, address(this), _amount);
+        IERC20(_token).safeTransferFrom(vault, address(this), _amount);
 
-        // Approve and deposit to appropriate strategy
+        // Attempt deposit to primary strategy with failure handling
         if (strategyType == StrategyType.AAVE) {
-            IERC20(_token).approve(address(strategyAave), _amount);
-            strategyAave.deposit(_token, _amount);
+            depositSuccessful = _attemptDepositToAave(_token, _amount);
+            
+            // If primary strategy failed, try Compound as fallback
+            if (!depositSuccessful && strategyCompound.supportedTokens(_token)) {
+                depositSuccessful = _attemptDepositToCompound(_token, _amount);
+                if (depositSuccessful) {
+                    actualStrategy = StrategyType.COMPOUND;
+                }
+            }
         } else if (strategyType == StrategyType.COMPOUND) {
-            IERC20(_token).approve(address(strategyCompound), _amount);
-            strategyCompound.deposit(_token, _amount);
+            depositSuccessful = _attemptDepositToCompound(_token, _amount);
+            
+            // If primary strategy failed, try Aave as fallback
+            if (!depositSuccessful && strategyAave.isTokenSupported(_token)) {
+                depositSuccessful = _attemptDepositToAave(_token, _amount);
+                if (depositSuccessful) {
+                    actualStrategy = StrategyType.AAVE;
+                }
+            }
         }
 
-        emit Deposit(_token, _amount, strategyType);
+        // If all strategies failed, revert and return tokens to vault
+        if (!depositSuccessful) {
+            IERC20(_token).safeTransfer(vault, _amount);
+            revert Errors.DepositFailed();
+        }
+
+        emit Deposit(_token, _amount, actualStrategy);
+    }
+
+    /**
+     * @notice Attempts to deposit tokens to Aave strategy with failure handling
+     * @dev Internal function that safely attempts deposit to Aave strategy
+     * 
+     * @param _token Address of the token to deposit
+     * @param _amount Amount of tokens to deposit
+     * @return success True if deposit succeeded, false if failed
+     */
+    function _attemptDepositToAave(address _token, uint256 _amount) internal returns (bool success) {
+        try strategyAave.isTokenSupported(_token) returns (bool supported) {
+            if (!supported) return false;
+            
+            IERC20(_token).safeIncreaseAllowance(address(strategyAave), _amount);
+            
+            try strategyAave.deposit(_token, _amount) {
+                return true;
+            } catch {
+                // Reset approval on failure
+                IERC20(_token).safeDecreaseAllowance(address(strategyAave), _amount);
+                return false;
+            }
+        } catch {
+            return false;
+        }
+    }
+
+    /**
+     * @notice Attempts to deposit tokens to Compound strategy with failure handling
+     * @dev Internal function that safely attempts deposit to Compound strategy
+     * 
+     * @param _token Address of the token to deposit
+     * @param _amount Amount of tokens to deposit
+     * @return success True if deposit succeeded, false if failed
+     */
+    function _attemptDepositToCompound(address _token, uint256 _amount) internal returns (bool success) {
+        try strategyCompound.supportedTokens(_token) returns (bool supported) {
+            if (!supported) return false;
+            
+            IERC20(_token).safeIncreaseAllowance(address(strategyCompound), _amount);
+            
+            try strategyCompound.deposit(_token, _amount) {
+                return true;
+            } catch {
+                // Reset approval on failure
+                IERC20(_token).safeDecreaseAllowance(address(strategyCompound), _amount);
+                return false;
+            }
+        } catch {
+            return false;
+        }
     }
 
     /**
      * @notice Withdraws tokens from strategies and returns them to the vault
-     * @dev Implements intelligent withdrawal logic that can source funds from multiple
-     *      strategies if needed. Prioritizes the assigned strategy but falls back to
-     *      other strategies for liquidity optimization.
+     * @dev Implements intelligent withdrawal logic with failure handling that can source funds from multiple
+     *      strategies if needed. Prioritizes the assigned strategy but falls back to other strategies for
+     *      liquidity optimization. Includes strategy failure isolation to prevent total withdrawal failure.
      * 
      * @param _token Address of the token to withdraw
      * @param _amount Amount of tokens to withdraw
@@ -289,54 +372,114 @@ contract StrategyCoordinator is Ownable, ReentrancyGuard {
      * - Can only be called by the vault contract
      * - Token must be supported by the coordinator
      * - Amount must be greater than 0
-     * - Sufficient liquidity must be available across strategies
+     * - At least some liquidity must be available across strategies
      * 
      * Effects:
-     * - Withdraws tokens from assigned strategy first
-     * - Falls back to other strategies if needed
-     * - Transfers tokens to vault
-     * - Emits Withdrawal event
+     * - Attempts withdrawal from assigned strategy first
+     * - Falls back to other strategies if needed or if primary fails
+     * - Transfers available tokens to vault (may be partial if insufficient liquidity)
+     * - Emits Withdrawal event with actual amount withdrawn
      * 
      * Security:
      * - Protected by onlyVault modifier
      * - Protected by nonReentrant modifier
+     * - Strategy failure isolation prevents total system failure
      * - Validates token support and amount
      * 
-     * Gas Optimization:
-     * - Prioritizes single-strategy withdrawals
-     * - Only uses cross-strategy logic when necessary
+     * Failure Handling:
+     * - Individual strategy failures don't block entire withdrawal
+     * - Partial withdrawals supported when full amount unavailable
+     * - Graceful degradation when strategies are paused or failing
      */
     function withdraw(address _token, uint256 _amount) external onlyVault nonReentrant {
         if (!supportedTokens[_token]) revert Errors.UnsupportedToken();
         if (_amount == 0) revert Errors.InvalidAmount();
 
         StrategyType strategyType = tokenToStrategy[_token];
+        uint256 totalWithdrawn = 0;
         
-        // Withdraw from appropriate strategy
+        // Attempt withdrawal from primary strategy with failure handling
         if (strategyType == StrategyType.AAVE) {
-            uint256 aaveBalance = strategyAave.balanceOf(_token);
-            if (aaveBalance >= _amount) {
-                strategyAave.withdraw(_token, _amount);
-            } else {
-                uint256 remainingBalance = _amount - aaveBalance;
-                strategyAave.withdraw(_token, aaveBalance);
-                strategyCompound.withdraw(_token, remainingBalance);
+            totalWithdrawn += _attemptWithdrawalFromAave(_token, _amount);
+            
+            // If we still need more tokens, try Compound strategy
+            if (totalWithdrawn < _amount) {
+                uint256 remaining = _amount - totalWithdrawn;
+                totalWithdrawn += _attemptWithdrawalFromCompound(_token, remaining);
             }
         } else if (strategyType == StrategyType.COMPOUND) {
-            uint256 compoundBalance = strategyCompound.balanceOf(_token);
-            if (compoundBalance >= _amount) {
-                strategyCompound.withdraw(_token, _amount);
-            } else {
-                uint256 remainingBalance = _amount - compoundBalance;
-                strategyCompound.withdraw(_token, compoundBalance);
-                strategyAave.withdraw(_token, remainingBalance);
+            totalWithdrawn += _attemptWithdrawalFromCompound(_token, _amount);
+            
+            // If we still need more tokens, try Aave strategy
+            if (totalWithdrawn < _amount) {
+                uint256 remaining = _amount - totalWithdrawn;
+                totalWithdrawn += _attemptWithdrawalFromAave(_token, remaining);
             }
         }
 
-        // Transfer tokens to vault contract
-        IERC20(_token).transfer(vault, _amount);
+        // Transfer whatever we managed to withdraw to vault
+        if (totalWithdrawn > 0) {
+            IERC20(_token).safeTransfer(vault, totalWithdrawn);
+        }
 
-        emit Withdrawal(_token, _amount, strategyType);
+        // Revert if we couldn't withdraw anything at all
+        if (totalWithdrawn <= 0) {
+            revert Errors.WithdrawalFailed();
+        }
+
+        emit Withdrawal(_token, totalWithdrawn, strategyType);
+    }
+
+    /**
+     * @notice Attempts to withdraw tokens from Aave strategy with failure handling
+     * @dev Internal function that safely attempts withdrawal from Aave strategy
+     * 
+     * @param _token Address of the token to withdraw
+     * @param _amount Amount of tokens to attempt to withdraw
+     * @return actualWithdrawn Amount actually withdrawn (0 if failed)
+     */
+    function _attemptWithdrawalFromAave(address _token, uint256 _amount) internal returns (uint256 actualWithdrawn) {
+        try strategyAave.balanceOf(_token) returns (uint256 aaveBalance) {
+            if (aaveBalance <= 0) return 0;
+            
+            uint256 withdrawAmount = aaveBalance >= _amount ? _amount : aaveBalance;
+            
+            try strategyAave.withdraw(_token, withdrawAmount) {
+                return withdrawAmount;
+            } catch {
+                // Strategy withdrawal failed, return 0
+                return 0;
+            }
+        } catch {
+            // Balance check failed, strategy likely paused or failing
+            return 0;
+        }
+    }
+
+    /**
+     * @notice Attempts to withdraw tokens from Compound strategy with failure handling
+     * @dev Internal function that safely attempts withdrawal from Compound strategy
+     * 
+     * @param _token Address of the token to withdraw
+     * @param _amount Amount of tokens to attempt to withdraw
+     * @return actualWithdrawn Amount actually withdrawn (0 if failed)
+     */
+    function _attemptWithdrawalFromCompound(address _token, uint256 _amount) internal returns (uint256 actualWithdrawn) {
+        try strategyCompound.balanceOf(_token) returns (uint256 compoundBalance) {
+            if (compoundBalance <= 0) return 0;
+            
+            uint256 withdrawAmount = compoundBalance >= _amount ? _amount : compoundBalance;
+            
+            try strategyCompound.withdraw(_token, withdrawAmount) {
+                return withdrawAmount;
+            } catch {
+                // Strategy withdrawal failed, return 0
+                return 0;
+            }
+        } catch {
+            // Balance check failed, strategy likely paused or failing
+            return 0;
+        }
     }
 
     /**
@@ -444,7 +587,7 @@ contract StrategyCoordinator is Ownable, ReentrancyGuard {
      * @dev This function bypasses normal withdrawal logic and should be used
      *      only when normal operations are not possible or safe.
      */
-    function emergencyWithdraw(address _token) external onlyOwner {
+    function emergencyWithdraw(address _token) external onlyOwner nonReentrant {
         StrategyType strategyType = tokenToStrategy[_token];
         
         if (strategyType == StrategyType.AAVE) {
@@ -457,8 +600,57 @@ contract StrategyCoordinator is Ownable, ReentrancyGuard {
         
         uint256 tokenBalance = IERC20(_token).balanceOf(address(this));
         if (tokenBalance > 0) {
-            IERC20(_token).transfer(vault, tokenBalance);
+            IERC20(_token).safeTransfer(vault, tokenBalance);
         }
+    }
+
+    /**
+     * @notice Emergency bypass function for direct strategy withdrawal
+     * @dev Allows vault to withdraw directly from a specific strategy, bypassing coordinator logic.
+     *      This is used when the coordinator's normal withdrawal logic fails or during emergencies.
+     * 
+     * @param _token Address of the token to withdraw
+     * @param _amount Amount of tokens to withdraw
+     * @param _strategyType Specific strategy to withdraw from (AAVE or COMPOUND)
+     * 
+     * Requirements:
+     * - Can only be called by the vault contract
+     * - Strategy must support the token
+     * - Amount must be greater than 0
+     * 
+     * Effects:
+     * - Withdraws tokens directly from specified strategy
+     * - Transfers tokens to vault
+     * - Bypasses normal coordinator withdrawal logic
+     * 
+     * Security:
+     * - Vault-only access control
+     * - Should be used when normal withdraw() function fails
+     * 
+     * @dev This function provides a fallback mechanism when the coordinator's
+     *      intelligent withdrawal logic encounters failures across strategies.
+     */
+    function emergencyWithdrawFromStrategy(
+        address _token, 
+        uint256 _amount, 
+        StrategyType _strategyType
+    ) external onlyVault nonReentrant {
+        if (_amount == 0) revert Errors.InvalidAmount();
+        
+        uint256 actualWithdrawn = 0;
+        
+        if (_strategyType == StrategyType.AAVE) {
+            actualWithdrawn = _attemptWithdrawalFromAave(_token, _amount);
+        } else if (_strategyType == StrategyType.COMPOUND) {
+            actualWithdrawn = _attemptWithdrawalFromCompound(_token, _amount);
+        }
+        
+        if (actualWithdrawn > 0) {
+            IERC20(_token).safeTransfer(vault, actualWithdrawn);
+        }
+        
+        // Don't revert if nothing withdrawn - let vault handle the response
+        emit Withdrawal(_token, actualWithdrawn, _strategyType);
     }
 
     /**
@@ -480,5 +672,80 @@ contract StrategyCoordinator is Ownable, ReentrancyGuard {
         }
         
         return 0;
+    }
+
+    /**
+     * @notice Checks if a strategy is currently available and operational
+     * @dev Tests strategy availability by checking if it's paused and can respond to balance queries
+     * 
+     * @param _strategyType Strategy type to check (AAVE or COMPOUND)
+     * @param _token Token to test strategy availability with
+     * @return available True if strategy is available and operational
+     */
+    function isStrategyAvailable(StrategyType _strategyType, address _token) external view returns (bool available) {
+        if (_strategyType == StrategyType.AAVE) {
+            try strategyAave.paused() returns (bool paused) {
+                if (paused) return false;
+                
+                try strategyAave.isTokenSupported(_token) returns (bool supported) {
+                    return supported;
+                } catch {
+                    return false;
+                }
+            } catch {
+                return false;
+            }
+        } else if (_strategyType == StrategyType.COMPOUND) {
+            try strategyCompound.paused() returns (bool paused) {
+                if (paused) return false;
+                
+                try strategyCompound.supportedTokens(_token) returns (bool supported) {
+                    return supported;
+                } catch {
+                    return false;
+                }
+            } catch {
+                return false;
+            }
+        }
+        
+        return false;
+    }
+
+    /**
+     * @notice Gets available liquidity across all strategies for a token
+     * @dev Returns total available liquidity that can be withdrawn, useful for withdrawal planning
+     * 
+     * @param _token Address of the token to check liquidity for
+     * @return totalLiquidity Total available liquidity across all strategies
+     * @return aaveLiquidity Available liquidity in Aave strategy
+     * @return compoundLiquidity Available liquidity in Compound strategy
+     */
+    function getAvailableLiquidity(address _token) external view returns (
+        uint256 totalLiquidity,
+        uint256 aaveLiquidity,
+        uint256 compoundLiquidity
+    ) {
+        // Check Aave liquidity
+        try strategyAave.balanceOf(_token) returns (uint256 aaveBalance) {
+            if (!strategyAave.paused()) {
+                aaveLiquidity = aaveBalance;
+            }
+        } catch {
+            aaveLiquidity = 0;
+        }
+        
+        // Check Compound liquidity
+        try strategyCompound.balanceOf(_token) returns (uint256 compoundBalance) {
+            if (!strategyCompound.paused()) {
+                compoundLiquidity = compoundBalance;
+            }
+        } catch {
+            compoundLiquidity = 0;
+        }
+        
+        totalLiquidity = aaveLiquidity + compoundLiquidity;
+        
+        return (totalLiquidity, aaveLiquidity, compoundLiquidity);
     }
 }

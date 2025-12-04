@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.19;
+pragma solidity ^0.8.28;
 
 import "@openzeppelin/contracts/governance/TimelockController.sol";
 
@@ -15,6 +15,9 @@ import "@openzeppelin/contracts/governance/TimelockController.sol";
  * - Admin should eventually renounce admin role to make timelock self-governing
  */
 contract BriqTimelock is TimelockController {
+    
+    // Custom Errors
+    error NotAdmin();
     
     /// @notice Delay period for critical operations (48 hours)
     uint256 public constant DELAY = 48 hours;
@@ -50,7 +53,7 @@ contract BriqTimelock is TimelockController {
      * WARNING: Only call this when you're ready to fully decentralize
      */
     function renounceAdminRole() external {
-        require(hasRole(DEFAULT_ADMIN_ROLE, msg.sender), "Not admin");
+        if (!hasRole(DEFAULT_ADMIN_ROLE, msg.sender)) revert NotAdmin();
         
         // Transfer admin role to the timelock itself
         _grantRole(DEFAULT_ADMIN_ROLE, address(this));

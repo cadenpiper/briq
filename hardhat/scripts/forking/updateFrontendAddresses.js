@@ -7,8 +7,12 @@
  * For production deployments, addresses should be manually updated in the frontend.
  */
 
-const fs = require('fs');
-const path = require('path');
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 function updateFrontendAddresses(addresses) {
   // Path from hardhat/scripts/forking/ to src/app/utils/forkAddresses.js
@@ -96,4 +100,4 @@ if (require.main === module) {
   console.log("Use this script by calling updateFrontendAddresses(addresses) from setupFork.js");
 }
 
-module.exports = { updateFrontendAddresses };
+export { updateFrontendAddresses };

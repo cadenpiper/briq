@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.0;
+pragma solidity ^0.8.28;
 
 /**
  * @title Errors
@@ -130,4 +130,22 @@ library Errors {
      * @dev Used in vault when total USD value is zero or insufficient for withdrawals
      */
     error InsufficientLiquidity();
+    
+    /**
+     * @notice Thrown when all withdrawal attempts from strategies fail
+     * @dev Used in coordinator when no strategy can fulfill withdrawal request
+     */
+    error WithdrawalFailed();
+    
+    /**
+     * @notice Thrown when all deposit attempts to strategies fail
+     * @dev Used in coordinator when no strategy can accept deposit
+     */
+    error DepositFailed();
+    
+    /**
+     * @notice Thrown when slippage tolerance is exceeded during withdrawals
+     * @dev Used in vault when actual withdrawal amount is below minimum expected
+     */
+    error SlippageExceeded();
 }

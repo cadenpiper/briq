@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: UNLICENSED
+// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
 import "../StrategyBase.sol";
@@ -8,6 +8,7 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+import "@openzeppelin/contracts/utils/Pausable.sol";
 
 /**
  * @title StrategyCompoundComet
@@ -35,7 +36,7 @@ import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
  * - SafeERC20 for secure token transfers
  * - Custom error handling for gas efficiency
  */
-contract StrategyCompoundComet is StrategyBase, ReentrancyGuard, Ownable {
+contract StrategyCompoundComet is StrategyBase, ReentrancyGuard, Pausable, Ownable {
     using SafeERC20 for IERC20;
 
     /// @notice Mapping to check if a token is supported by this strategy
@@ -47,9 +48,20 @@ contract StrategyCompoundComet is StrategyBase, ReentrancyGuard, Ownable {
     /// @notice Mapping from token address to its corresponding Comet market contract
     mapping(address => IComet) public tokenToComet;
 
+    /// @notice Address of the timelock controller for critical operations
+    address public timelock;
+
     // Rewards tracking for analytics
     mapping(address => uint256) public totalDeposited;
     mapping(address => uint256) public totalWithdrawn;
+
+    /**
+     * @notice Modifier to allow only owner or timelock to call critical functions
+     */
+    modifier onlyOwnerOrTimelock() {
+        if (msg.sender != owner() && msg.sender != timelock) revert Errors.UnauthorizedAccess();
+        _;
+    }
 
     /**
      * @notice Emitted when a token's support status is updated
@@ -89,6 +101,20 @@ contract StrategyCompoundComet is StrategyBase, ReentrancyGuard, Ownable {
     event Withdrawn(address indexed token, uint256 amount, uint256 totalWithdrawn);
 
     /**
+     * @notice Emitted when timelock address is updated
+     * @param timelock New timelock address
+     */
+    event TimelockUpdated(address indexed timelock);
+
+    /**
+     * @notice Emitted when emergency withdrawal is executed
+     * @param token Address of the withdrawn token
+     * @param amount Amount withdrawn
+     * @param recipient Address that received the tokens
+     */
+    event EmergencyWithdraw(address indexed token, uint256 amount, address indexed recipient);
+
+    /**
      * @notice Initializes the StrategyCompoundComet contract
      * @dev Sets up the strategy with owner permissions. Coordinator address
      *      must be set separately after deployment.
@@ -98,6 +124,17 @@ contract StrategyCompoundComet is StrategyBase, ReentrancyGuard, Ownable {
      * - Sets deployer as owner
      */
     constructor() StrategyBase() Ownable(msg.sender) {}
+
+    /**
+     * @notice Sets the timelock address for critical operations
+     * @dev Only owner can call this function
+     * @param _timelock Address of the timelock controller
+     */
+    function setTimelock(address _timelock) external onlyOwner {
+        if (_timelock == address(0)) revert Errors.InvalidAddress();
+        timelock = _timelock;
+        emit TimelockUpdated(_timelock);
+    }
 
     /**
      * @notice Sets the coordinator address for this strategy
@@ -144,7 +181,7 @@ contract StrategyCompoundComet is StrategyBase, ReentrancyGuard, Ownable {
      * - If disabling, clears tokenToComet mapping
      * - Emits TokenSupportUpdated event
      */
-    function updateTokenSupport(address _token, bool _status) external onlyOwner {
+    function updateTokenSupport(address _token, bool _status) external onlyOwnerOrTimelock {
         if (_token == address(0)) revert Errors.InvalidAddress();
         if (supportedTokens[_token] == _status) revert Errors.TokenSupportUnchanged();
         if (_status && address(tokenToComet[_token]) == address(0)) revert Errors.NoPoolForToken();
@@ -184,7 +221,7 @@ contract StrategyCompoundComet is StrategyBase, ReentrancyGuard, Ownable {
      * - Validates market-token compatibility before enabling
      * - Prevents misconfiguration of market-token relationships
      */
-    function updateMarketSupport(address _market, address _token, bool _status) external onlyOwner {
+    function updateMarketSupport(address _market, address _token, bool _status) external onlyOwnerOrTimelock {
         if (_market == address(0) || _token == address(0)) revert Errors.InvalidAddress();
         if (supportedMarkets[_market] == _status) revert Errors.PoolSupportUnchanged();
 
@@ -230,14 +267,14 @@ contract StrategyCompoundComet is StrategyBase, ReentrancyGuard, Ownable {
      * - Uses SafeERC20 for secure token transfers
      * - Validates all parameters before execution
      */
-    function deposit(address _token, uint256 _amount) external override onlyCoordinator nonReentrant {
+    function deposit(address _token, uint256 _amount) external override onlyCoordinator nonReentrant whenNotPaused {
         if (!supportedTokens[_token]) revert Errors.UnsupportedToken();
         if (_amount == 0) revert Errors.InvalidAmount();
         IComet comet = tokenToComet[_token];
         if (address(comet) == address(0)) revert Errors.NoPoolForToken();
 
         IERC20(_token).safeTransferFrom(coordinator, address(this), _amount);
-        IERC20(_token).approve(address(comet), _amount);
+        IERC20(_token).safeIncreaseAllowance(address(comet), _amount);
         comet.supply(_token, _amount); // supply base token
         
         // Track total deposited for rewards calculation
@@ -274,7 +311,7 @@ contract StrategyCompoundComet is StrategyBase, ReentrancyGuard, Ownable {
      * - Uses SafeERC20 for secure token transfers
      * - Tracks actual received amount to handle rounding
      */
-    function withdraw(address _token, uint256 _amount) external override onlyCoordinator nonReentrant {
+    function withdraw(address _token, uint256 _amount) external override onlyCoordinator nonReentrant whenNotPaused {
         if (!supportedTokens[_token]) revert Errors.UnsupportedToken();
         if (_amount == 0) revert Errors.InvalidAmount();
         IComet comet = tokenToComet[_token];
@@ -483,5 +520,52 @@ contract StrategyCompoundComet is StrategyBase, ReentrancyGuard, Ownable {
      */
     function getCometMarket(address _token) external view returns (address market) {
         return address(tokenToComet[_token]);
+    }
+
+    /**
+     * @notice Pauses the contract, preventing deposits and withdrawals
+     * @dev Only owner or timelock can call this function
+     */
+    function pause() external onlyOwnerOrTimelock {
+        _pause();
+    }
+
+    /**
+     * @notice Unpauses the contract, allowing deposits and withdrawals
+     * @dev Only owner or timelock can call this function
+     */
+    function unpause() external onlyOwnerOrTimelock {
+        _unpause();
+    }
+
+    /**
+     * @notice Emergency withdrawal function that can be called when paused
+     * @dev Allows withdrawal of tokens from Comet when contract is paused for emergency situations
+     * @param _token Address of the token to withdraw
+     * @param _amount Amount to withdraw (0 = withdraw all)
+     * @param _recipient Address to receive the withdrawn tokens
+     */
+    function emergencyWithdraw(address _token, uint256 _amount, address _recipient) external onlyOwnerOrTimelock whenPaused {
+        if (_token == address(0)) revert Errors.InvalidAddress();
+        if (_recipient == address(0)) revert Errors.InvalidAddress();
+        if (!supportedTokens[_token]) revert Errors.UnsupportedToken();
+
+        IComet comet = tokenToComet[_token];
+        if (address(comet) == address(0)) revert Errors.NoPoolForToken();
+
+        uint256 currentBalance = comet.balanceOf(address(this));
+        uint256 withdrawAmount = _amount <= 0 ? currentBalance : _amount;
+        
+        if (withdrawAmount <= 0) revert Errors.InvalidAmount();
+
+        // Track before/after balances
+        uint256 before = IERC20(_token).balanceOf(address(this));
+        comet.withdraw(_token, withdrawAmount);
+        uint256 afterBal = IERC20(_token).balanceOf(address(this));
+        uint256 received = afterBal - before;
+
+        IERC20(_token).safeTransfer(_recipient, received);
+        
+        emit EmergencyWithdraw(_token, received, _recipient);
     }
 }

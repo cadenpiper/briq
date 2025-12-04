@@ -12,72 +12,51 @@
  * Deployment addresses are saved to deployment.json for use by other scripts.
  */
 
-const { ethers } = require("hardhat");
-const fs = require('fs');
+import hre from "hardhat";
+import fs from 'fs';
 
 async function main() {
   console.log("🚀 Deploying Briq Protocol with Chainlink Price Feeds\n");
   
-  // Get deployer account and network info
-  const [deployer] = await ethers.getSigners();
-  const chainId = (await ethers.provider.getNetwork()).chainId;
-  const balance = await ethers.provider.getBalance(deployer.address);
+  // Get public client for network info
+  const publicClient = await hre.viem.getPublicClient();
+  const chainId = await publicClient.getChainId();
   
-  console.log(`Deployer: ${deployer.address}`);
-  console.log(`Chain ID: ${chainId}`);
-  console.log(`Balance: ${ethers.formatEther(balance)} ETH\n`);
+  console.log(`Chain ID: ${chainId}\n`);
 
   // Deploy contracts in dependency order
   console.log("📄 Deploying contracts...");
 
   // 1. Deploy PriceFeedManager (Chainlink price feed integration)
-  const PriceFeedManager = await ethers.getContractFactory("PriceFeedManager");
-  const priceFeedManager = await PriceFeedManager.deploy();
-  await priceFeedManager.waitForDeployment();
-  const priceFeedManagerAddress = await priceFeedManager.getAddress();
-  console.log(`   PriceFeedManager: ${priceFeedManagerAddress}`);
+  const priceFeedManager = await hre.viem.deployContract("PriceFeedManager");
+  console.log(`   PriceFeedManager: ${priceFeedManager.address}`);
 
   // 2. Deploy BriqShares (ERC20 token for vault shares)
-  const BriqShares = await ethers.getContractFactory("BriqShares");
-  const briqShares = await BriqShares.deploy("Briq Shares", "BRIQ");
-  await briqShares.waitForDeployment();
-  const briqSharesAddress = await briqShares.getAddress();
-  console.log(`   BriqShares: ${briqSharesAddress}`);
+  const briqShares = await hre.viem.deployContract("BriqShares", ["Briq Shares", "BRIQ"]);
+  console.log(`   BriqShares: ${briqShares.address}`);
 
   // 3. Deploy StrategyAave (Aave V3 lending strategy)
-  const StrategyAave = await ethers.getContractFactory("StrategyAave");
-  const strategyAave = await StrategyAave.deploy();
-  await strategyAave.waitForDeployment();
-  const strategyAaveAddress = await strategyAave.getAddress();
-  console.log(`   StrategyAave: ${strategyAaveAddress}`);
+  const strategyAave = await hre.viem.deployContract("StrategyAave");
+  console.log(`   StrategyAave: ${strategyAave.address}`);
 
   // 4. Deploy StrategyCompoundComet (Compound V3 strategy)
-  const StrategyCompoundComet = await ethers.getContractFactory("StrategyCompoundComet");
-  const strategyCompound = await StrategyCompoundComet.deploy();
-  await strategyCompound.waitForDeployment();
-  const strategyCompoundAddress = await strategyCompound.getAddress();
-  console.log(`   StrategyCompoundComet: ${strategyCompoundAddress}`);
+  const strategyCompound = await hre.viem.deployContract("StrategyCompoundComet");
+  console.log(`   StrategyCompoundComet: ${strategyCompound.address}`);
 
   // 5. Deploy StrategyCoordinator (manages strategy routing)
-  const StrategyCoordinator = await ethers.getContractFactory("StrategyCoordinator");
-  const strategyCoordinator = await StrategyCoordinator.deploy(
-    strategyAaveAddress,
-    strategyCompoundAddress
-  );
-  await strategyCoordinator.waitForDeployment();
-  const strategyCoordinatorAddress = await strategyCoordinator.getAddress();
-  console.log(`   StrategyCoordinator: ${strategyCoordinatorAddress}`);
+  const strategyCoordinator = await hre.viem.deployContract("StrategyCoordinator", [
+    strategyAave.address,
+    strategyCompound.address
+  ]);
+  console.log(`   StrategyCoordinator: ${strategyCoordinator.address}`);
 
   // 6. Deploy BriqVault (main vault contract with USD-normalized shares)
-  const BriqVault = await ethers.getContractFactory("BriqVault");
-  const briqVault = await BriqVault.deploy(
-    strategyCoordinatorAddress,
-    briqSharesAddress,
-    priceFeedManagerAddress
-  );
-  await briqVault.waitForDeployment();
-  const briqVaultAddress = await briqVault.getAddress();
-  console.log(`   BriqVault: ${briqVaultAddress}`);
+  const briqVault = await hre.viem.deployContract("BriqVault", [
+    strategyCoordinator.address,
+    briqShares.address,
+    priceFeedManager.address
+  ]);
+  console.log(`   BriqVault: ${briqVault.address}`);
 
   console.log("\n✅ Deployment complete!");
   
@@ -86,12 +65,12 @@ async function main() {
     chainId: chainId.toString(),
     timestamp: new Date().toISOString(),
     contracts: {
-      PriceFeedManager: priceFeedManagerAddress,
-      BriqVault: briqVaultAddress,
-      BriqShares: briqSharesAddress,
-      StrategyAave: strategyAaveAddress,
-      StrategyCompoundComet: strategyCompoundAddress,
-      StrategyCoordinator: strategyCoordinatorAddress
+      PriceFeedManager: priceFeedManager.address,
+      BriqVault: briqVault.address,
+      BriqShares: briqShares.address,
+      StrategyAave: strategyAave.address,
+      StrategyCompoundComet: strategyCompound.address,
+      StrategyCoordinator: strategyCoordinator.address
     }
   };
   
