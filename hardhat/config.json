@@ -2,7 +2,7 @@
   "CHAIN_CONFIG": {
     "31337": {
       "aavePoolV3": "0x794a61358D6845594F94dc1DB02A252b5b4814aD",
-      "compoundMarketUSDC": "0xA5EDBDD9646f8dFF606d7448e414884C7d905dCA",
+      "compoundMarketUSDC": "0x9c4ec768c28520B50860ea7a15bd7213a9fF58bf",
       "compoundMarketWETH": "0x6f7D514bbD4aFf3BcD1140B7344b32f063dEe486",
       "usdcAddress": "0xaf88d065e77c8cC2239327C5EDb3A432268e5831",
       "wethAddress": "0x82aF49447D8a07e3bd95BD0d56f35241523fBab1",
