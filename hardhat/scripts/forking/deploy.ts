@@ -26,6 +26,10 @@ async function main() {
   // 2. Deploy PriceFeedManager (Chainlink + Pyth price feed integration)
   const priceFeedManager = await viem.deployContract("PriceFeedManager", [timelock.address, PYTH_CONTRACT]);
   console.log(`   PriceFeedManager: ${priceFeedManager.address}`);
+  
+  // Verify contract was deployed
+  const contractCode = await publicClient.getCode({ address: priceFeedManager.address });
+  console.log(`   PriceFeedManager code length: ${contractCode ? contractCode.length : 0} bytes`);
 
   // 3. Deploy BriqShares (ERC20 token for vault shares)
   const briqShares = await viem.deployContract("BriqShares", ["Briq Shares", "BRIQ"]);

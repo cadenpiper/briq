@@ -63,13 +63,15 @@ async function main() {
 
   console.log("📊 Setting up Chainlink price feeds...");
   
-  // Get contract instances
+  // Get contract instances AFTER loading deployment addresses
   const priceFeedManager = await viem.getContractAt("PriceFeedManager", contracts.PriceFeedManager);
   const briqVault = await viem.getContractAt("BriqVault", contracts.BriqVault);
   const briqShares = await viem.getContractAt("BriqShares", contracts.BriqShares);
   const strategyAave = await viem.getContractAt("StrategyAave", contracts.StrategyAave);
   const strategyCompound = await viem.getContractAt("StrategyCompoundComet", contracts.StrategyCompoundComet);
   const strategyCoordinator = await viem.getContractAt("StrategyCoordinator", contracts.StrategyCoordinator);
+  
+  console.log(`   Using PriceFeedManager at: ${contracts.PriceFeedManager}`);
   
   // Configure USDC price feed (6 decimals)
   console.log(`   Setting USDC price feed: ${USDC_ADDRESS} -> ${CHAINLINK_FEEDS.USDC_USD}`);
@@ -78,6 +80,8 @@ async function main() {
     CHAINLINK_FEEDS.USDC_USD,
     6
   ]);
+  const usdcReceipt = await publicClient.waitForTransactionReceipt({ hash: usdcTx });
+  console.log(`   USDC tx status: ${usdcReceipt.status} (success=1, reverted=0)`);
   console.log(`   ✅ USDC/USD price feed: ${CHAINLINK_FEEDS.USDC_USD}`);
   
   // Configure WETH price feed (18 decimals)
@@ -87,6 +91,8 @@ async function main() {
     CHAINLINK_FEEDS.ETH_USD,
     18
   ]);
+  const wethReceipt = await publicClient.waitForTransactionReceipt({ hash: wethTx });
+  console.log(`   WETH tx status: ${wethReceipt.status} (success=1, reverted=0)`);
   console.log(`   ✅ WETH/USD price feed: ${CHAINLINK_FEEDS.ETH_USD}`);
 
   // Test price feeds are working
@@ -120,37 +126,39 @@ async function main() {
     // Now test our PriceFeedManager step by step
     console.log("   Testing PriceFeedManager step by step...");
     
-    // Check if price feeds were actually set
+    // First check if the contract exists at the address
+    const contractCode = await publicClient.getCode({ address: contracts.PriceFeedManager });
+    console.log(`   PriceFeedManager contract code length: ${contractCode ? contractCode.length : 0} bytes`);
+    
+    if (!contractCode || contractCode === '0x') {
+      console.log(`   ❌ No contract found at address ${contracts.PriceFeedManager}`);
+      return;
+    }
+    
+    // Try simpler read functions first
     try {
-      const usdcPriceFeedAddr = await publicClient.readContract({
-        address: contracts.PriceFeedManager,
-        abi: priceFeedManager.abi,
-        functionName: 'priceFeeds',
-        args: [USDC_ADDRESS]
-      });
-      console.log(`   USDC price feed address stored: ${usdcPriceFeedAddr}`);
+      console.log("   Testing simple contract reads...");
+      const pythContract = await priceFeedManager.read.pythContract();
+      console.log(`   Pyth contract address: ${pythContract}`);
       
-      const wethPriceFeedAddr = await publicClient.readContract({
-        address: contracts.PriceFeedManager,
-        abi: priceFeedManager.abi,
-        functionName: 'priceFeeds',
-        args: [WETH_ADDRESS]
-      });
-      console.log(`   WETH price feed address stored: ${wethPriceFeedAddr}`);
-      
-      // If price feeds are set, test getTokenPrice
-      if (usdcPriceFeedAddr !== '0x0000000000000000000000000000000000000000') {
-        const usdcPrice = await priceFeedManager.read.getTokenPrice([USDC_ADDRESS]);
-        console.log(`   📈 PriceFeedManager USDC price: $${Number(usdcPrice) / 1e8}`);
-      }
-      
-      if (wethPriceFeedAddr !== '0x0000000000000000000000000000000000000000') {
-        const wethPrice = await priceFeedManager.read.getTokenPrice([WETH_ADDRESS]);
-        console.log(`   📈 PriceFeedManager WETH price: $${Number(wethPrice) / 1e8}`);
-      }
+      const timelock = await priceFeedManager.read.timelock();
+      console.log(`   Timelock address: ${timelock}`);
       
     } catch (error) {
-      console.log(`   Price feed check failed: ${error.message}`);
+      console.log(`   Simple reads failed: ${error.message}`);
+    }
+    
+    // Now try price feed functions
+    try {
+      console.log("   Testing price feed functions...");
+      const usdcPrice = await priceFeedManager.read.getTokenPrice([USDC_ADDRESS]);
+      console.log(`   📈 PriceFeedManager USDC price: $${Number(usdcPrice) / 1e8}`);
+      
+      const wethPrice = await priceFeedManager.read.getTokenPrice([WETH_ADDRESS]);
+      console.log(`   📈 PriceFeedManager WETH price: $${Number(wethPrice) / 1e8}`);
+      
+    } catch (error) {
+      console.log(`   Price feed functions failed: ${error.message}`);
     }
   } catch (error) {
     console.log(`   ⚠️  Price feed test failed: ${error.message}`);

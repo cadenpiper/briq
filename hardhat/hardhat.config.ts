@@ -33,7 +33,7 @@ export default defineConfig({
       hardfork: "cancun",
       forking: {
         url: configVariable("ARBITRUM_RPC_URL"),
-        blockNumber: 285000000,
+        blockNumber: 406900000,
       },
     },
     arbitrum: {

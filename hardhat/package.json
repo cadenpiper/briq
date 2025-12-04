@@ -9,12 +9,12 @@
     "compile": "npx hardhat compile",
     "clean": "npx hardhat clean",
     "node": "npx hardhat node",
-    "deploy": "npx hardhat run scripts/forking/deploy.ts --network hardhat",
-    "configure": "npx hardhat run scripts/forking/configure.ts --network hardhat",
-    "fund": "npx hardhat run scripts/forking/fundAccount.js --network hardhat",
-    "fund-rupert": "npx hardhat run scripts/forking/fundRupert.js --network hardhat",
-    "set-rupert": "npx hardhat run scripts/forking/setRupert.js --network hardhat",
-    "balance": "npx hardhat run scripts/forking/checkBalance.js --network hardhat",
+    "deploy": "npx hardhat run scripts/forking/deploy.ts --network localhost",
+    "configure": "npx hardhat run scripts/forking/configure.ts --network localhost",
+    "fund": "npx hardhat run scripts/forking/fundAccount.js --network localhost",
+    "fund-rupert": "npx hardhat run scripts/forking/fundRupert.js --network localhost",
+    "set-rupert": "npx hardhat run scripts/forking/setRupert.js --network localhost",
+    "balance": "npx hardhat run scripts/forking/checkBalance.js --network localhost",
     "setup-fork": "npm run deploy && npm run configure && npm run fund && npm run fund-rupert && npm run set-rupert && npm run balance"
   },
   "keywords": [
