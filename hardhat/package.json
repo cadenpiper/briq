@@ -10,7 +10,7 @@
     "clean": "npx hardhat clean",
     "node": "npx hardhat node",
     "deploy": "npx hardhat run scripts/forking/deploy.ts --network hardhat",
-    "configure": "npx hardhat run scripts/forking/configure.js --network hardhat",
+    "configure": "npx hardhat run scripts/forking/configure.ts --network hardhat",
     "fund": "npx hardhat run scripts/forking/fundAccount.js --network hardhat",
     "fund-rupert": "npx hardhat run scripts/forking/fundRupert.js --network hardhat",
     "set-rupert": "npx hardhat run scripts/forking/setRupert.js --network hardhat",

@@ -95,7 +95,7 @@ export function areStrategiesAvailable() {
 }
 
 // If called directly, update with current addresses from deployment
-if (require.main === module) {
+if (import.meta.url === `file://${process.argv[1]}`) {
   // You can manually call this with addresses or integrate it into setupFork.js
   console.log("Use this script by calling updateFrontendAddresses(addresses) from setupFork.js");
 }
