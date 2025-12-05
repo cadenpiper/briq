@@ -222,7 +222,7 @@ export default function Dashboard() {
                         <button 
                           type="button"
                           onClick={handleMaxClick}
-                          className="absolute right-2 top-2 text-xs text-accent hover:text-accent/80"
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-foreground/60 hover:text-foreground"
                         >
                           MAX
                         </button>
@@ -278,7 +278,7 @@ export default function Dashboard() {
                         <button 
                           type="button"
                           onClick={() => setAmount((Number(shareBalance) / 1e18).toString())}
-                          className="absolute right-2 top-2 text-xs text-accent hover:text-accent/80"
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-foreground/60 hover:text-foreground"
                         >
                           MAX
                         </button>
