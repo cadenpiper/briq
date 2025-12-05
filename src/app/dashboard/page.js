@@ -5,6 +5,7 @@ import { useAccount } from 'wagmi';
 import toast, { Toaster } from 'react-hot-toast';
 import Layout from '../components/Layout';
 import AnimatedBackground from '../components/AnimatedBackground';
+import { TokenIcon } from '../components/icons';
 import { useTokenBalances } from '../hooks/useTokenBalances';
 import { useVaultOperations } from '../hooks/useVaultOperations';
 import { useVaultPosition } from '../hooks/useVaultPosition';
@@ -167,36 +168,50 @@ export default function Dashboard() {
                     <p className="text-sm text-foreground/40 mt-1">Start by making your first deposit</p>
                   </div>
                 ) : (
-                  <div className="space-y-4">
-                    <div className="border border-foreground/10 rounded-lg p-4">
-                      <div className="flex items-center justify-between mb-3">
-                        <div className="flex items-center space-x-3">
-                          <div className="w-10 h-10 rounded-full bg-accent/20 flex items-center justify-center">
-                            <span className="text-accent font-bold">B</span>
-                          </div>
-                          <div>
-                            <div className="font-semibold text-foreground">Briq Vault</div>
-                            <div className="text-sm text-foreground/60">Optimized Yield</div>
-                          </div>
-                        </div>
-                        <div className="text-right">
-                          <div className="text-lg font-bold text-foreground">${(userValueUSD || 0).toFixed(2)}</div>
-                          <div className="text-sm text-green-500">+{averageAPY}% APY</div>
-                        </div>
-                      </div>
-                      <div className="grid grid-cols-2 gap-4 pt-3 border-t border-foreground/10">
-                        <div>
-                          <div className="text-xs text-foreground/60">Shares</div>
-                          <div className="text-sm font-medium text-foreground">
-                            {(Number(shareBalance) / 1e18).toFixed(4)} BRIQ
-                          </div>
-                        </div>
-                        <div>
-                          <div className="text-xs text-foreground/60">Strategy</div>
-                          <div className="text-sm font-medium text-foreground">Multi-Protocol</div>
-                        </div>
-                      </div>
+                  <div className="space-y-3">
+                    {/* Column Headers */}
+                    <div className="grid grid-cols-5 gap-4 px-4 pb-2 border-b border-foreground/10 text-xs font-medium text-foreground/60">
+                      <div>Strategy</div>
+                      <div className="text-center">Position</div>
+                      <div className="text-center">APY</div>
+                      <div className="text-center">Allocation</div>
+                      <div className="text-center">Earned</div>
                     </div>
+                    
+                    {/* Position Rows */}
+                    {['USDC', 'WETH'].map(token => {
+                      const tokenMarkets = markets?.filter(m => m.tokenSymbol === token) || [];
+                      if (tokenMarkets.length === 0) return null;
+                      
+                      const totalTokenValue = tokenMarkets.reduce((sum, m) => sum + m.usdValueFormatted, 0);
+                      if (totalTokenValue === 0) return null;
+                      
+                      const userTokenValue = (userValueUSD * totalTokenValue) / totalMarketValue;
+                      const tokenAPY = tokenMarkets.length > 0 
+                        ? (tokenMarkets.reduce((sum, m) => {
+                            const weight = m.usdValueFormatted / totalTokenValue;
+                            return sum + (parseFloat(m.apyFormatted) * weight);
+                          }, 0)).toFixed(2)
+                        : '0.00';
+                      
+                      const allocationText = tokenMarkets.map(m => {
+                        const pct = (m.usdValueFormatted / totalTokenValue * 100).toFixed(0);
+                        return `${m.strategyName} ${pct}%`;
+                      }).join(', ');
+                      
+                      return (
+                        <div key={token} className="grid grid-cols-5 gap-4 px-4 py-3 border border-foreground/10 rounded-lg items-center">
+                          <div className="flex items-center space-x-2">
+                            <TokenIcon token={token} size={24} />
+                            <span className="font-medium text-foreground text-sm">{token}</span>
+                          </div>
+                          <div className="text-center font-semibold text-foreground">${userTokenValue.toFixed(2)}</div>
+                          <div className="text-center font-semibold text-green-500">{tokenAPY}%</div>
+                          <div className="text-center text-sm text-foreground/60">{allocationText}</div>
+                          <div className="text-center font-semibold text-green-500">$0.00</div>
+                        </div>
+                      );
+                    })}
                   </div>
                 )}
               </div>
