@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useAccount } from 'wagmi';
+import toast, { Toaster } from 'react-hot-toast';
 import Layout from '../components/Layout';
 import AnimatedBackground from '../components/AnimatedBackground';
 import { useTokenBalances } from '../hooks/useTokenBalances';
@@ -58,9 +59,14 @@ export default function Dashboard() {
     if (!amount || !isConnected) return;
     try {
       await deposit(selectedAsset, amount);
+      toast.success('Deposit successful');
       setAmount('');
     } catch (error) {
-      console.error('Deposit failed:', error);
+      if (error.message.includes('User rejected')) {
+        toast.error('Transaction rejected');
+      } else {
+        toast.error('Deposit failed');
+      }
     }
   };
 
@@ -68,9 +74,14 @@ export default function Dashboard() {
     if (!amount || !isConnected) return;
     try {
       await withdraw(selectedAsset, amount);
+      toast.success('Withdrawal successful');
       setAmount('');
     } catch (error) {
-      console.error('Withdraw failed:', error);
+      if (error.message.includes('User rejected')) {
+        toast.error('Transaction rejected');
+      } else {
+        toast.error('Withdrawal failed');
+      }
     }
   };
 
@@ -81,6 +92,28 @@ export default function Dashboard() {
 
   return (
     <Layout>
+      <Toaster 
+        position="bottom-center"
+        toastOptions={{
+          style: {
+            background: '#1f2937',
+            color: '#f9fafb',
+            border: '1px solid #374151',
+          },
+          success: {
+            iconTheme: {
+              primary: '#10b981',
+              secondary: '#f9fafb',
+            },
+          },
+          error: {
+            iconTheme: {
+              primary: '#ef4444',
+              secondary: '#f9fafb',
+            },
+          },
+        }}
+      />
       <AnimatedBackground />
       <div className="min-h-screen py-8">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -246,7 +279,7 @@ export default function Dashboard() {
                     <button
                       onClick={handleDeposit}
                       disabled={!isConnected || !amount || isPending}
-                      className="w-full bg-accent hover:bg-accent/90 disabled:bg-foreground/10 disabled:text-foreground/40 text-white font-medium py-3 rounded-lg transition-colors"
+                      className="w-full bg-accent hover:bg-accent/90 hover:scale-105 disabled:bg-foreground/10 disabled:text-foreground/40 disabled:hover:scale-100 text-white font-medium py-3 rounded-lg transition-all duration-200 cursor-pointer disabled:cursor-not-allowed active:scale-95"
                     >
                       {!isConnected ? 'Connect Wallet' : isPending ? 'Processing...' : 'Deposit'}
                     </button>
@@ -312,7 +345,7 @@ export default function Dashboard() {
                     <button
                       onClick={handleWithdraw}
                       disabled={!isConnected || !amount || isPending}
-                      className="w-full bg-red-500 hover:bg-red-600 disabled:bg-foreground/10 disabled:text-foreground/40 text-white font-medium py-3 rounded-lg transition-colors"
+                      className="w-full bg-accent hover:bg-accent/90 hover:scale-105 disabled:bg-foreground/10 disabled:text-foreground/40 disabled:hover:scale-100 text-white font-medium py-3 rounded-lg transition-all duration-200 cursor-pointer disabled:cursor-not-allowed active:scale-95"
                     >
                       {!isConnected ? 'Connect Wallet' : isPending ? 'Processing...' : 'Withdraw'}
                     </button>
