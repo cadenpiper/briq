@@ -141,7 +141,7 @@ export default function Dashboard() {
               <div className="text-2xl font-bold text-green-500">$0.00</div>
             </div>
             <div className="glass-card p-6">
-              <div className="text-sm text-foreground/60 mb-1">APY</div>
+              <div className="text-sm text-foreground/60 mb-1">Average APY</div>
               <div className="text-2xl font-bold text-accent">{averageAPY}%</div>
             </div>
           </div>
@@ -287,7 +287,21 @@ export default function Dashboard() {
                       </div>
                       <div className="flex justify-between text-sm">
                         <span className="text-foreground/60">You will receive</span>
-                        <span className="text-foreground">0.00 BRIQ</span>
+                        <span className="text-foreground">
+                          {amount && totalMarketValue > 0 && userValueUSD > 0
+                            ? (() => {
+                                const depositAmount = parseFloat(amount);
+                                // Calculate shares: (depositAmount / totalVaultValue) * totalSupply
+                                // userValueUSD / (shareBalance in ether) = price per share
+                                const shareBalanceEther = Number(shareBalance) / 1e18;
+                                const pricePerShare = shareBalanceEther > 0 ? userValueUSD / shareBalanceEther : 1;
+                                const sharesToReceive = depositAmount / pricePerShare;
+                                
+                                return sharesToReceive.toFixed(6);
+                              })()
+                            : '0.000000'
+                          } BRIQ
+                        </span>
                       </div>
                     </div>
 

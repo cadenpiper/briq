@@ -6,54 +6,6 @@
       "currentStrategy": "None",
       "newStrategy": "Aave V3",
       "improvement": "1.73",
-      "txHash": "0x70f48b07e47d4867bb4ad3f1f8aa7fd52902970a261b925ad2324280391189c4",
-      "fromPool": "N/A",
-      "toPool": "0x794a61358D6845594F94dc1DB02A252b5b4814aD",
-      "timestamp": "2025-12-05T16:10:39.893Z",
-      "id": 1764951039893
-    },
-    {
-      "type": "strategy_change",
-      "token": "USDC",
-      "currentStrategy": "Aave V3",
-      "newStrategy": "Compound V3",
-      "improvement": "0.62",
-      "txHash": "0x18da2b5e28ee4ce481a398ec6c7a1bd020a65ee75ae043265782b5076effa32c",
-      "fromPool": "0x794a61358D6845594F94dc1DB02A252b5b4814aD",
-      "toPool": "0x9c4ec768c28520B50860ea7a15bd7213a9fF58bf",
-      "timestamp": "2025-12-05T16:15:37.352Z",
-      "id": 1764951337352
-    },
-    {
-      "type": "strategy_change",
-      "token": "WETH",
-      "currentStrategy": "None",
-      "newStrategy": "Aave V3",
-      "improvement": "1.73",
-      "txHash": "0xfb7590b39a1a40aa899466992f20b9251373ef9d741e200c3432487ea69e176d",
-      "fromPool": "N/A",
-      "toPool": "0x794a61358D6845594F94dc1DB02A252b5b4814aD",
-      "timestamp": "2025-12-05T16:15:39.557Z",
-      "id": 1764951339557
-    },
-    {
-      "type": "strategy_change",
-      "token": "USDC",
-      "currentStrategy": "Aave V3",
-      "newStrategy": "Compound V3",
-      "improvement": "0.62",
-      "txHash": "0x9d532cdf330a6a8a64337776b14253e0754d3d7b0a649e455bc61ab47dabc84b",
-      "fromPool": "0x794a61358D6845594F94dc1DB02A252b5b4814aD",
-      "toPool": "0x9c4ec768c28520B50860ea7a15bd7213a9fF58bf",
-      "timestamp": "2025-12-05T16:20:37.184Z",
-      "id": 1764951637184
-    },
-    {
-      "type": "strategy_change",
-      "token": "WETH",
-      "currentStrategy": "None",
-      "newStrategy": "Aave V3",
-      "improvement": "1.73",
       "txHash": "0x9dbec1a8f2b31236cb4475aaa5ee121d29868aa100dbaaecb68425e9a138d093",
       "fromPool": "N/A",
       "toPool": "0x794a61358D6845594F94dc1DB02A252b5b4814aD",
@@ -1199,6 +1151,54 @@
       "toPool": "0x794a61358D6845594F94dc1DB02A252b5b4814aD",
       "timestamp": "2025-12-05T20:20:33.408Z",
       "id": 1764966033408
+    },
+    {
+      "type": "strategy_change",
+      "token": "USDC",
+      "currentStrategy": "Aave V3",
+      "newStrategy": "Compound V3",
+      "improvement": "0.62",
+      "txHash": "0x019e8b0f173bb090c842d81ae5e1f90eb2d1865429d2a22f5dc3952310913b73",
+      "fromPool": "0x794a61358D6845594F94dc1DB02A252b5b4814aD",
+      "toPool": "0x9c4ec768c28520B50860ea7a15bd7213a9fF58bf",
+      "timestamp": "2025-12-05T20:25:29.010Z",
+      "id": 1764966329010
+    },
+    {
+      "type": "strategy_change",
+      "token": "WETH",
+      "currentStrategy": "Compound V3",
+      "newStrategy": "Aave V3",
+      "improvement": "0.29",
+      "txHash": "0x79e418408fb418b4fd6e6fbb3b0ed75dd6ca25c7ac754d1a2fab8cbdcb237268",
+      "fromPool": "0x6f7D514bbD4aFf3BcD1140B7344b32f063dEe486",
+      "toPool": "0x794a61358D6845594F94dc1DB02A252b5b4814aD",
+      "timestamp": "2025-12-05T20:25:31.209Z",
+      "id": 1764966331209
+    },
+    {
+      "type": "strategy_change",
+      "token": "USDC",
+      "currentStrategy": "Aave V3",
+      "newStrategy": "Compound V3",
+      "improvement": "0.62",
+      "txHash": "0xde32b20bd210f9b148cdad48e0bf80c845e4d32dfb88a583d8c55e7f6c9b0894",
+      "fromPool": "0x794a61358D6845594F94dc1DB02A252b5b4814aD",
+      "toPool": "0x9c4ec768c28520B50860ea7a15bd7213a9fF58bf",
+      "timestamp": "2025-12-05T20:30:29.465Z",
+      "id": 1764966629465
+    },
+    {
+      "type": "strategy_change",
+      "token": "WETH",
+      "currentStrategy": "Compound V3",
+      "newStrategy": "Aave V3",
+      "improvement": "0.29",
+      "txHash": "0x1ee43dd41d9dc7c8187da7b568dd2493265a62bf514b1b7787d4bef1f71178d8",
+      "fromPool": "0x6f7D514bbD4aFf3BcD1140B7344b32f063dEe486",
+      "toPool": "0x794a61358D6845594F94dc1DB02A252b5b4814aD",
+      "timestamp": "2025-12-05T20:30:31.651Z",
+      "id": 1764966631651
     }
   ]
 }
