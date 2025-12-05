@@ -22,6 +22,7 @@ export default function Dashboard() {
   const [selectedAction, setSelectedAction] = useState('deposit');
   const [selectedAsset, setSelectedAsset] = useState('USDC');
   const [amount, setAmount] = useState('');
+  const [isAssetDropdownOpen, setIsAssetDropdownOpen] = useState(false);
   const { usdc, weth, isLoading } = useTokenBalances();
   const { deposit, withdraw, isPending } = useVaultOperations();
   const { userValueUSD, hasPosition, shareBalance } = useVaultPosition();
@@ -247,14 +248,39 @@ export default function Dashboard() {
                   <div className="space-y-4">
                     <div>
                       <label className="block text-sm font-medium text-foreground mb-2">Asset</label>
-                      <select 
-                        value={selectedAsset}
-                        onChange={(e) => setSelectedAsset(e.target.value)}
-                        className="w-full bg-foreground/5 border border-foreground/10 rounded-lg px-3 py-2 text-foreground focus:outline-none focus:ring-2 focus:ring-accent/50"
-                      >
-                        <option value="USDC">USDC</option>
-                        <option value="WETH">WETH</option>
-                      </select>
+                      <div className="relative">
+                        <button
+                          type="button"
+                          onClick={() => setIsAssetDropdownOpen(!isAssetDropdownOpen)}
+                          className="w-full glass border border-foreground/10 rounded-lg px-3 py-2 text-foreground focus:outline-none focus:ring-2 focus:ring-accent/50 flex items-center justify-between"
+                        >
+                          <div className="flex items-center space-x-2">
+                            <TokenIcon token={selectedAsset} size={20} />
+                            <span>{selectedAsset}</span>
+                          </div>
+                          <svg className="w-4 h-4 text-foreground/60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                          </svg>
+                        </button>
+                        {isAssetDropdownOpen && (
+                          <div className="absolute z-10 w-full mt-1 bg-background border border-foreground/10 rounded-lg shadow-lg overflow-hidden">
+                            {['USDC', 'WETH'].map(token => (
+                              <button
+                                key={token}
+                                type="button"
+                                onClick={() => {
+                                  setSelectedAsset(token);
+                                  setIsAssetDropdownOpen(false);
+                                }}
+                                className="w-full px-3 py-2 text-left hover:bg-foreground/5 flex items-center space-x-2 transition-colors"
+                              >
+                                <TokenIcon token={token} size={20} />
+                                <span>{token}</span>
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
                     </div>
                     
                     <div>
@@ -317,14 +343,39 @@ export default function Dashboard() {
                   <div className="space-y-4">
                     <div>
                       <label className="block text-sm font-medium text-foreground mb-2">Asset</label>
-                      <select 
-                        value={selectedAsset}
-                        onChange={(e) => setSelectedAsset(e.target.value)}
-                        className="w-full bg-foreground/5 border border-foreground/10 rounded-lg px-3 py-2 text-foreground focus:outline-none focus:ring-2 focus:ring-accent/50"
-                      >
-                        <option value="USDC">USDC</option>
-                        <option value="WETH">WETH</option>
-                      </select>
+                      <div className="relative">
+                        <button
+                          type="button"
+                          onClick={() => setIsAssetDropdownOpen(!isAssetDropdownOpen)}
+                          className="w-full glass border border-foreground/10 rounded-lg px-3 py-2 text-foreground focus:outline-none focus:ring-2 focus:ring-accent/50 flex items-center justify-between"
+                        >
+                          <div className="flex items-center space-x-2">
+                            <TokenIcon token={selectedAsset} size={20} />
+                            <span>{selectedAsset}</span>
+                          </div>
+                          <svg className="w-4 h-4 text-foreground/60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                          </svg>
+                        </button>
+                        {isAssetDropdownOpen && (
+                          <div className="absolute z-10 w-full mt-1 bg-background border border-foreground/10 rounded-lg shadow-lg overflow-hidden">
+                            {['USDC', 'WETH'].map(token => (
+                              <button
+                                key={token}
+                                type="button"
+                                onClick={() => {
+                                  setSelectedAsset(token);
+                                  setIsAssetDropdownOpen(false);
+                                }}
+                                className="w-full px-3 py-2 text-left hover:bg-foreground/5 flex items-center space-x-2 transition-colors"
+                              >
+                                <TokenIcon token={token} size={20} />
+                                <span>{token}</span>
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
                     </div>
                     
                     <div>

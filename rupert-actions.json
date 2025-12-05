@@ -2,18 +2,6 @@
   "actions": [
     {
       "type": "strategy_change",
-      "token": "WETH",
-      "currentStrategy": "None",
-      "newStrategy": "Aave V3",
-      "improvement": "1.73",
-      "txHash": "0x9dbec1a8f2b31236cb4475aaa5ee121d29868aa100dbaaecb68425e9a138d093",
-      "fromPool": "N/A",
-      "toPool": "0x794a61358D6845594F94dc1DB02A252b5b4814aD",
-      "timestamp": "2025-12-05T16:20:39.381Z",
-      "id": 1764951639381
-    },
-    {
-      "type": "strategy_change",
       "token": "USDC",
       "currentStrategy": "Aave V3",
       "newStrategy": "Compound V3",
@@ -1199,6 +1187,18 @@
       "toPool": "0x794a61358D6845594F94dc1DB02A252b5b4814aD",
       "timestamp": "2025-12-05T20:30:31.651Z",
       "id": 1764966631651
+    },
+    {
+      "type": "strategy_change",
+      "token": "USDC",
+      "currentStrategy": "Aave V3",
+      "newStrategy": "Compound V3",
+      "improvement": "0.62",
+      "txHash": "0xb7a5aa2e56256f02fe1481573221df0eb60cf173525589abc94a7ed1de7356fd",
+      "fromPool": "0x794a61358D6845594F94dc1DB02A252b5b4814aD",
+      "toPool": "0x9c4ec768c28520B50860ea7a15bd7213a9fF58bf",
+      "timestamp": "2025-12-05T20:35:31.631Z",
+      "id": 1764966931631
     }
   ]
 }
