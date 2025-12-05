@@ -245,7 +245,7 @@ export default function Dashboard() {
                 </div>
 
                 {selectedAction === 'deposit' ? (
-                  <div className="space-y-4">
+                  <div className="space-y-4 animate-fade-in">
                     <div>
                       <label className="block text-sm font-medium text-foreground mb-2">Asset</label>
                       <div className="relative">
@@ -308,17 +308,11 @@ export default function Dashboard() {
 
                     <div className="bg-foreground/5 rounded-lg p-3 space-y-2">
                       <div className="flex justify-between text-sm">
-                        <span className="text-foreground/60">Current APY</span>
-                        <span className="text-green-500 font-medium">{selectedAsset === 'USDC' ? usdcAPY : wethAPY}%</span>
-                      </div>
-                      <div className="flex justify-between text-sm">
                         <span className="text-foreground/60">You will receive</span>
                         <span className="text-foreground">
                           {amount && totalMarketValue > 0 && userValueUSD > 0
                             ? (() => {
                                 const depositAmount = parseFloat(amount);
-                                // Calculate shares: (depositAmount / totalVaultValue) * totalSupply
-                                // userValueUSD / (shareBalance in ether) = price per share
                                 const shareBalanceEther = Number(shareBalance) / 1e18;
                                 const pricePerShare = shareBalanceEther > 0 ? userValueUSD / shareBalanceEther : 1;
                                 const sharesToReceive = depositAmount / pricePerShare;
@@ -328,6 +322,10 @@ export default function Dashboard() {
                             : '0.000000'
                           } BRIQ
                         </span>
+                      </div>
+                      <div className="flex justify-between text-xs">
+                        <span className="text-foreground/60">Current APY</span>
+                        <span className="text-green-500">{selectedAsset === 'USDC' ? usdcAPY : wethAPY}%</span>
                       </div>
                     </div>
 
@@ -340,7 +338,7 @@ export default function Dashboard() {
                     </button>
                   </div>
                 ) : (
-                  <div className="space-y-4">
+                  <div className="space-y-4 animate-fade-in">
                     <div>
                       <label className="block text-sm font-medium text-foreground mb-2">Asset</label>
                       <div className="relative">
@@ -379,7 +377,7 @@ export default function Dashboard() {
                     </div>
                     
                     <div>
-                      <label className="block text-sm font-medium text-foreground mb-2">BRIQ Shares</label>
+                      <label className="block text-sm font-medium text-foreground mb-2">Amount</label>
                       <div className="relative">
                         <input
                           type="text"

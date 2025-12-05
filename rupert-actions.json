@@ -2,42 +2,6 @@
   "actions": [
     {
       "type": "strategy_change",
-      "token": "USDC",
-      "currentStrategy": "Aave V3",
-      "newStrategy": "Compound V3",
-      "improvement": "0.62",
-      "txHash": "0xb4d636928f95de25ed8e8a838568bb211ff1e845a0287b924cf680fd6f25290e",
-      "fromPool": "0x794a61358D6845594F94dc1DB02A252b5b4814aD",
-      "toPool": "0x9c4ec768c28520B50860ea7a15bd7213a9fF58bf",
-      "timestamp": "2025-12-05T16:25:37.461Z",
-      "id": 1764951937461
-    },
-    {
-      "type": "strategy_change",
-      "token": "WETH",
-      "currentStrategy": "None",
-      "newStrategy": "Aave V3",
-      "improvement": "1.73",
-      "txHash": "0x30ab6970ee78a93bb28bbb51574ab1ca3d7ef1299810ce81d38ddfe438e52821",
-      "fromPool": "N/A",
-      "toPool": "0x794a61358D6845594F94dc1DB02A252b5b4814aD",
-      "timestamp": "2025-12-05T16:25:39.671Z",
-      "id": 1764951939671
-    },
-    {
-      "type": "strategy_change",
-      "token": "USDC",
-      "currentStrategy": "Aave V3",
-      "newStrategy": "Compound V3",
-      "improvement": "0.62",
-      "txHash": "0x95b9280147402295cb165425c7d21a7d44064311103c16a4e131f407d6d2c6de",
-      "fromPool": "0x794a61358D6845594F94dc1DB02A252b5b4814aD",
-      "toPool": "0x9c4ec768c28520B50860ea7a15bd7213a9fF58bf",
-      "timestamp": "2025-12-05T16:30:37.110Z",
-      "id": 1764952237110
-    },
-    {
-      "type": "strategy_change",
       "token": "WETH",
       "currentStrategy": "None",
       "newStrategy": "Aave V3",
@@ -1199,6 +1163,42 @@
       "toPool": "0x9c4ec768c28520B50860ea7a15bd7213a9fF58bf",
       "timestamp": "2025-12-05T20:35:31.631Z",
       "id": 1764966931631
+    },
+    {
+      "type": "strategy_change",
+      "token": "WETH",
+      "currentStrategy": "Compound V3",
+      "newStrategy": "Aave V3",
+      "improvement": "0.29",
+      "txHash": "0xd6ce39ec7de54676f8a391af18b5df6a7ae5af3072228b59a204c741d806861c",
+      "fromPool": "0x6f7D514bbD4aFf3BcD1140B7344b32f063dEe486",
+      "toPool": "0x794a61358D6845594F94dc1DB02A252b5b4814aD",
+      "timestamp": "2025-12-05T20:35:36.156Z",
+      "id": 1764966936156
+    },
+    {
+      "type": "strategy_change",
+      "token": "USDC",
+      "currentStrategy": "Aave V3",
+      "newStrategy": "Compound V3",
+      "improvement": "0.62",
+      "txHash": "0xd02196cbcd3efaa9f65fe9db5cb3f9cb3434f232f49f1285070838678e1329bf",
+      "fromPool": "0x794a61358D6845594F94dc1DB02A252b5b4814aD",
+      "toPool": "0x9c4ec768c28520B50860ea7a15bd7213a9fF58bf",
+      "timestamp": "2025-12-05T20:40:30.579Z",
+      "id": 1764967230579
+    },
+    {
+      "type": "strategy_change",
+      "token": "WETH",
+      "currentStrategy": "Compound V3",
+      "newStrategy": "Aave V3",
+      "improvement": "0.29",
+      "txHash": "0x4ae601e0d50c61d8cffa8dd770bad7a5f48d73f9ed7a955909a93e7125ae3ca4",
+      "fromPool": "0x6f7D514bbD4aFf3BcD1140B7344b32f063dEe486",
+      "toPool": "0x794a61358D6845594F94dc1DB02A252b5b4814aD",
+      "timestamp": "2025-12-05T20:40:32.775Z",
+      "id": 1764967232775
     }
   ]
 }
