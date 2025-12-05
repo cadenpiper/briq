@@ -266,7 +266,7 @@ export default function Dashboard() {
                     </div>
                     
                     <div>
-                      <label className="block text-sm font-medium text-foreground mb-2">Amount</label>
+                      <label className="block text-sm font-medium text-foreground mb-2">BRIQ Shares</label>
                       <div className="relative">
                         <input
                           type="text"
@@ -277,21 +277,35 @@ export default function Dashboard() {
                         />
                         <button 
                           type="button"
-                          onClick={handleMaxClick}
+                          onClick={() => setAmount((Number(shareBalance) / 1e18).toString())}
                           className="absolute right-2 top-2 text-xs text-accent hover:text-accent/80"
                         >
                           MAX
                         </button>
                       </div>
                       <div className="text-xs text-foreground/60 mt-1">
-                        Available: {isLoading ? '...' : selectedAsset === 'USDC' ? usdc : weth} {selectedAsset}
+                        Available: {(Number(shareBalance) / 1e18).toFixed(4)} BRIQ
                       </div>
                     </div>
 
                     <div className="bg-foreground/5 rounded-lg p-3 space-y-2">
                       <div className="flex justify-between text-sm">
-                        <span className="text-foreground/60">You will receive</span>
-                        <span className="text-foreground">0.00 USDC</span>
+                        <span className="text-foreground/60">You receive</span>
+                        <span className="text-foreground">
+                          ~{amount && shareBalance > 0n && totalMarketValue > 0
+                            ? ((parseFloat(amount) / (Number(shareBalance) / 1e18)) * userValueUSD).toFixed(6)
+                            : '0.00'
+                          } {selectedAsset}
+                        </span>
+                      </div>
+                      <div className="flex justify-between text-xs">
+                        <span className="text-foreground/60">0.5% slippage tolerance</span>
+                        <span className="text-foreground/60">
+                          ({amount && shareBalance > 0n && totalMarketValue > 0
+                            ? (((parseFloat(amount) / (Number(shareBalance) / 1e18)) * userValueUSD) * 0.005).toFixed(6)
+                            : '0.00'
+                          } {selectedAsset})
+                        </span>
                       </div>
                     </div>
 
