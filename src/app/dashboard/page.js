@@ -74,6 +74,21 @@ export default function Dashboard() {
 
   const handleWithdraw = async () => {
     if (!amount || !isConnected) return;
+    
+    // Check available liquidity for selected token
+    const tokenMarkets = markets?.filter(m => m.tokenSymbol === selectedAsset) || [];
+    const availableLiquidity = tokenMarkets.reduce((sum, m) => sum + m.usdValueFormatted, 0);
+    const sharesToWithdraw = parseFloat(amount);
+    const shareBalanceEther = Number(shareBalance) / 1e18;
+    const tokenValueToWithdraw = shareBalanceEther > 0 
+      ? (sharesToWithdraw / shareBalanceEther) * userValueUSD 
+      : 0;
+    
+    if (tokenValueToWithdraw > availableLiquidity) {
+      toast.error(`Insufficient ${selectedAsset} liquidity. Available: $${availableLiquidity.toFixed(2)}`);
+      return;
+    }
+    
     try {
       await withdraw(selectedAsset, amount);
       toast.success('Withdrawal successful');
@@ -404,6 +419,32 @@ export default function Dashboard() {
                       <div className="text-xs text-foreground/60 mt-1">
                         Available: {(Number(shareBalance) / 1e18).toFixed(4)} BRIQ
                       </div>
+                      
+                      {/* Liquidity Status Indicator */}
+                      {amount && (() => {
+                        const tokenMarkets = markets?.filter(m => m.tokenSymbol === selectedAsset) || [];
+                        const availableLiquidity = tokenMarkets.reduce((sum, m) => sum + m.usdValueFormatted, 0);
+                        const sharesToWithdraw = parseFloat(amount);
+                        const shareBalanceEther = Number(shareBalance) / 1e18;
+                        const tokenValueToWithdraw = shareBalanceEther > 0 
+                          ? (sharesToWithdraw / shareBalanceEther) * userValueUSD 
+                          : 0;
+                        const isAvailable = tokenValueToWithdraw <= availableLiquidity;
+                        
+                        return (
+                          <div className={`flex items-center space-x-1 mt-2 text-xs ${isAvailable ? 'text-green-500' : 'text-red-500'}`}>
+                            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                              <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                            </svg>
+                            <span>
+                              {isAvailable 
+                                ? `${selectedAsset} available ($${availableLiquidity.toFixed(2)} liquidity)`
+                                : `Insufficient ${selectedAsset} liquidity ($${availableLiquidity.toFixed(2)} available)`
+                              }
+                            </span>
+                          </div>
+                        );
+                      })()}
                     </div>
 
                     <div className="bg-foreground/5 rounded-lg p-3 space-y-2">
@@ -429,7 +470,22 @@ export default function Dashboard() {
 
                     <button
                       onClick={handleWithdraw}
-                      disabled={!isConnected || !amount || isPending}
+                      disabled={
+                        !isConnected || 
+                        !amount || 
+                        isPending ||
+                        (() => {
+                          if (!amount) return false;
+                          const tokenMarkets = markets?.filter(m => m.tokenSymbol === selectedAsset) || [];
+                          const availableLiquidity = tokenMarkets.reduce((sum, m) => sum + m.usdValueFormatted, 0);
+                          const sharesToWithdraw = parseFloat(amount);
+                          const shareBalanceEther = Number(shareBalance) / 1e18;
+                          const tokenValueToWithdraw = shareBalanceEther > 0 
+                            ? (sharesToWithdraw / shareBalanceEther) * userValueUSD 
+                            : 0;
+                          return tokenValueToWithdraw > availableLiquidity;
+                        })()
+                      }
                       className="w-full bg-accent hover:bg-accent/90 hover:scale-105 disabled:bg-foreground/10 disabled:text-foreground/40 disabled:hover:scale-100 text-white font-medium py-3 rounded-lg transition-all duration-200 cursor-pointer disabled:cursor-not-allowed active:scale-95"
                     >
                       {!isConnected ? 'Connect Wallet' : isPending ? 'Processing...' : 'Withdraw'}

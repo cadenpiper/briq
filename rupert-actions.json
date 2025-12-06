@@ -6,30 +6,6 @@
       "currentStrategy": "Compound V3",
       "newStrategy": "Aave V3",
       "improvement": "0.28",
-      "txHash": "0x2b46f3d1e3f0a16787d9a0bf4c6bb2ec743b4f5fb814dc41443798ecaf8a131e",
-      "fromPool": "0x6f7D514bbD4aFf3BcD1140B7344b32f063dEe486",
-      "toPool": "0x794a61358D6845594F94dc1DB02A252b5b4814aD",
-      "timestamp": "2025-12-06T05:17:44.167Z",
-      "id": 1764998264167
-    },
-    {
-      "type": "strategy_change",
-      "token": "USDC",
-      "currentStrategy": "Aave V3",
-      "newStrategy": "Compound V3",
-      "improvement": "0.62",
-      "txHash": "0xa6b1193ff60dfe5a34a3c5cdfb403387732a9a180d42f5a3a37e6473628c6de4",
-      "fromPool": "0x794a61358D6845594F94dc1DB02A252b5b4814aD",
-      "toPool": "0x9c4ec768c28520B50860ea7a15bd7213a9fF58bf",
-      "timestamp": "2025-12-06T05:35:10.856Z",
-      "id": 1764999310856
-    },
-    {
-      "type": "strategy_change",
-      "token": "WETH",
-      "currentStrategy": "Compound V3",
-      "newStrategy": "Aave V3",
-      "improvement": "0.28",
       "txHash": "0xc5311d91007d6dcb54530701d94a8f09284c3a414811f96f0a2fe42f30adfdea",
       "fromPool": "0x6f7D514bbD4aFf3BcD1140B7344b32f063dEe486",
       "toPool": "0x794a61358D6845594F94dc1DB02A252b5b4814aD",
@@ -1199,6 +1175,30 @@
       "toPool": "0x794a61358D6845594F94dc1DB02A252b5b4814aD",
       "timestamp": "2025-12-06T20:28:41.344Z",
       "id": 1765052921344
+    },
+    {
+      "type": "strategy_change",
+      "token": "USDC",
+      "currentStrategy": "None",
+      "newStrategy": "Compound V3",
+      "improvement": "2.95",
+      "txHash": "0x4649d74e78b4175bbb69d2dfe16c26f8d3cdef85eef3bb50adbaf639c2bb6c29",
+      "fromPool": "N/A",
+      "toPool": "0x9c4ec768c28520B50860ea7a15bd7213a9fF58bf",
+      "timestamp": "2025-12-06T20:33:39.763Z",
+      "id": 1765053219763
+    },
+    {
+      "type": "strategy_change",
+      "token": "WETH",
+      "currentStrategy": "None",
+      "newStrategy": "Aave V3",
+      "improvement": "1.70",
+      "txHash": "0x20b6de2c8da3192164f6a9d103cbcd3be4b06084db75a3c9112bfe4da07faa46",
+      "fromPool": "N/A",
+      "toPool": "0x794a61358D6845594F94dc1DB02A252b5b4814aD",
+      "timestamp": "2025-12-06T20:33:41.948Z",
+      "id": 1765053221948
     }
   ]
 }
