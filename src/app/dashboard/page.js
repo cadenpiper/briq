@@ -221,12 +221,19 @@ export default function Dashboard() {
             {/* Deposit/Withdraw Card */}
             <div className="lg:col-span-1">
               <div className="glass-card p-6 sticky top-8">
-                <div className="flex space-x-1 mb-6 bg-foreground/5 rounded-lg p-1">
+                <div className="relative flex space-x-1 mb-6 bg-foreground/5 rounded-lg p-1">
+                  {/* Sliding background indicator */}
+                  <div 
+                    className={`absolute top-1 bottom-1 w-[calc(50%-0.125rem)] bg-accent rounded-md shadow-sm transition-transform duration-300 ease-in-out ${
+                      selectedAction === 'withdraw' ? 'translate-x-[calc(100%+0.25rem)]' : 'translate-x-0'
+                    }`}
+                  />
+                  
                   <button
                     onClick={() => setSelectedAction('deposit')}
-                    className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-all ${
+                    className={`relative z-10 flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors duration-300 ${
                       selectedAction === 'deposit'
-                        ? 'bg-accent text-white shadow-sm'
+                        ? 'text-white'
                         : 'text-foreground/60 hover:text-foreground'
                     }`}
                   >
@@ -234,9 +241,9 @@ export default function Dashboard() {
                   </button>
                   <button
                     onClick={() => setSelectedAction('withdraw')}
-                    className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-all ${
+                    className={`relative z-10 flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors duration-300 ${
                       selectedAction === 'withdraw'
-                        ? 'bg-accent text-white shadow-sm'
+                        ? 'text-white'
                         : 'text-foreground/60 hover:text-foreground'
                     }`}
                   >
