@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useAccount } from 'wagmi';
 import toast, { Toaster } from 'react-hot-toast';
 import Layout from '../components/Layout';
@@ -23,9 +23,21 @@ export default function Dashboard() {
   const [selectedAsset, setSelectedAsset] = useState('USDC');
   const [amount, setAmount] = useState('');
   const [isAssetDropdownOpen, setIsAssetDropdownOpen] = useState(false);
+  const assetDropdownRef = useRef(null);
   const { usdc, weth, isLoading } = useTokenBalances();
   const { deposit, withdraw, isPending } = useVaultOperations();
   const { userValueUSD, hasPosition, shareBalance } = useVaultPosition();
+  
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (assetDropdownRef.current && !assetDropdownRef.current.contains(event.target)) {
+        setIsAssetDropdownOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
   
   const CONTRACTS = getContractAddresses();
   const { markets } = useContractMarketData({
@@ -270,7 +282,7 @@ export default function Dashboard() {
                   <div className="space-y-4 animate-fade-in">
                     <div>
                       <label className="block text-sm font-medium text-foreground mb-2">Asset</label>
-                      <div className="relative">
+                      <div className="relative" ref={assetDropdownRef}>
                         <button
                           type="button"
                           onClick={() => setIsAssetDropdownOpen(!isAssetDropdownOpen)}
@@ -363,7 +375,7 @@ export default function Dashboard() {
                   <div className="space-y-4 animate-fade-in">
                     <div>
                       <label className="block text-sm font-medium text-foreground mb-2">Asset</label>
-                      <div className="relative">
+                      <div className="relative" ref={assetDropdownRef}>
                         <button
                           type="button"
                           onClick={() => setIsAssetDropdownOpen(!isAssetDropdownOpen)}

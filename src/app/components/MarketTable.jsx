@@ -1,16 +1,34 @@
 "use client";
 
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import { formatAPY, formatTVL, formatUtilization } from '../utils/formatters';
 import { useSubgraphMarketData } from '../hooks/useSubgraphMarketData';
 import { ProtocolIcon, TokenIcon, NetworkIcon } from './icons';
-import CustomDropdown from './CustomDropdown';
 
 export default function MarketTable() {
   const [selectedNetworks, setSelectedNetworks] = useState([]);
   const [selectedTokens, setSelectedTokens] = useState([]);
   const [sortConfig, setSortConfig] = useState({ key: 'apy', direction: 'desc' });
   const [searchQuery, setSearchQuery] = useState('');
+  const [isNetworkDropdownOpen, setIsNetworkDropdownOpen] = useState(false);
+  const [isAssetDropdownOpen, setIsAssetDropdownOpen] = useState(false);
+  
+  const networkDropdownRef = useRef(null);
+  const assetDropdownRef = useRef(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (networkDropdownRef.current && !networkDropdownRef.current.contains(event.target)) {
+        setIsNetworkDropdownOpen(false);
+      }
+      if (assetDropdownRef.current && !assetDropdownRef.current.contains(event.target)) {
+        setIsAssetDropdownOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   const { data: subgraphData, loading: subgraphLoading, error: subgraphError, refetch } = useSubgraphMarketData();
 
@@ -205,12 +223,40 @@ export default function MarketTable() {
           </div>
         </div>
 
-        <CustomDropdown
-          options={networks}
-          onSelect={handleNetworkSelect}
-          selectedItems={selectedNetworks}
-          placeholder="Network"
-        />
+        {/* Network Dropdown */}
+        <div className="relative w-full sm:w-auto" ref={networkDropdownRef}>
+          <button
+            type="button"
+            onClick={() => {
+              setIsNetworkDropdownOpen(!isNetworkDropdownOpen);
+              setIsAssetDropdownOpen(false);
+            }}
+            className="w-full sm:w-[140px] glass border border-foreground/10 rounded-lg px-4 py-3 text-foreground focus:outline-none focus:ring-2 focus:ring-accent/50 flex items-center justify-between"
+          >
+            <span className="text-sm">Network</span>
+            <svg className="w-4 h-4 text-foreground/60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            </svg>
+          </button>
+          {isNetworkDropdownOpen && (
+            <div className="absolute z-10 w-full sm:w-[140px] mt-1 bg-background border border-foreground/10 rounded-lg shadow-lg overflow-hidden">
+              {networks.map(network => (
+                <button
+                  key={network}
+                  type="button"
+                  onClick={() => {
+                    handleNetworkSelect(network);
+                    setIsNetworkDropdownOpen(false);
+                  }}
+                  className="w-full px-3 py-2 text-left hover:bg-foreground/5 flex items-center space-x-2 transition-colors text-sm"
+                >
+                  <NetworkIcon network={network} size={20} />
+                  <span>{network}</span>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
         
         {/* Selected Networks Display */}
         {selectedNetworks.length > 0 && (
@@ -233,12 +279,40 @@ export default function MarketTable() {
           </div>
         )}
 
-        <CustomDropdown
-          options={tokens}
-          onSelect={handleTokenSelect}
-          selectedItems={selectedTokens}
-          placeholder="Asset"
-        />
+        {/* Asset Dropdown */}
+        <div className="relative w-full sm:w-auto" ref={assetDropdownRef}>
+          <button
+            type="button"
+            onClick={() => {
+              setIsAssetDropdownOpen(!isAssetDropdownOpen);
+              setIsNetworkDropdownOpen(false);
+            }}
+            className="w-full sm:w-[140px] glass border border-foreground/10 rounded-lg px-4 py-3 text-foreground focus:outline-none focus:ring-2 focus:ring-accent/50 flex items-center justify-between"
+          >
+            <span className="text-sm">Asset</span>
+            <svg className="w-4 h-4 text-foreground/60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            </svg>
+          </button>
+          {isAssetDropdownOpen && (
+            <div className="absolute z-10 w-full sm:w-[140px] mt-1 bg-background border border-foreground/10 rounded-lg shadow-lg overflow-hidden">
+              {tokens.map(token => (
+                <button
+                  key={token}
+                  type="button"
+                  onClick={() => {
+                    handleTokenSelect(token);
+                    setIsAssetDropdownOpen(false);
+                  }}
+                  className="w-full px-3 py-2 text-left hover:bg-foreground/5 flex items-center space-x-2 transition-colors text-sm"
+                >
+                  <TokenIcon token={token} size={20} />
+                  <span>{token}</span>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
         
         {/* Selected Tokens Display */}
         {selectedTokens.length > 0 && (
