@@ -155,20 +155,20 @@ export default function Dashboard() {
 
           {/* Portfolio Overview */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-            <div className="glass-card p-6">
+            <div className="glass-card p-6 hover:scale-[1.02] transition-all duration-300">
               <div className="text-sm text-foreground/60 mb-1">Net Worth</div>
               <div className="text-2xl font-bold text-foreground">${(userValueUSD || 0).toFixed(2)}</div>
               <div className="text-xs text-green-500 mt-1">+0.00%</div>
             </div>
-            <div className="glass-card p-6">
+            <div className="glass-card p-6 hover:scale-[1.02] transition-all duration-300">
               <div className="text-sm text-foreground/60 mb-1">Total Supplied</div>
               <div className="text-2xl font-bold text-foreground">${(userValueUSD || 0).toFixed(2)}</div>
             </div>
-            <div className="glass-card p-6">
+            <div className="glass-card p-6 hover:scale-[1.02] transition-all duration-300">
               <div className="text-sm text-foreground/60 mb-1">Total Earned</div>
               <div className="text-2xl font-bold text-green-500">$0.00</div>
             </div>
-            <div className="glass-card p-6">
+            <div className="glass-card p-6 hover:scale-[1.02] transition-all duration-300">
               <div className="text-sm text-foreground/60 mb-1">Average APY</div>
               <div className="text-2xl font-bold text-accent">{averageAPY}%</div>
             </div>
@@ -228,7 +228,7 @@ export default function Dashboard() {
                       }).join(', ');
                       
                       return (
-                        <div key={token} className="grid grid-cols-5 gap-4 px-4 py-3 border border-foreground/10 rounded-lg items-center">
+                        <div key={token} className="grid grid-cols-5 gap-4 px-4 py-3 border border-foreground/10 rounded-lg items-center hover:bg-accent/5 hover:shadow-lg hover:shadow-accent/10 transition-all duration-300 cursor-pointer group">
                           <div className="flex items-center space-x-2">
                             <TokenIcon token={token} size={24} />
                             <span className="font-medium text-foreground text-sm">{token}</span>
