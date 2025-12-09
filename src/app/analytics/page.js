@@ -15,7 +15,6 @@ import StrategyAaveArtifact from '../abis/StrategyAave.json';
 import StrategyCompoundArtifact from '../abis/StrategyCompoundComet.json';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
-import AnimatedBackground from '../components/AnimatedBackground';
 
 // Extract ABIs from artifacts
 const BriqVaultABI = BriqVaultArtifact.abi;
@@ -236,7 +235,6 @@ export default function Analytics() {
   return (
     <>
       <Header />
-      <AnimatedBackground />
       <div className="min-h-screen transition-colors duration-300">
         <div className="container mx-auto px-3 sm:px-4 py-4 sm:py-8">
           {/* Page Header */}

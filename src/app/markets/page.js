@@ -3,7 +3,6 @@
 import Layout from '../components/Layout';
 import MarketTable from '../components/MarketTable';
 import MarketOverview from '../components/MarketOverview';
-import AnimatedBackground from '../components/AnimatedBackground';
 import { useSubgraphMarketData } from '../hooks/useSubgraphMarketData';
 
 export default function Markets() {
@@ -11,7 +10,6 @@ export default function Markets() {
 
   return (
     <Layout>
-      <AnimatedBackground />
       <div className="flex justify-center py-6 sm:py-12">
         <div className="max-w-6xl mx-auto px-4 sm:px-6">
           

@@ -1,7 +1,6 @@
 import Layout from './components/Layout';
 import Image from 'next/image';
 import Link from 'next/link';
-import AnimatedBackground from './components/AnimatedBackground';
 import HowItWorks from './components/HowItWorks';
 import AboutBriq from './components/AboutBriq';
 import SupportedEcosystem from './components/SupportedEcosystem';
@@ -9,7 +8,6 @@ import SupportedEcosystem from './components/SupportedEcosystem';
 export default function Home() {
   return (
     <Layout>
-      <AnimatedBackground />
       <div className="flex justify-center py-6 sm:py-12">
         <div className="text-center max-w-6xl mx-auto px-4 sm:px-6">
           

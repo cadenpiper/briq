@@ -77,7 +77,7 @@ const Providers = ({ children }) => {
                 <RainbowKitProvider
                     coolMode
                     theme={darkTheme({
-                        accentColor: '#FF7A2F',
+                        accentColor: '#3B82F6',
                         accentColorForeground: 'white',
                         borderRadius: 'large',
                         fontStack: 'system',

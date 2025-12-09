@@ -4,7 +4,6 @@ import { useRef, useEffect, useState } from 'react';
 import { useChat } from 'ai/react';
 import Layout from '../components/Layout';
 import RupertActions from '../components/RupertActions';
-import AnimatedBackground from '../components/AnimatedBackground';
 
 export default function Rupert() {
   const messagesEndRef = useRef(null);
@@ -134,7 +133,6 @@ export default function Rupert() {
 
   return (
     <Layout>
-      <AnimatedBackground />
       <div className="flex justify-center py-6">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 w-full">
           

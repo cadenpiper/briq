@@ -4,7 +4,6 @@ import { useState, useEffect, useRef } from 'react';
 import { useAccount } from 'wagmi';
 import toast, { Toaster } from 'react-hot-toast';
 import Layout from '../components/Layout';
-import AnimatedBackground from '../components/AnimatedBackground';
 import { TokenIcon } from '../components/icons';
 import { useTokenBalances } from '../hooks/useTokenBalances';
 import { useVaultOperations } from '../hooks/useVaultOperations';
@@ -145,7 +144,6 @@ export default function Dashboard() {
           },
         }}
       />
-      <AnimatedBackground />
       <div className="min-h-screen py-8">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           
