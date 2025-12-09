@@ -204,7 +204,7 @@ export default function MarketTable() {
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 justify-start">
+      <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 items-start sm:items-center">
         {/* Search Bar */}
         <div className="flex-shrink-0 w-full sm:w-auto">
           <div className="relative">
@@ -257,27 +257,6 @@ export default function MarketTable() {
             </div>
           )}
         </div>
-        
-        {/* Selected Networks Display */}
-        {selectedNetworks.length > 0 && (
-          <div className="flex flex-wrap gap-2 mt-2 justify-start sm:justify-center sm:max-w-[140px]">
-            {selectedNetworks.map((network) => (
-              <div key={network} className="flex items-center bg-accent/20 text-accent border border-accent/40 px-2 py-1 rounded text-sm font-medium">
-                <button
-                  type="button"
-                  onClick={() => removeNetwork(network)}
-                  className="mr-1 hover:bg-accent/30 rounded-full p-1 transition-colors duration-200"
-                  aria-label={`Remove ${network} network filter`}
-                >
-                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
-                <span>{getNetworkAbbreviation(network)}</span>
-              </div>
-            ))}
-          </div>
-        )}
 
         {/* Asset Dropdown */}
         <div className="relative w-full sm:w-auto" ref={assetDropdownRef}>
@@ -313,25 +292,58 @@ export default function MarketTable() {
             </div>
           )}
         </div>
-        
-        {/* Selected Tokens Display */}
-        {selectedTokens.length > 0 && (
-          <div className="flex flex-wrap gap-2 mt-2 justify-start sm:justify-center sm:max-w-[140px]">
-            {selectedTokens.map((token) => (
-              <div key={token} className="flex items-center bg-accent/20 text-accent border border-accent/40 px-2 py-1 rounded text-sm font-medium">
-                <button
-                  type="button"
-                  onClick={() => removeToken(token)}
-                  className="mr-1 hover:bg-accent/30 rounded-full p-1 transition-colors duration-200"
-                  aria-label={`Remove ${token} asset filter`}
-                >
-                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
-                <span>{token}</span>
+
+        {/* Selections Display with Divider */}
+        {(selectedNetworks.length > 0 || selectedTokens.length > 0) && (
+          <div className="flex items-center gap-3 glass border border-foreground/10 rounded-lg px-3 py-2">
+            {/* Network Icons */}
+            {selectedNetworks.length > 0 && (
+              <div className="flex items-center gap-2">
+                {selectedNetworks.map((network) => (
+                  <button
+                    key={network}
+                    type="button"
+                    onClick={() => removeNetwork(network)}
+                    className="relative group"
+                    aria-label={`Remove ${network} network filter`}
+                  >
+                    <NetworkIcon network={network} size={24} />
+                    <div className="absolute inset-0 bg-red-500/0 group-hover:bg-red-500/20 rounded-full transition-colors flex items-center justify-center">
+                      <svg className="w-3 h-3 text-red-500 opacity-0 group-hover:opacity-100 transition-opacity" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </div>
+                  </button>
+                ))}
               </div>
-            ))}
+            )}
+            
+            {/* Vertical Divider */}
+            {selectedNetworks.length > 0 && selectedTokens.length > 0 && (
+              <div className="h-6 w-px bg-foreground/20"></div>
+            )}
+            
+            {/* Token Icons */}
+            {selectedTokens.length > 0 && (
+              <div className="flex items-center gap-2">
+                {selectedTokens.map((token) => (
+                  <button
+                    key={token}
+                    type="button"
+                    onClick={() => removeToken(token)}
+                    className="relative group"
+                    aria-label={`Remove ${token} asset filter`}
+                  >
+                    <TokenIcon token={token} size={24} />
+                    <div className="absolute inset-0 bg-red-500/0 group-hover:bg-red-500/20 rounded-full transition-colors flex items-center justify-center">
+                      <svg className="w-3 h-3 text-red-500 opacity-0 group-hover:opacity-100 transition-opacity" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
         )}
       </div>
