@@ -10,6 +10,7 @@ import { useTokenBalances } from '../hooks/useTokenBalances';
 import { useVaultOperations } from '../hooks/useVaultOperations';
 import { useVaultPosition } from '../hooks/useVaultPosition';
 import { useContractMarketData } from '../hooks/useContractMarketData';
+import { useTokenPrices } from '../hooks/useTokenPrices';
 import { getContractAddresses } from '../utils/forkAddresses';
 import BriqVaultArtifact from '../abis/BriqVault.json';
 import StrategyCoordinatorArtifact from '../abis/StrategyCoordinator.json';
@@ -26,7 +27,8 @@ export default function Dashboard() {
   const assetDropdownRef = useRef(null);
   const { usdc, weth, isLoading } = useTokenBalances();
   const { deposit, withdraw, isPending } = useVaultOperations();
-  const { userValueUSD, hasPosition, shareBalance } = useVaultPosition();
+  const { userValueUSD, hasPosition, shareBalance, totalSupply, totalVaultValue } = useVaultPosition();
+  const { wethPrice, usdcPrice } = useTokenPrices();
   
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -344,12 +346,23 @@ export default function Dashboard() {
                       <div className="flex justify-between text-sm">
                         <span className="text-foreground/60">You will receive</span>
                         <span className="text-foreground">
-                          {amount && totalMarketValue > 0 && userValueUSD > 0
+                          {amount && wethPrice > 0
                             ? (() => {
                                 const depositAmount = parseFloat(amount);
-                                const shareBalanceEther = Number(shareBalance) / 1e18;
-                                const pricePerShare = shareBalanceEther > 0 ? userValueUSD / shareBalanceEther : 1;
-                                const sharesToReceive = depositAmount / pricePerShare;
+                                const depositUSD = selectedAsset === 'USDC' 
+                                  ? depositAmount * usdcPrice 
+                                  : depositAmount * wethPrice;
+                                
+                                // If vault is empty, 1 USD = 1 BRIQ
+                                if (totalSupply === 0n || totalVaultValue === 0n) {
+                                  return depositUSD.toFixed(6);
+                                }
+                                
+                                // Otherwise calculate based on current price per share
+                                const totalSupplyEther = Number(totalSupply) / 1e18;
+                                const totalVaultValueUSD = Number(totalVaultValue) / 1e18;
+                                const pricePerShare = totalVaultValueUSD / totalSupplyEther;
+                                const sharesToReceive = depositUSD / pricePerShare;
                                 
                                 return sharesToReceive.toFixed(6);
                               })()
