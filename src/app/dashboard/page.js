@@ -211,7 +211,35 @@ export default function Dashboard() {
             {/* Current Positions */}
             <div className="lg:col-span-2">
               <div className="glass-card p-6">
-                <h2 className="text-xl font-semibold text-foreground mb-6">Your Positions</h2>
+                <div className="flex items-center justify-between mb-6">
+                  <h2 className="text-xl font-semibold text-foreground">
+                    Your Positions
+                    {isConnected && address && (
+                      <button
+                        onClick={() => {
+                          navigator.clipboard.writeText(address);
+                          toast.success('Address copied!');
+                        }}
+                        className="hidden sm:inline ml-3 text-sm text-foreground/60 hover:text-foreground font-mono cursor-pointer transition-colors"
+                        title="Click to copy address"
+                      >
+                        {`${address.slice(0, 6)}...${address.slice(-4)}`}
+                      </button>
+                    )}
+                  </h2>
+                  {isConnected && address && (
+                    <button
+                      onClick={() => {
+                        navigator.clipboard.writeText(address);
+                        toast.success('Address copied!');
+                      }}
+                      className="sm:hidden text-sm text-foreground/60 hover:text-foreground font-mono cursor-pointer transition-colors"
+                      title="Click to copy address"
+                    >
+                      {`${address.slice(0, 6)}...${address.slice(-4)}`}
+                    </button>
+                  )}
+                </div>
                 
                 {!isConnected ? (
                   <div className="text-center py-12">
