@@ -5,6 +5,9 @@ import { useAccount } from 'wagmi';
 import toast, { Toaster } from 'react-hot-toast';
 import Layout from '../components/Layout';
 import { TokenIcon } from '../components/icons';
+import AllocationChart from '../components/AllocationChart';
+import AllocationDisplay from '../components/AllocationDisplay';
+import HealthMeter from '../components/HealthMeter';
 import { useTokenBalances } from '../hooks/useTokenBalances';
 import { useVaultOperations } from '../hooks/useVaultOperations';
 import { useVaultPosition } from '../hooks/useVaultPosition';
@@ -258,11 +261,12 @@ export default function Dashboard() {
                 ) : (
                   <div className="space-y-3">
                     {/* Desktop Layout - Column Headers */}
-                    <div className="hidden md:grid grid-cols-5 gap-4 px-4 pb-2 border-b border-foreground/10 text-xs font-medium text-foreground/60">
+                    <div className="hidden md:grid grid-cols-6 gap-4 px-4 pb-2 border-b border-foreground/10 text-xs font-medium text-foreground/60">
                       <div>Strategy</div>
                       <div className="text-center">Position</div>
                       <div className="text-center">APY</div>
                       <div className="text-center">Allocation</div>
+                      <div className="text-center">Health</div>
                       <div className="text-center">Earned</div>
                     </div>
                     
@@ -282,22 +286,28 @@ export default function Dashboard() {
                           }, 0)).toFixed(2)
                         : '0.00';
                       
-                      const allocationText = tokenMarkets.map(m => {
-                        const pct = (m.usdValueFormatted / totalTokenValue * 100).toFixed(0);
-                        return `${m.strategyName} ${pct}%`;
-                      }).join(', ');
+                      const allocationData = tokenMarkets.map(m => ({
+                        protocol: m.strategyName,
+                        percentage: (m.usdValueFormatted / totalTokenValue) * 100,
+                        poolAddress: m.poolAddress
+                      }));
                       
                       return (
                         <div key={token}>
                           {/* Desktop Layout */}
-                          <div className="hidden md:grid grid-cols-5 gap-4 px-4 py-3 border border-foreground/10 rounded-lg items-center hover:bg-accent/5 hover:shadow-lg hover:shadow-accent/10 transition-all duration-300 cursor-pointer group">
+                          <div className="hidden md:grid grid-cols-6 gap-4 px-4 py-3 border border-foreground/10 rounded-lg items-center hover:bg-accent/5 hover:shadow-lg hover:shadow-accent/10 transition-all duration-300 group">
                             <div className="flex items-center space-x-2">
                               <TokenIcon token={token} size={24} />
                               <span className="font-medium text-foreground text-sm">{token}</span>
                             </div>
                             <div className="text-center font-semibold text-foreground">{formatPrivateValue(userTokenValue.toFixed(2))}</div>
-                            <div className="text-center font-semibold text-green-500">{formatPrivateValue(tokenAPY, '', '%')}</div>
-                            <div className="text-center text-sm text-foreground/60">{allocationText}</div>
+                            <div className="text-center font-semibold text-foreground">{formatPrivateValue(tokenAPY, '', '%')}</div>
+                            <div className="text-center flex justify-center">
+                              <AllocationDisplay allocations={allocationData} />
+                            </div>
+                            <div className="text-center flex justify-center">
+                              <HealthMeter health={4} />
+                            </div>
                             <div className="text-center font-semibold text-green-500">{formatPrivateValue('0.00')}</div>
                           </div>
 
@@ -305,12 +315,15 @@ export default function Dashboard() {
                           <div className="md:hidden border border-foreground/10 rounded-lg p-5 hover:bg-accent/5 hover:shadow-lg hover:shadow-accent/10 transition-all duration-300 space-y-4">
                             {/* Header - Stacked */}
                             <div className="text-center space-y-3">
-                              <div className="flex items-center justify-center space-x-3">
-                                <TokenIcon token={token} size={32} />
-                                <span className="font-bold text-foreground text-xl">{token}</span>
+                              <div>
+                                <div className="text-sm text-foreground/60 mb-1">Strategy</div>
+                                <div className="flex items-center justify-center space-x-3">
+                                  <TokenIcon token={token} size={32} />
+                                  <span className="font-bold text-foreground text-xl">{token}</span>
+                                </div>
                               </div>
                               <div>
-                                <div className="text-sm text-foreground/60 mb-1">Position Value</div>
+                                <div className="text-sm text-foreground/60 mb-1">Value</div>
                                 <div className="font-bold text-foreground text-2xl">{formatPrivateValue(userTokenValue.toFixed(2))}</div>
                               </div>
                             </div>
@@ -319,18 +332,28 @@ export default function Dashboard() {
                             <div className="grid grid-cols-2 gap-4">
                               <div className="text-center p-4 bg-foreground/5 rounded-lg">
                                 <div className="text-sm text-foreground/60 mb-2">APY</div>
-                                <div className="font-bold text-green-500 text-xl">{formatPrivateValue(tokenAPY, '', '%')}</div>
+                                <div className="font-bold text-foreground text-xl">{formatPrivateValue(tokenAPY, '', '%')}</div>
                               </div>
+                              <div className="text-center p-4 bg-foreground/5 rounded-lg">
+                                <div className="text-sm text-foreground/60 mb-2">Health</div>
+                                <div className="flex justify-center">
+                                  <HealthMeter health={4} width={50} height={8} />
+                                </div>
+                              </div>
+                            </div>
+                            
+                            {/* Bottom Grid */}
+                            <div className="grid grid-cols-2 gap-4">
                               <div className="text-center p-4 bg-foreground/5 rounded-lg">
                                 <div className="text-sm text-foreground/60 mb-2">Earned</div>
                                 <div className="font-bold text-green-500 text-xl">{formatPrivateValue('0.00')}</div>
                               </div>
-                            </div>
                             
                             {/* Allocation */}
-                            <div className="text-center p-4 bg-foreground/5 rounded-lg">
-                              <div className="text-sm text-foreground/60 mb-2">Strategy Allocation</div>
-                              <div className="text-sm font-medium text-foreground">{allocationText}</div>
+                            <div className="text-center p-4 bg-foreground/5 rounded-lg relative">
+                              <div className="text-sm text-foreground/60 mb-2">Allocation</div>
+                              <AllocationDisplay allocations={allocationData} isMobile={true} />
+                            </div>
                             </div>
                           </div>
                         </div>
