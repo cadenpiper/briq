@@ -23,11 +23,17 @@ export default function Dashboard() {
   const [selectedAsset, setSelectedAsset] = useState('USDC');
   const [amount, setAmount] = useState('');
   const [isAssetDropdownOpen, setIsAssetDropdownOpen] = useState(false);
+  const [isPrivacyMode, setIsPrivacyMode] = useState(false);
   const assetDropdownRef = useRef(null);
   const { usdc, weth, isLoading } = useTokenBalances();
   const { deposit, withdraw, isPending } = useVaultOperations();
   const { userValueUSD, hasPosition, shareBalance, totalSupply, totalVaultValue } = useVaultPosition();
   const { wethPrice, usdcPrice } = useTokenPrices();
+  
+  // Helper function to hide sensitive data
+  const formatPrivateValue = (value, prefix = '$', suffix = '') => {
+    return isPrivacyMode ? '••••••' : `${prefix}${value}${suffix}`;
+  };
   
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -148,29 +154,55 @@ export default function Dashboard() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           
           {/* Header */}
-          <div className="mb-8">
-            <h1 className="text-3xl font-bold text-foreground mb-2">Dashboard</h1>
-            <p className="text-foreground/60">Manage your DeFi positions and earn optimized yields</p>
+          <div className="mb-8 flex items-start justify-between">
+            <div>
+              <div className="flex items-center gap-3 mb-2">
+                <h1 className="text-3xl font-bold text-foreground">Dashboard</h1>
+                
+                {/* Privacy Toggle - Simple Eye Icon */}
+                <button
+                  onClick={() => setIsPrivacyMode(!isPrivacyMode)}
+                  className="p-3 sm:p-1.5 text-foreground/60 hover:text-foreground transition-colors duration-200 flex items-center justify-center"
+                  title={isPrivacyMode ? "Show values" : "Hide values"}
+                >
+                  <svg 
+                    className="w-6 h-6 sm:w-5 sm:h-5" 
+                    fill="none" 
+                    stroke="currentColor" 
+                    viewBox="0 0 24 24"
+                  >
+                    {isPrivacyMode ? (
+                      // Eye closed (eyelid)
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3.98 8.223A10.477 10.477 0 001.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.45 10.45 0 0112 4.5c4.756 0 8.773 3.162 10.065 7.498a10.523 10.523 0 01-4.293 5.774M6.228 6.228L3 3m3.228 3.228l3.65 3.65m7.894 7.894L21 21m-3.228-3.228l-3.65-3.65m0 0a3 3 0 11-4.243-4.243m4.242 4.242L9.88 9.88" />
+                    ) : (
+                      // Eye open
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                    )}
+                  </svg>
+                </button>
+              </div>
+              <p className="text-foreground/60">Manage your DeFi positions and earn optimized yields</p>
+            </div>
           </div>
 
           {/* Portfolio Overview */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
             <div className="glass-card p-6 hover:scale-[1.02] transition-all duration-300">
               <div className="text-sm text-foreground/60 mb-1">Net Worth</div>
-              <div className="text-2xl font-bold text-foreground">${(userValueUSD || 0).toFixed(2)}</div>
+              <div className="text-2xl font-bold text-foreground">{formatPrivateValue((userValueUSD || 0).toFixed(2))}</div>
               <div className="text-xs text-green-500 mt-1">+0.00%</div>
             </div>
             <div className="glass-card p-6 hover:scale-[1.02] transition-all duration-300">
               <div className="text-sm text-foreground/60 mb-1">Total Supplied</div>
-              <div className="text-2xl font-bold text-foreground">${(userValueUSD || 0).toFixed(2)}</div>
+              <div className="text-2xl font-bold text-foreground">{formatPrivateValue((userValueUSD || 0).toFixed(2))}</div>
             </div>
             <div className="glass-card p-6 hover:scale-[1.02] transition-all duration-300">
               <div className="text-sm text-foreground/60 mb-1">Total Earned</div>
-              <div className="text-2xl font-bold text-green-500">$0.00</div>
+              <div className="text-2xl font-bold text-green-500">{formatPrivateValue('0.00')}</div>
             </div>
             <div className="glass-card p-6 hover:scale-[1.02] transition-all duration-300">
               <div className="text-sm text-foreground/60 mb-1">Average APY</div>
-              <div className="text-2xl font-bold text-accent">{averageAPY}%</div>
+              <div className="text-2xl font-bold text-accent">{formatPrivateValue(averageAPY, '', '%')}</div>
             </div>
           </div>
 
@@ -233,10 +265,10 @@ export default function Dashboard() {
                             <TokenIcon token={token} size={24} />
                             <span className="font-medium text-foreground text-sm">{token}</span>
                           </div>
-                          <div className="text-center font-semibold text-foreground">${userTokenValue.toFixed(2)}</div>
-                          <div className="text-center font-semibold text-green-500">{tokenAPY}%</div>
+                          <div className="text-center font-semibold text-foreground">{formatPrivateValue(userTokenValue.toFixed(2))}</div>
+                          <div className="text-center font-semibold text-green-500">{formatPrivateValue(tokenAPY, '', '%')}</div>
                           <div className="text-center text-sm text-foreground/60">{allocationText}</div>
-                          <div className="text-center font-semibold text-green-500">$0.00</div>
+                          <div className="text-center font-semibold text-green-500">{formatPrivateValue('0.00')}</div>
                         </div>
                       );
                     })}
@@ -336,7 +368,7 @@ export default function Dashboard() {
                         </button>
                       </div>
                       <div className="text-xs text-foreground/60 mt-1">
-                        Balance: {isLoading ? '...' : selectedAsset === 'USDC' ? usdc : weth} {selectedAsset}
+                        Balance: {isLoading ? '...' : isPrivacyMode ? '••••••' : `${selectedAsset === 'USDC' ? usdc : weth} ${selectedAsset}`}
                       </div>
                     </div>
 
