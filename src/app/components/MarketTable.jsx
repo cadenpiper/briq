@@ -8,7 +8,10 @@ import { ProtocolIcon, TokenIcon, NetworkIcon } from './icons';
 export default function MarketTable() {
   const [selectedNetworks, setSelectedNetworks] = useState([]);
   const [selectedTokens, setSelectedTokens] = useState([]);
-  const [sortConfig, setSortConfig] = useState({ key: 'apy', direction: 'desc' });
+  const [sortConfig, setSortConfig] = useState({
+    'Arbitrum One': { key: 'apy', direction: 'desc' },
+    'Ethereum': { key: 'apy', direction: 'desc' }
+  });
   const [searchQuery, setSearchQuery] = useState('');
   const [isNetworkDropdownOpen, setIsNetworkDropdownOpen] = useState(false);
   const [isAssetDropdownOpen, setIsAssetDropdownOpen] = useState(false);
@@ -138,45 +141,64 @@ export default function MarketTable() {
 
   const sortedMarkets = useMemo(() => {
     const markets = getCurrentMarkets();
-    if (!sortConfig.key) return markets;
 
-    return [...markets].sort((a, b) => {
-      let aValue, bValue;
-      
-      switch (sortConfig.key) {
-        case 'apy':
-          aValue = a.apyValue;
-          bValue = b.apyValue;
-          break;
-        case 'tvl':
-          aValue = a.tvlValue;
-          bValue = b.tvlValue;
-          break;
-        case 'utilization':
-          aValue = a.utilizationValue;
-          bValue = b.utilizationValue;
-          break;
-        default:
-          return 0;
-      }
+    // Group by network first
+    const grouped = markets.reduce((acc, market) => {
+      if (!acc[market.network]) acc[market.network] = [];
+      acc[market.network].push(market);
+      return acc;
+    }, {});
 
-      if (sortConfig.direction === 'asc') {
-        return aValue - bValue;
-      } else {
-        return bValue - aValue;
-      }
+    // Sort within each network group using its own sort config
+    Object.keys(grouped).forEach(network => {
+      const config = sortConfig[network];
+      if (!config || !config.key) return;
+
+      grouped[network].sort((a, b) => {
+        let aValue, bValue;
+        
+        switch (config.key) {
+          case 'apy':
+            aValue = a.apyValue;
+            bValue = b.apyValue;
+            break;
+          case 'tvl':
+            aValue = a.tvlValue;
+            bValue = b.tvlValue;
+            break;
+          case 'utilization':
+            aValue = a.utilizationValue;
+            bValue = b.utilizationValue;
+            break;
+          default:
+            return 0;
+        }
+
+        if (config.direction === 'asc') {
+          return aValue - bValue;
+        } else {
+          return bValue - aValue;
+        }
+      });
     });
+
+    // Flatten back to array
+    return Object.values(grouped).flat();
   }, [selectedNetworks, selectedTokens, sortConfig, subgraphData, searchQuery]);
 
-  const handleSort = (key) => {
+  const handleSort = (network, key) => {
     setSortConfig(prevConfig => ({
-      key,
-      direction: prevConfig.key === key && prevConfig.direction === 'desc' ? 'asc' : 'desc'
+      ...prevConfig,
+      [network]: {
+        key,
+        direction: prevConfig[network]?.key === key && prevConfig[network]?.direction === 'desc' ? 'asc' : 'desc'
+      }
     }));
   };
 
-  const getSortIcon = (columnKey) => {
-    if (sortConfig.key !== columnKey) {
+  const getSortIcon = (network, columnKey) => {
+    const config = sortConfig[network];
+    if (!config || config.key !== columnKey) {
       return (
         <svg className="w-4 h-4 text-foreground/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
@@ -184,7 +206,7 @@ export default function MarketTable() {
       );
     }
     
-    if (sortConfig.direction === 'desc') {
+    if (config.direction === 'desc') {
       return (
         <svg className="w-4 h-4 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
@@ -198,9 +220,6 @@ export default function MarketTable() {
       );
     }
   };
-
-  const showNetworkColumn = true;
-  const showTokenColumn = true;
 
   return (
     <div className="space-y-4">
@@ -395,213 +414,167 @@ export default function MarketTable() {
       </div>
 
       {/* Markets Table - Desktop */}
-      <div className="hidden md:block glass-card overflow-hidden w-full">
-        <div className="overflow-x-auto">
-          <table className="w-full border-collapse border-spacing-0" style={{ tableLayout: 'fixed', width: '100%' }}>
-            <thead className="glass">
-              <tr>
-                <th className="px-6 py-4 text-center text-sm font-medium text-foreground">
-                  Protocols
-                </th>
-                {showNetworkColumn && (
-                  <th className="px-6 py-4 text-center text-sm font-medium text-foreground">
-                    Network
-                  </th>
-                )}
-                {showTokenColumn && (
-                  <th className="px-6 py-4 text-center text-sm font-medium text-foreground">
-                    Token
-                  </th>
-                )}
-                <th 
-                  className="px-6 py-4 text-center text-sm font-medium text-foreground cursor-pointer hover:bg-foreground/5 transition-colors duration-200"
-                  onClick={() => handleSort('apy')}
-                >
-                  <div className="flex items-center justify-center gap-2">
-                    APY
-                    {getSortIcon('apy')}
-                  </div>
-                </th>
-                <th 
-                  className="px-6 py-4 text-center text-sm font-medium text-foreground cursor-pointer hover:bg-foreground/5 transition-colors duration-200"
-                  onClick={() => handleSort('tvl')}
-                >
-                  <div className="flex items-center justify-center gap-2">
-                    TVL
-                    {getSortIcon('tvl')}
-                  </div>
-                </th>
-                <th 
-                  className="px-6 py-4 text-center text-sm font-medium text-foreground cursor-pointer hover:bg-foreground/5 transition-colors duration-200"
-                  onClick={() => handleSort('utilization')}
-                >
-                  <div className="flex items-center justify-center gap-2">
-                    Utilization
-                    {getSortIcon('utilization')}
-                  </div>
-                </th>
-                <th className="px-6 py-4 text-center text-sm font-medium text-foreground">
-                  Health
-                </th>
-                <th className="px-6 py-4 text-center text-sm font-medium text-foreground">
-                  Status
-                </th>
-              </tr>
-            </thead>
-            <tbody className="space-y-1">
-              {sortedMarkets.map((market, index) => (
-                <tr 
-                  key={index}
-                  className="hover:bg-accent/5 hover:shadow-lg hover:shadow-accent/10 transition-all duration-300 cursor-pointer group"
-                >
-                  <td className="px-6 py-4 text-sm font-medium text-foreground text-center">
-                    <div className="flex items-center justify-center gap-2">
-                      <ProtocolIcon protocol={market.protocol} size={20} />
-                      <span>{market.protocol}</span>
-                    </div>
-                  </td>
-                  {showNetworkColumn && (
-                    <td className="px-6 py-4 text-sm text-foreground/70 text-center">
-                      <div className="flex items-center justify-center gap-2">
-                        <NetworkIcon network={market.network} size={20} />
-                        <span>{market.network}</span>
-                      </div>
-                    </td>
-                  )}
-                  {showTokenColumn && (
-                    <td className="px-6 py-4 text-sm text-foreground/70 text-center">
-                      <div className="flex items-center justify-center gap-2">
-                        <TokenIcon token={market.token} size={20} />
-                        <span>{market.token}</span>
-                      </div>
-                    </td>
-                  )}
-                  <td className="px-6 py-4 text-sm text-center">
-                    <span className="bg-accent/20 text-accent px-3 py-1.5 rounded-full font-semibold border border-accent/30 shadow-sm group-hover:bg-accent/30 group-hover:shadow-md transition-all duration-300">
-                      {formatAPY(market.apyValue)}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 text-sm text-foreground/70 text-center">
-                    {formatTVL(market.tvlValue)}
-                  </td>
-                  <td className="px-6 py-4 text-sm text-foreground/70 text-center">
-                    {formatUtilization(market.utilizationValue)}
-                  </td>
-                  <td className="px-6 py-4 text-sm text-center">
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${getHealthStyle(calculatePoolHealth(market.apyValue, market.utilizationValue, market.tvlValue))}`}>
-                      {calculatePoolHealth(market.apyValue, market.utilizationValue, market.tvlValue)}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 text-sm text-center">
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                      market.status === 'Active' 
-                        ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
-                        : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'
-                    }`}>
-                      {market.status}
-                    </span>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+      <div className="hidden md:block space-y-8">
+        {['Arbitrum One', 'Ethereum'].map(network => {
+          const networkMarkets = sortedMarkets.filter(m => m.network === network);
+          if (networkMarkets.length === 0) return null;
+          
+          return (
+            <div key={network} className="glass-card overflow-hidden w-full">
+              {/* Network Title */}
+              <div className="px-6 py-4 border-b border-foreground/10 flex items-center gap-3">
+                <NetworkIcon network={network} size={24} />
+                <h3 className="text-lg font-semibold text-foreground">{network}</h3>
+              </div>
+              
+              <div className="overflow-x-auto">
+                <table className="w-full border-collapse border-spacing-0" style={{ tableLayout: 'fixed', width: '100%' }}>
+                  <thead className="glass">
+                    <tr>
+                      <th className="px-6 py-4 text-center text-sm font-medium text-foreground">
+                        Protocols
+                      </th>
+                      <th className="px-6 py-4 text-center text-sm font-medium text-foreground">
+                        Token
+                      </th>
+                      <th 
+                        className="px-6 py-4 text-center text-sm font-medium text-foreground cursor-pointer hover:bg-foreground/5 transition-colors duration-200"
+                        onClick={() => handleSort(network, 'apy')}
+                      >
+                        <div className="flex items-center justify-center gap-2">
+                          APY
+                          {getSortIcon(network, 'apy')}
+                        </div>
+                      </th>
+                      <th 
+                        className="px-6 py-4 text-center text-sm font-medium text-foreground cursor-pointer hover:bg-foreground/5 transition-colors duration-200"
+                        onClick={() => handleSort(network, 'tvl')}
+                      >
+                        <div className="flex items-center justify-center gap-2">
+                          TVL
+                          {getSortIcon(network, 'tvl')}
+                        </div>
+                      </th>
+                      <th 
+                        className="px-6 py-4 text-center text-sm font-medium text-foreground cursor-pointer hover:bg-foreground/5 transition-colors duration-200"
+                        onClick={() => handleSort(network, 'utilization')}
+                      >
+                        <div className="flex items-center justify-center gap-2">
+                          Utilization
+                          {getSortIcon(network, 'utilization')}
+                        </div>
+                      </th>
+                      <th className="px-6 py-4 text-center text-sm font-medium text-foreground">
+                        Health
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="space-y-1">
+                    {networkMarkets.map((market, index) => (
+                      <tr 
+                        key={index}
+                        className="hover:bg-accent/5 hover:shadow-lg hover:shadow-accent/10 transition-all duration-300 cursor-pointer group"
+                      >
+                        <td className="px-6 py-4 text-sm font-medium text-foreground text-center">
+                          <div className="flex items-center justify-center gap-2">
+                            <ProtocolIcon protocol={market.protocol} size={20} />
+                            <span>{market.protocol}</span>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 text-sm text-foreground/70 text-center">
+                          <div className="flex items-center justify-center gap-2">
+                            <TokenIcon token={market.token} size={20} />
+                            <span>{market.token}</span>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 text-sm text-center">
+                          <span className="bg-accent/20 text-accent px-3 py-1.5 rounded-full font-semibold border border-accent/30 shadow-sm group-hover:bg-accent/30 group-hover:shadow-md transition-all duration-300">
+                            {formatAPY(market.apyValue)}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 text-sm text-foreground/70 text-center">
+                          {formatTVL(market.tvlValue)}
+                        </td>
+                        <td className="px-6 py-4 text-sm text-foreground/70 text-center">
+                          {formatUtilization(market.utilizationValue)}
+                        </td>
+                        <td className="px-6 py-4 text-sm text-center">
+                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${getHealthStyle(calculatePoolHealth(market.apyValue, market.utilizationValue, market.tvlValue))}`}>
+                            {calculatePoolHealth(market.apyValue, market.utilizationValue, market.tvlValue)}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          );
+        })}
       </div>
 
       {/* Markets Cards - Mobile */}
-      <div className="md:hidden space-y-4">
-        {/* Mobile Sort Controls */}
-        <div className="flex items-center justify-between glass-card px-4 py-3">
-          <span className="text-sm font-medium text-foreground">Sort by:</span>
-          <div className="flex gap-2">
-            <button
-              onClick={() => handleSort('apy')}
-              className={`px-3 py-1 rounded text-sm font-medium transition-colors ${
-                sortConfig.key === 'apy' 
-                  ? 'bg-accent text-foreground' 
-                  : 'glass text-foreground/70 hover:bg-foreground/5'
-              }`}
-            >
-              APY {sortConfig.key === 'apy' && (sortConfig.direction === 'desc' ? '↓' : '↑')}
-            </button>
-            <button
-              onClick={() => handleSort('tvl')}
-              className={`px-3 py-1 rounded text-sm font-medium transition-colors ${
-                sortConfig.key === 'tvl' 
-                  ? 'bg-accent text-foreground' 
-                  : 'glass text-foreground/70 hover:bg-foreground/5'
-              }`}
-            >
-              TVL {sortConfig.key === 'tvl' && (sortConfig.direction === 'desc' ? '↓' : '↑')}
-            </button>
-            <button
-              onClick={() => handleSort('utilization')}
-              className={`px-3 py-1 rounded text-sm font-medium transition-colors ${
-                sortConfig.key === 'utilization' 
-                  ? 'bg-accent text-foreground' 
-                  : 'glass text-foreground/70 hover:bg-foreground/5'
-              }`}
-            >
-              Util {sortConfig.key === 'utilization' && (sortConfig.direction === 'desc' ? '↓' : '↑')}
-            </button>
-          </div>
-        </div>
+      <div className="md:hidden space-y-6">
+        {['Arbitrum One', 'Ethereum'].map(network => {
+          const networkMarkets = sortedMarkets.filter(m => m.network === network);
+          if (networkMarkets.length === 0) return null;
+          
+          return (
+            <div key={network} className="space-y-4">
+              {/* Network Title */}
+              <div className="flex items-center gap-3 px-2">
+                <NetworkIcon network={network} size={24} />
+                <h3 className="text-lg font-semibold text-foreground">{network}</h3>
+              </div>
+              
+              {/* Market Cards */}
+              {networkMarkets.map((market, index) => (
+                <div key={index} className="glass-card p-4 space-y-3">
+                  {/* Header Row */}
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <ProtocolIcon protocol={market.protocol} size={24} />
+                      <div>
+                        <div className="font-medium text-foreground">{market.protocol}</div>
+                        <div className="text-sm text-foreground/60 flex items-center gap-2">
+                          <TokenIcon token={market.token} size={16} />
+                          <span>{market.token}</span>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex flex-col items-end gap-1">
+                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${getHealthStyle(calculatePoolHealth(market.apyValue, market.utilizationValue, market.tvlValue))}`}>
+                        {calculatePoolHealth(market.apyValue, market.utilizationValue, market.tvlValue)}
+                      </span>
+                    </div>
+                  </div>
 
-        {/* Market Cards */}
-        {sortedMarkets.map((market, index) => (
-          <div key={index} className="glass-card p-4 space-y-3">
-            {/* Header Row */}
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <ProtocolIcon protocol={market.protocol} size={24} />
-                <div>
-                  <div className="font-medium text-foreground">{market.protocol}</div>
-                  <div className="text-sm text-foreground/60 flex items-center gap-2">
-                    <NetworkIcon network={market.network} size={16} />
-                    <span>{market.network}</span>
-                    <span>•</span>
-                    <TokenIcon token={market.token} size={16} />
-                    <span>{market.token}</span>
+                  {/* Metrics Row */}
+                  <div className="grid grid-cols-3 gap-4 pt-2 border-t border-foreground/20">
+                    <div className="text-center">
+                      <div className="text-xs text-foreground/50 mb-1">APY</div>
+                      <div className="bg-accent/20 text-accent px-3 py-1.5 rounded-full font-semibold text-sm border border-accent/30 shadow-sm">
+                        {formatAPY(market.apyValue)}
+                      </div>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-xs text-foreground/50 mb-1">TVL</div>
+                      <div className="text-sm font-medium text-foreground">
+                        {formatTVL(market.tvlValue)}
+                      </div>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-xs text-foreground/50 mb-1">Utilization</div>
+                      <div className="text-sm font-medium text-foreground">
+                        {formatUtilization(market.utilizationValue)}
+                      </div>
+                    </div>
                   </div>
                 </div>
-              </div>
-              <div className="flex flex-col items-end gap-1">
-                <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                  market.status === 'Active' 
-                    ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
-                    : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'
-                }`}>
-                  {market.status}
-                </span>
-                <span className={`px-2 py-1 rounded-full text-xs font-medium ${getHealthStyle(calculatePoolHealth(market.apyValue, market.utilizationValue, market.tvlValue))}`}>
-                  {calculatePoolHealth(market.apyValue, market.utilizationValue, market.tvlValue)}
-                </span>
-              </div>
+              ))}
             </div>
-
-            {/* Metrics Row */}
-            <div className="grid grid-cols-3 gap-4 pt-2 border-t border-foreground/20">
-              <div className="text-center">
-                <div className="text-xs text-foreground/50 mb-1">APY</div>
-                <div className="bg-accent/20 text-accent px-3 py-1.5 rounded-full font-semibold text-sm border border-accent/30 shadow-sm">
-                  {formatAPY(market.apyValue)}
-                </div>
-              </div>
-              <div className="text-center">
-                <div className="text-xs text-foreground/50 mb-1">TVL</div>
-                <div className="text-sm font-medium text-foreground">
-                  {formatTVL(market.tvlValue)}
-                </div>
-              </div>
-              <div className="text-center">
-                <div className="text-xs text-foreground/50 mb-1">Utilization</div>
-                <div className="text-sm font-medium text-foreground">
-                  {formatUtilization(market.utilizationValue)}
-                </div>
-              </div>
-            </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );

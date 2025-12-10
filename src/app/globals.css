@@ -271,17 +271,17 @@ svg:focus, svg *:focus {
 }
 
 .glass-button {
-  background: rgba(255, 122, 47, 0.1);
+  background: rgba(59, 130, 246, 0.1);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 122, 47, 0.2);
+  border: 1px solid rgba(59, 130, 246, 0.2);
   box-shadow: 0 8px 32px var(--glass-shadow);
   border-radius: 0.5rem;
   transition: all 0.3s ease;
 }
 
 .glass-button:hover {
-  background: rgba(255, 122, 47, 0.2);
-  border-color: rgba(255, 122, 47, 0.4);
+  background: rgba(59, 130, 246, 0.2);
+  border-color: rgba(59, 130, 246, 0.4);
   transform: translateY(-1px);
 }
