@@ -5,9 +5,11 @@ import Link from "next/link";
 import Image from "next/image";
 import ThemeToggle from "./ThemeToggle";
 import { useState } from "react";
+import { usePathname } from "next/navigation";
 
 export default function Header() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const pathname = usePathname();
 
   const toggleMobileMenu = () => {
     setIsMobileMenuOpen(!isMobileMenuOpen);
@@ -16,6 +18,8 @@ export default function Header() {
   const closeMobileMenu = () => {
     setIsMobileMenuOpen(false);
   };
+
+  const isActive = (path) => pathname === path;
 
   return (
     <header className="w-full bg-cream-200 dark:bg-zen-800 transition-colors duration-300">
@@ -46,16 +50,32 @@ export default function Header() {
             
             {/* Desktop Navigation - Left side after logo */}
             <nav className="hidden md:flex items-center ml-8 space-x-8">
-              <Link href="/dashboard" className="hover-highlight-effect text-zen-800 dark:text-cream-200 hover:text-briq-orange dark:hover:text-briq-orange hover:bg-briq-orange/20 dark:hover:bg-briq-orange/30 px-3 py-2 rounded-md transition-all duration-200 font-light font-lato relative hover:shadow-highlight">
+              <Link href="/dashboard" className={`transition-colors duration-200 font-light font-lato ${
+                isActive('/dashboard') 
+                  ? 'text-accent' 
+                  : 'text-zen-800 dark:text-cream-200 hover:text-accent'
+              }`}>
                 Dashboard
               </Link>
-              <Link href="/markets" className="hover-highlight-effect text-zen-800 dark:text-cream-200 hover:text-briq-orange dark:hover:text-briq-orange hover:bg-briq-orange/20 dark:hover:bg-briq-orange/30 px-3 py-2 rounded-md transition-all duration-200 font-light font-lato relative hover:shadow-highlight">
+              <Link href="/markets" className={`transition-colors duration-200 font-light font-lato ${
+                isActive('/markets') 
+                  ? 'text-accent' 
+                  : 'text-zen-800 dark:text-cream-200 hover:text-accent'
+              }`}>
                 Markets
               </Link>
-              <Link href="/analytics" className="hover-highlight-effect text-zen-800 dark:text-cream-200 hover:text-briq-orange dark:hover:text-briq-orange hover:bg-briq-orange/20 dark:hover:bg-briq-orange/30 px-3 py-2 rounded-md transition-all duration-200 font-light font-lato relative hover:shadow-highlight">
+              <Link href="/analytics" className={`transition-colors duration-200 font-light font-lato ${
+                isActive('/analytics') 
+                  ? 'text-accent' 
+                  : 'text-zen-800 dark:text-cream-200 hover:text-accent'
+              }`}>
                 Analytics
               </Link>
-              <Link href="/rupert" className="hover-highlight-effect text-zen-800 dark:text-cream-200 hover:text-briq-orange dark:hover:text-briq-orange hover:bg-briq-orange/20 dark:hover:bg-briq-orange/30 px-3 py-2 rounded-md transition-all duration-200 font-light font-lato relative hover:shadow-highlight">
+              <Link href="/rupert" className={`transition-colors duration-200 font-light font-lato ${
+                isActive('/rupert') 
+                  ? 'text-accent' 
+                  : 'text-zen-800 dark:text-cream-200 hover:text-accent'
+              }`}>
                 Rupert
               </Link>
             </nav>
@@ -128,28 +148,44 @@ export default function Header() {
               
               <Link 
                 href="/dashboard" 
-                className="block px-3 py-2 rounded-md text-zen-800 dark:text-cream-200 hover:text-briq-orange dark:hover:text-briq-orange hover:bg-briq-orange/20 dark:hover:bg-briq-orange/30 transition-all duration-200 font-light font-lato"
+                className={`block px-3 py-2 transition-colors duration-200 font-light font-lato ${
+                  isActive('/dashboard') 
+                    ? 'text-accent' 
+                    : 'text-zen-800 dark:text-cream-200 hover:text-accent'
+                }`}
                 onClick={closeMobileMenu}
               >
                 Dashboard
               </Link>
               <Link 
                 href="/markets" 
-                className="block px-3 py-2 rounded-md text-zen-800 dark:text-cream-200 hover:text-briq-orange dark:hover:text-briq-orange hover:bg-briq-orange/20 dark:hover:bg-briq-orange/30 transition-all duration-200 font-light font-lato"
+                className={`block px-3 py-2 transition-colors duration-200 font-light font-lato ${
+                  isActive('/markets') 
+                    ? 'text-accent' 
+                    : 'text-zen-800 dark:text-cream-200 hover:text-accent'
+                }`}
                 onClick={closeMobileMenu}
               >
                 Markets
               </Link>
               <Link 
                 href="/analytics" 
-                className="block px-3 py-2 rounded-md text-zen-800 dark:text-cream-200 hover:text-briq-orange dark:hover:text-briq-orange hover:bg-briq-orange/20 dark:hover:bg-briq-orange/30 transition-all duration-200 font-light font-lato"
+                className={`block px-3 py-2 transition-colors duration-200 font-light font-lato ${
+                  isActive('/analytics') 
+                    ? 'text-accent' 
+                    : 'text-zen-800 dark:text-cream-200 hover:text-accent'
+                }`}
                 onClick={closeMobileMenu}
               >
                 Analytics
               </Link>
               <Link 
                 href="/rupert" 
-                className="block px-3 py-2 rounded-md text-zen-800 dark:text-cream-200 hover:text-briq-orange dark:hover:text-briq-orange hover:bg-briq-orange/20 dark:hover:bg-briq-orange/30 transition-all duration-200 font-light font-lato"
+                className={`block px-3 py-2 transition-colors duration-200 font-light font-lato ${
+                  isActive('/rupert') 
+                    ? 'text-accent' 
+                    : 'text-zen-800 dark:text-cream-200 hover:text-accent'
+                }`}
                 onClick={closeMobileMenu}
               >
                 Rupert

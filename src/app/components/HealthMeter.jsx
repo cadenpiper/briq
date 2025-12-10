@@ -55,10 +55,10 @@ const HealthMeter = ({ health, maxHealth = 5, width = 60, height = 8 }) => {
       
       {/* Tooltip */}
       {showTooltip && (
-        <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-background border border-foreground/10 rounded-lg shadow-lg z-10 w-32">
-          <div className="text-xs text-center" style={{ fontFamily: 'var(--font-jetbrains-mono)' }}>
+        <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-background border border-foreground/10 rounded-lg shadow-lg z-10 w-36">
+          <div className="text-sm text-center" style={{ fontFamily: 'var(--font-jetbrains-mono)' }}>
             <div className="font-semibold text-foreground">{Math.round(clampedHealth)}/{maxHealth} - {description}</div>
-            <div className="text-foreground/50 mt-1 text-[11px]">Health score is based on protocol metrics like TVL and utilization</div>
+            <div className="text-foreground/50 mt-1 text-xs">Health score is based on protocol metrics like TVL and utilization</div>
           </div>
           {/* Tooltip arrow */}
           <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-foreground/10" />
