@@ -229,8 +229,8 @@ export default function Dashboard() {
                   </div>
                 ) : (
                   <div className="space-y-3">
-                    {/* Column Headers */}
-                    <div className="grid grid-cols-5 gap-4 px-4 pb-2 border-b border-foreground/10 text-xs font-medium text-foreground/60">
+                    {/* Desktop Layout - Column Headers */}
+                    <div className="hidden md:grid grid-cols-5 gap-4 px-4 pb-2 border-b border-foreground/10 text-xs font-medium text-foreground/60">
                       <div>Strategy</div>
                       <div className="text-center">Position</div>
                       <div className="text-center">APY</div>
@@ -260,15 +260,51 @@ export default function Dashboard() {
                       }).join(', ');
                       
                       return (
-                        <div key={token} className="grid grid-cols-5 gap-4 px-4 py-3 border border-foreground/10 rounded-lg items-center hover:bg-accent/5 hover:shadow-lg hover:shadow-accent/10 transition-all duration-300 cursor-pointer group">
-                          <div className="flex items-center space-x-2">
-                            <TokenIcon token={token} size={24} />
-                            <span className="font-medium text-foreground text-sm">{token}</span>
+                        <div key={token}>
+                          {/* Desktop Layout */}
+                          <div className="hidden md:grid grid-cols-5 gap-4 px-4 py-3 border border-foreground/10 rounded-lg items-center hover:bg-accent/5 hover:shadow-lg hover:shadow-accent/10 transition-all duration-300 cursor-pointer group">
+                            <div className="flex items-center space-x-2">
+                              <TokenIcon token={token} size={24} />
+                              <span className="font-medium text-foreground text-sm">{token}</span>
+                            </div>
+                            <div className="text-center font-semibold text-foreground">{formatPrivateValue(userTokenValue.toFixed(2))}</div>
+                            <div className="text-center font-semibold text-green-500">{formatPrivateValue(tokenAPY, '', '%')}</div>
+                            <div className="text-center text-sm text-foreground/60">{allocationText}</div>
+                            <div className="text-center font-semibold text-green-500">{formatPrivateValue('0.00')}</div>
                           </div>
-                          <div className="text-center font-semibold text-foreground">{formatPrivateValue(userTokenValue.toFixed(2))}</div>
-                          <div className="text-center font-semibold text-green-500">{formatPrivateValue(tokenAPY, '', '%')}</div>
-                          <div className="text-center text-sm text-foreground/60">{allocationText}</div>
-                          <div className="text-center font-semibold text-green-500">{formatPrivateValue('0.00')}</div>
+
+                          {/* Mobile Layout */}
+                          <div className="md:hidden border border-foreground/10 rounded-lg p-5 hover:bg-accent/5 hover:shadow-lg hover:shadow-accent/10 transition-all duration-300 space-y-4">
+                            {/* Header - Stacked */}
+                            <div className="text-center space-y-3">
+                              <div className="flex items-center justify-center space-x-3">
+                                <TokenIcon token={token} size={32} />
+                                <span className="font-bold text-foreground text-xl">{token}</span>
+                              </div>
+                              <div>
+                                <div className="text-sm text-foreground/60 mb-1">Position Value</div>
+                                <div className="font-bold text-foreground text-2xl">{formatPrivateValue(userTokenValue.toFixed(2))}</div>
+                              </div>
+                            </div>
+                            
+                            {/* Metrics Grid */}
+                            <div className="grid grid-cols-2 gap-4">
+                              <div className="text-center p-4 bg-foreground/5 rounded-lg">
+                                <div className="text-sm text-foreground/60 mb-2">APY</div>
+                                <div className="font-bold text-green-500 text-xl">{formatPrivateValue(tokenAPY, '', '%')}</div>
+                              </div>
+                              <div className="text-center p-4 bg-foreground/5 rounded-lg">
+                                <div className="text-sm text-foreground/60 mb-2">Earned</div>
+                                <div className="font-bold text-green-500 text-xl">{formatPrivateValue('0.00')}</div>
+                              </div>
+                            </div>
+                            
+                            {/* Allocation */}
+                            <div className="text-center p-4 bg-foreground/5 rounded-lg">
+                              <div className="text-sm text-foreground/60 mb-2">Strategy Allocation</div>
+                              <div className="text-sm font-medium text-foreground">{allocationText}</div>
+                            </div>
+                          </div>
                         </div>
                       );
                     })}
