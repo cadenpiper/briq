@@ -162,7 +162,7 @@ export default function Dashboard() {
                 {/* Privacy Toggle - Simple Eye Icon */}
                 <button
                   onClick={() => setIsPrivacyMode(!isPrivacyMode)}
-                  className="p-3 sm:p-1.5 text-foreground/60 hover:text-foreground transition-colors duration-200 flex items-center justify-center"
+                  className="p-3 sm:p-1.5 text-foreground/60 hover:text-foreground transition-colors duration-200 flex items-center justify-center cursor-pointer"
                   title={isPrivacyMode ? "Show values" : "Hide values"}
                 >
                   <svg 
@@ -326,7 +326,7 @@ export default function Dashboard() {
                   
                   <button
                     onClick={() => setSelectedAction('deposit')}
-                    className={`relative z-10 flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors duration-300 ${
+                    className={`relative z-10 flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors duration-300 cursor-pointer ${
                       selectedAction === 'deposit'
                         ? 'text-white'
                         : 'text-foreground/60 hover:text-foreground'
@@ -336,7 +336,7 @@ export default function Dashboard() {
                   </button>
                   <button
                     onClick={() => setSelectedAction('withdraw')}
-                    className={`relative z-10 flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors duration-300 ${
+                    className={`relative z-10 flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors duration-300 cursor-pointer ${
                       selectedAction === 'withdraw'
                         ? 'text-white'
                         : 'text-foreground/60 hover:text-foreground'
@@ -354,7 +354,7 @@ export default function Dashboard() {
                         <button
                           type="button"
                           onClick={() => setIsAssetDropdownOpen(!isAssetDropdownOpen)}
-                          className="w-full glass border border-foreground/10 rounded-lg px-3 py-2 text-foreground focus:outline-none focus:ring-2 focus:ring-accent/50 flex items-center justify-between"
+                          className="w-full glass border border-foreground/10 rounded-lg px-3 py-2 text-foreground focus:outline-none focus:ring-2 focus:ring-accent/50 flex items-center justify-between cursor-pointer"
                         >
                           <div className="flex items-center space-x-2">
                             <TokenIcon token={selectedAsset} size={20} />
@@ -374,7 +374,7 @@ export default function Dashboard() {
                                   setSelectedAsset(token);
                                   setIsAssetDropdownOpen(false);
                                 }}
-                                className="w-full px-3 py-2 text-left hover:bg-foreground/5 flex items-center space-x-2 transition-colors"
+                                className="w-full px-3 py-2 text-left hover:bg-foreground/5 flex items-center space-x-2 transition-colors cursor-pointer"
                               >
                                 <TokenIcon token={token} size={20} />
                                 <span>{token}</span>
@@ -458,7 +458,7 @@ export default function Dashboard() {
                         <button
                           type="button"
                           onClick={() => setIsAssetDropdownOpen(!isAssetDropdownOpen)}
-                          className="w-full glass border border-foreground/10 rounded-lg px-3 py-2 text-foreground focus:outline-none focus:ring-2 focus:ring-accent/50 flex items-center justify-between"
+                          className="w-full glass border border-foreground/10 rounded-lg px-3 py-2 text-foreground focus:outline-none focus:ring-2 focus:ring-accent/50 flex items-center justify-between cursor-pointer"
                         >
                           <div className="flex items-center space-x-2">
                             <TokenIcon token={selectedAsset} size={20} />
@@ -478,7 +478,7 @@ export default function Dashboard() {
                                   setSelectedAsset(token);
                                   setIsAssetDropdownOpen(false);
                                 }}
-                                className="w-full px-3 py-2 text-left hover:bg-foreground/5 flex items-center space-x-2 transition-colors"
+                                className="w-full px-3 py-2 text-left hover:bg-foreground/5 flex items-center space-x-2 transition-colors cursor-pointer"
                               >
                                 <TokenIcon token={token} size={20} />
                                 <span>{token}</span>
@@ -508,7 +508,7 @@ export default function Dashboard() {
                         </button>
                       </div>
                       <div className="text-xs text-foreground/60 mt-1">
-                        Available: {(Number(shareBalance) / 1e18).toFixed(4)} BRIQ
+                        Available: {formatPrivateValue((Number(shareBalance) / 1e18).toFixed(4), '', ' BRIQ')}
                       </div>
                       
                       {/* Liquidity Status Indicator */}
