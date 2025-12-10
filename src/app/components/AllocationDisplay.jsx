@@ -8,11 +8,7 @@ const AllocationDisplay = ({ allocations, isMobile = false }) => {
 
   if (isMobile) {
     return (
-      <div 
-        className="relative flex items-center justify-center space-x-2"
-        onMouseEnter={() => setShowTooltip(true)}
-        onMouseLeave={() => setShowTooltip(false)}
-      >
+      <div className="relative flex items-center justify-center space-x-2">
         {allocations.map((allocation, index) => (
           <div key={allocation.protocol} className="flex items-center space-x-1">
             <ProtocolIcon protocol={allocation.protocol} size={24} />
@@ -22,24 +18,6 @@ const AllocationDisplay = ({ allocations, isMobile = false }) => {
             )}
           </div>
         ))}
-        
-        {/* Tooltip */}
-        {showTooltip && (
-          <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-background border border-foreground/10 rounded-lg shadow-lg z-10 whitespace-nowrap">
-            <div className="text-xs space-y-1 text-center">
-              {allocations.map((allocation) => (
-                <div key={allocation.protocol} className="flex items-center justify-center space-x-2">
-                  <ProtocolIcon protocol={allocation.protocol} size={12} />
-                  <span className="text-foreground">
-                    {allocation.protocol}: {allocation.percentage.toFixed(0)}%
-                  </span>
-                </div>
-              ))}
-            </div>
-            {/* Tooltip arrow */}
-            <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-foreground/10" />
-          </div>
-        )}
       </div>
     );
   }

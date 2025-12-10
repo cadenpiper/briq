@@ -4,6 +4,7 @@ import { useState, useMemo, useEffect, useRef } from 'react';
 import { formatAPY, formatTVL, formatUtilization } from '../utils/formatters';
 import { useSubgraphMarketData } from '../hooks/useSubgraphMarketData';
 import { ProtocolIcon, TokenIcon, NetworkIcon } from './icons';
+import HealthMeter from './HealthMeter';
 
 export default function MarketTable() {
   const [selectedNetworks, setSelectedNetworks] = useState([]);
@@ -67,25 +68,12 @@ export default function MarketTable() {
     else if (tvl >= 10000000) score += 15;
     else score += 10;
     
-    if (score >= 85) return 'Great';
-    else if (score >= 70) return 'Good';
-    else if (score >= 55) return 'Fair';
-    else return 'Poor';
-  };
-
-  const getHealthStyle = (health) => {
-    switch (health) {
-      case 'Great':
-        return 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200 border border-emerald-200 dark:border-emerald-700 shadow-sm';
-      case 'Good':
-        return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 border border-blue-200 dark:border-blue-700 shadow-sm';
-      case 'Fair':
-        return 'bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200 border border-amber-200 dark:border-amber-700 shadow-sm';
-      case 'Poor':
-        return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200 border border-red-200 dark:border-red-700 shadow-sm';
-      default:
-        return 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200 border border-gray-200 dark:border-gray-700 shadow-sm';
-    }
+    // Convert to 1-5 scale for HealthMeter
+    if (score >= 85) return 5;
+    else if (score >= 70) return 4;
+    else if (score >= 55) return 3;
+    else if (score >= 40) return 2;
+    else return 1;
   };
 
   const handleNetworkSelect = (network) => {
@@ -427,8 +415,8 @@ export default function MarketTable() {
                 <h3 className="text-lg font-semibold text-foreground">{network}</h3>
               </div>
               
-              <div className="overflow-x-auto">
-                <table className="w-full border-collapse border-spacing-0" style={{ tableLayout: 'fixed', width: '100%' }}>
+              <div className="overflow-visible">
+                <table className="w-full border-collapse border-spacing-0 overflow-visible" style={{ tableLayout: 'fixed', width: '100%' }}>
                   <thead className="glass">
                     <tr>
                       <th className="px-6 py-4 text-center text-sm font-medium text-foreground">
@@ -498,10 +486,10 @@ export default function MarketTable() {
                         <td className="px-6 py-4 text-sm text-foreground/70 text-center">
                           {formatUtilization(market.utilizationValue)}
                         </td>
-                        <td className="px-6 py-4 text-sm text-center">
-                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${getHealthStyle(calculatePoolHealth(market.apyValue, market.utilizationValue, market.tvlValue))}`}>
-                            {calculatePoolHealth(market.apyValue, market.utilizationValue, market.tvlValue)}
-                          </span>
+                        <td className="px-6 py-4 text-sm text-center overflow-visible">
+                          <div className="flex justify-center">
+                            <HealthMeter health={calculatePoolHealth(market.apyValue, market.utilizationValue, market.tvlValue)} />
+                          </div>
                         </td>
                       </tr>
                     ))}
@@ -542,10 +530,9 @@ export default function MarketTable() {
                         </div>
                       </div>
                     </div>
-                    <div className="flex flex-col items-end gap-1">
-                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${getHealthStyle(calculatePoolHealth(market.apyValue, market.utilizationValue, market.tvlValue))}`}>
-                        {calculatePoolHealth(market.apyValue, market.utilizationValue, market.tvlValue)}
-                      </span>
+                    <div className="flex flex-col items-center gap-1">
+                      <div className="text-xs text-foreground/60 mb-1">Health</div>
+                      <HealthMeter health={calculatePoolHealth(market.apyValue, market.utilizationValue, market.tvlValue)} width={50} height={8} />
                     </div>
                   </div>
 

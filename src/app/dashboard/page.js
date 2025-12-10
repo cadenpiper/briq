@@ -336,7 +336,7 @@ export default function Dashboard() {
                               </div>
                               <div className="text-center p-4 bg-foreground/5 rounded-lg">
                                 <div className="text-sm text-foreground/60 mb-2">Health</div>
-                                <div className="flex justify-center">
+                                <div className="flex justify-center mt-3">
                                   <HealthMeter health={4} width={50} height={8} />
                                 </div>
                               </div>

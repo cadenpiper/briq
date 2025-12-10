@@ -22,7 +22,7 @@ export default function Markets() {
           {/* Markets Table Section */}
           <div className="mb-16 sm:mb-20 lg:mb-24">
             <h2 className="text-2xl font-semibold text-foreground mb-6">Markets</h2>
-            <div className="glass-card p-6 sm:p-8">
+            <div className="glass-card p-6 sm:p-8 overflow-visible">
               <MarketTable />
             </div>
           </div>
