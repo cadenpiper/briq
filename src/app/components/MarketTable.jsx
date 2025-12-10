@@ -238,7 +238,7 @@ export default function MarketTable() {
               setIsNetworkDropdownOpen(!isNetworkDropdownOpen);
               setIsAssetDropdownOpen(false);
             }}
-            className="w-full sm:w-[140px] glass border border-foreground/10 rounded-lg px-4 py-3 text-foreground focus:outline-none focus:ring-2 focus:ring-accent/50 flex items-center justify-between"
+            className="w-full sm:w-[140px] glass border border-foreground/10 rounded-lg px-4 py-3 text-foreground focus:outline-none focus:ring-2 focus:ring-accent/50 flex items-center justify-between cursor-pointer"
           >
             <span className="text-sm">Network</span>
             <svg className="w-4 h-4 text-foreground/60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -255,7 +255,7 @@ export default function MarketTable() {
                     handleNetworkSelect(network);
                     setIsNetworkDropdownOpen(false);
                   }}
-                  className="w-full px-3 py-2 text-left hover:bg-foreground/5 flex items-center space-x-2 transition-colors text-sm"
+                  className="w-full px-3 py-2 text-left hover:bg-foreground/5 flex items-center space-x-2 transition-colors text-sm cursor-pointer"
                 >
                   <NetworkIcon network={network} size={20} />
                   <span>{network}</span>
@@ -273,7 +273,7 @@ export default function MarketTable() {
               setIsAssetDropdownOpen(!isAssetDropdownOpen);
               setIsNetworkDropdownOpen(false);
             }}
-            className="w-full sm:w-[140px] glass border border-foreground/10 rounded-lg px-4 py-3 text-foreground focus:outline-none focus:ring-2 focus:ring-accent/50 flex items-center justify-between"
+            className="w-full sm:w-[140px] glass border border-foreground/10 rounded-lg px-4 py-3 text-foreground focus:outline-none focus:ring-2 focus:ring-accent/50 flex items-center justify-between cursor-pointer"
           >
             <span className="text-sm">Asset</span>
             <svg className="w-4 h-4 text-foreground/60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -290,7 +290,7 @@ export default function MarketTable() {
                     handleTokenSelect(token);
                     setIsAssetDropdownOpen(false);
                   }}
-                  className="w-full px-3 py-2 text-left hover:bg-foreground/5 flex items-center space-x-2 transition-colors text-sm"
+                  className="w-full px-3 py-2 text-left hover:bg-foreground/5 flex items-center space-x-2 transition-colors text-sm cursor-pointer"
                 >
                   <TokenIcon token={token} size={20} />
                   <span>{token}</span>
@@ -461,7 +461,7 @@ export default function MarketTable() {
                     {networkMarkets.map((market, index) => (
                       <tr 
                         key={index}
-                        className="hover:bg-accent/5 hover:shadow-lg hover:shadow-accent/10 transition-all duration-300 cursor-pointer group"
+                        className="hover:bg-accent/5 hover:shadow-lg hover:shadow-accent/10 transition-all duration-300 group"
                       >
                         <td className="px-6 py-4 text-sm text-foreground/70 text-center">
                           <div className="flex items-center justify-center gap-2">

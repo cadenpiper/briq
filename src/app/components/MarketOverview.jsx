@@ -27,8 +27,8 @@ export default function MarketOverview({ data, loading, error }) {
     };
   }, [data]);
 
-  const MetricCard = ({ title, value, subtitle, loading }) => (
-    <div className="glass-card p-6 text-center">
+  const MetricCard = ({ title, value, subtitle, loading, valueColor = "text-foreground" }) => (
+    <div className="glass-card p-6 text-center hover:scale-[1.02] transition-all duration-300">
       <div className="text-sm font-medium text-foreground/60 mb-2">{title}</div>
       {loading ? (
         <div className="animate-pulse">
@@ -42,7 +42,7 @@ export default function MarketOverview({ data, loading, error }) {
         </div>
       ) : (
         <>
-          <div className="text-2xl font-bold text-foreground mb-1">{value}</div>
+          <div className={`text-2xl font-bold mb-1 ${valueColor}`}>{value}</div>
           {subtitle && <div className="text-xs text-foreground/50">{subtitle}</div>}
         </>
       )}
@@ -74,6 +74,7 @@ export default function MarketOverview({ data, loading, error }) {
           title="Average APY"
           value={formatAPY(metrics.averageAPY)}
           subtitle="Market average"
+          valueColor="text-accent"
           loading={loading}
         />
       </div>
