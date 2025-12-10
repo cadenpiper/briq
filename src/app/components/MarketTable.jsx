@@ -302,7 +302,7 @@ export default function MarketTable() {
 
         {/* Selections Display with Divider */}
         {(selectedNetworks.length > 0 || selectedTokens.length > 0) && (
-          <div className="flex items-center gap-3 glass border border-foreground/10 rounded-lg px-3 py-2">
+          <div className="flex items-center justify-center sm:justify-start gap-2 glass border border-foreground/10 rounded-lg px-4 py-2 w-fit mx-auto sm:mx-0 sm:w-auto">
             {/* Network Icons */}
             {selectedNetworks.length > 0 && (
               <div className="flex items-center gap-2">
@@ -311,7 +311,7 @@ export default function MarketTable() {
                     key={network}
                     type="button"
                     onClick={() => removeNetwork(network)}
-                    className="relative group"
+                    className="relative group w-8 h-8 flex items-center justify-center"
                     aria-label={`Remove ${network} network filter`}
                   >
                     <NetworkIcon network={network} size={24} />
@@ -338,7 +338,7 @@ export default function MarketTable() {
                     key={token}
                     type="button"
                     onClick={() => removeToken(token)}
-                    className="relative group"
+                    className="relative group w-8 h-8 flex items-center justify-center"
                     aria-label={`Remove ${token} asset filter`}
                   >
                     <TokenIcon token={token} size={24} />
@@ -420,9 +420,6 @@ export default function MarketTable() {
                   <thead className="glass">
                     <tr>
                       <th className="px-6 py-4 text-center text-sm font-medium text-foreground">
-                        Protocols
-                      </th>
-                      <th className="px-6 py-4 text-center text-sm font-medium text-foreground">
                         Token
                       </th>
                       <th 
@@ -455,6 +452,9 @@ export default function MarketTable() {
                       <th className="px-6 py-4 text-center text-sm font-medium text-foreground">
                         Health
                       </th>
+                      <th className="px-6 py-4 text-center text-sm font-medium text-foreground">
+                        Protocol
+                      </th>
                     </tr>
                   </thead>
                   <tbody className="space-y-1">
@@ -463,22 +463,14 @@ export default function MarketTable() {
                         key={index}
                         className="hover:bg-accent/5 hover:shadow-lg hover:shadow-accent/10 transition-all duration-300 cursor-pointer group"
                       >
-                        <td className="px-6 py-4 text-sm font-medium text-foreground text-center">
-                          <div className="flex items-center justify-center gap-2">
-                            <ProtocolIcon protocol={market.protocol} size={20} />
-                            <span>{market.protocol}</span>
-                          </div>
-                        </td>
                         <td className="px-6 py-4 text-sm text-foreground/70 text-center">
                           <div className="flex items-center justify-center gap-2">
                             <TokenIcon token={market.token} size={20} />
                             <span>{market.token}</span>
                           </div>
                         </td>
-                        <td className="px-6 py-4 text-sm text-center">
-                          <span className="bg-accent/20 text-accent px-3 py-1.5 rounded-full font-semibold border border-accent/30 shadow-sm group-hover:bg-accent/30 group-hover:shadow-md transition-all duration-300">
-                            {formatAPY(market.apyValue)}
-                          </span>
+                        <td className="px-6 py-4 text-sm text-foreground text-center">
+                          {formatAPY(market.apyValue)}
                         </td>
                         <td className="px-6 py-4 text-sm text-foreground/70 text-center">
                           {formatTVL(market.tvlValue)}
@@ -489,6 +481,12 @@ export default function MarketTable() {
                         <td className="px-6 py-4 text-sm text-center overflow-visible">
                           <div className="flex justify-center">
                             <HealthMeter health={calculatePoolHealth(market.apyValue, market.utilizationValue, market.tvlValue)} />
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 text-sm font-medium text-foreground text-center">
+                          <div className="flex items-center justify-center gap-2">
+                            <ProtocolIcon protocol={market.protocol} size={20} />
+                            <span>{market.protocol}</span>
                           </div>
                         </td>
                       </tr>
@@ -521,12 +519,12 @@ export default function MarketTable() {
                   {/* Header Row */}
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                      <ProtocolIcon protocol={market.protocol} size={24} />
+                      <TokenIcon token={market.token} size={24} />
                       <div>
-                        <div className="font-medium text-foreground">{market.protocol}</div>
+                        <div className="font-medium text-foreground">{market.token}</div>
                         <div className="text-sm text-foreground/60 flex items-center gap-2">
-                          <TokenIcon token={market.token} size={16} />
-                          <span>{market.token}</span>
+                          <ProtocolIcon protocol={market.protocol} size={16} />
+                          <span>{market.protocol}</span>
                         </div>
                       </div>
                     </div>
@@ -540,7 +538,7 @@ export default function MarketTable() {
                   <div className="grid grid-cols-3 gap-4 pt-2 border-t border-foreground/20">
                     <div className="text-center">
                       <div className="text-xs text-foreground/50 mb-1">APY</div>
-                      <div className="bg-accent/20 text-accent px-3 py-1.5 rounded-full font-semibold text-sm border border-accent/30 shadow-sm">
+                      <div className="text-sm font-medium text-foreground">
                         {formatAPY(market.apyValue)}
                       </div>
                     </div>
