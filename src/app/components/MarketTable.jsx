@@ -246,7 +246,7 @@ export default function MarketTable() {
             </svg>
           </button>
           {isNetworkDropdownOpen && (
-            <div className="absolute z-10 w-full sm:w-[140px] mt-1 bg-background border border-foreground/10 rounded-lg shadow-lg overflow-hidden">
+            <div className="absolute z-10 w-full sm:w-[140px] mt-1 border border-foreground/10 rounded-lg shadow-lg overflow-hidden" style={{ backgroundColor: '#bfdbfe' }}>
               {networks.map(network => (
                 <button
                   key={network}
@@ -281,7 +281,7 @@ export default function MarketTable() {
             </svg>
           </button>
           {isAssetDropdownOpen && (
-            <div className="absolute z-10 w-full sm:w-[140px] mt-1 bg-background border border-foreground/10 rounded-lg shadow-lg overflow-hidden">
+            <div className="absolute z-10 w-full sm:w-[140px] mt-1 border border-foreground/10 rounded-lg shadow-lg overflow-hidden" style={{ backgroundColor: '#bfdbfe' }}>
               {tokens.map(token => (
                 <button
                   key={token}
@@ -312,6 +312,7 @@ export default function MarketTable() {
                     type="button"
                     onClick={() => removeNetwork(network)}
                     className="relative group w-8 h-8 flex items-center justify-center"
+                    style={{ cursor: 'pointer' }}
                     aria-label={`Remove ${network} network filter`}
                   >
                     <NetworkIcon network={network} size={24} />
@@ -339,6 +340,7 @@ export default function MarketTable() {
                     type="button"
                     onClick={() => removeToken(token)}
                     className="relative group w-8 h-8 flex items-center justify-center"
+                    style={{ cursor: 'pointer' }}
                     aria-label={`Remove ${token} asset filter`}
                   >
                     <TokenIcon token={token} size={24} />
@@ -387,7 +389,7 @@ export default function MarketTable() {
         <button
           onClick={refetch}
           disabled={subgraphLoading}
-          className="glass-button flex items-center justify-center space-x-2 px-4 py-2 text-sm text-foreground disabled:opacity-50 disabled:cursor-not-allowed w-full sm:w-auto"
+          className="glass-button flex items-center justify-center space-x-2 px-4 py-2 text-sm text-foreground disabled:opacity-50 disabled:cursor-not-allowed w-full sm:w-auto cursor-pointer"
         >
           <svg 
             className={`w-4 h-4 ${subgraphLoading ? 'animate-spin' : ''}`} 
