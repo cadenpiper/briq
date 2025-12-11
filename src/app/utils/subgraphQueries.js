@@ -40,6 +40,25 @@ const createMarketQuery = (tokenSymbol) => gql`
   }
 `;
 
+// Historical data query
+const createHistoricalQuery = (marketId, days = 30) => gql`
+  {
+    marketDailySnapshots(
+      first: ${days}
+      orderBy: timestamp
+      orderDirection: desc
+      where: { market: "${marketId}" }
+    ) {
+      timestamp
+      totalDepositBalanceUSD
+      totalBorrowBalanceUSD
+      rates(where: { side: LENDER }) {
+        rate
+      }
+    }
+  }
+`;
+
 /**
  * Utility function to split Compound market ID (from your reference file)
  * @param {string} marketId - The compound market ID
@@ -59,6 +78,46 @@ export function splitCompoundMarketId(marketId) {
   }
 
   return { cometAddress, tokenAddress };
+}
+
+/**
+ * Query historical data for a specific market
+ * @param {string} protocolName - Name of the protocol
+ * @param {string} subgraphId - The subgraph ID
+ * @param {string} marketId - Market ID to query
+ * @param {number} days - Number of days of history to fetch
+ * @returns {Promise<Array|null>} Historical data array or null if error
+ */
+export async function queryHistoricalData(protocolName, subgraphId, marketId, days = 30) {
+  try {
+    const url = getSubgraphUrl(subgraphId);
+    if (!url) {
+      console.error(`Cannot construct subgraph URL for ${protocolName} - missing API key`);
+      return null;
+    }
+
+    const query = createHistoricalQuery(marketId, days);
+    const response = await request(url, query);
+    const snapshots = response.marketDailySnapshots;
+
+    if (!snapshots || snapshots.length === 0) {
+      console.log(`No historical data found for ${protocolName} market ${marketId}`);
+      return null;
+    }
+
+    // Transform data for charts
+    return snapshots.reverse().map(snapshot => ({
+      date: new Date(parseInt(snapshot.timestamp) * 1000).toISOString().split('T')[0],
+      tvl: parseFloat(snapshot.totalDepositBalanceUSD),
+      apy: snapshot.rates[0] ? parseFloat(snapshot.rates[0].rate) : 0,
+      utilization: snapshot.totalDepositBalanceUSD > 0 
+        ? (parseFloat(snapshot.totalBorrowBalanceUSD) / parseFloat(snapshot.totalDepositBalanceUSD)) * 100 
+        : 0
+    }));
+  } catch (error) {
+    console.error(`Error querying historical data for ${protocolName}:`, error);
+    return null;
+  }
 }
 
 /**
@@ -115,6 +174,48 @@ export async function queryProtocolMarkets(protocolName, subgraphId, tokenSymbol
     console.error(`Error querying ${protocolName} subgraph:`, error);
     return null;
   }
+}
+
+/**
+ * Get historical data for all supported protocols
+ * @param {number} days - Number of days of history to fetch
+ * @returns {Promise<Object>} Object with historical data by protocol and token
+ */
+export async function getAllHistoricalData(days = 30) {
+  const results = {};
+  
+  // Get current markets first to get market IDs
+  const currentMarkets = await getAllMarketData();
+  
+  for (const market of currentMarkets) {
+    const key = `${market.protocol}_${market.network}_${market.token}`;
+    let subgraphId;
+    
+    // Map to correct subgraph ID
+    if (market.protocol === "Aave V3" && market.network === "Arbitrum One") {
+      subgraphId = SUBGRAPH_IDS.AAVE_V3_ARB;
+    } else if (market.protocol === "Aave V3" && market.network === "Ethereum") {
+      subgraphId = SUBGRAPH_IDS.AAVE_V3_ETH;
+    } else if (market.protocol === "Compound V3" && market.network === "Arbitrum One") {
+      subgraphId = SUBGRAPH_IDS.COMPOUND_V3_ARB;
+    } else if (market.protocol === "Compound V3" && market.network === "Ethereum") {
+      subgraphId = SUBGRAPH_IDS.COMPOUND_V3_ETH;
+    }
+    
+    if (subgraphId && market.id) {
+      const historicalData = await queryHistoricalData(market.protocol, subgraphId, market.id, days);
+      if (historicalData) {
+        results[key] = {
+          protocol: market.protocol,
+          network: market.network,
+          token: market.token,
+          data: historicalData
+        };
+      }
+    }
+  }
+  
+  return results;
 }
 
 /**
