@@ -11,7 +11,7 @@ export default function Footer() {
               href="https://github.com/cadenpiper/briq" 
               target="_blank" 
               rel="noopener noreferrer" 
-              className="hover-highlight-effect text-zen-800 dark:text-cream-300 hover:text-briq-orange dark:hover:text-briq-orange hover:bg-briq-orange/20 dark:hover:bg-briq-orange/30 px-3 py-2 rounded-md transition-all duration-200 text-sm font-medium flex items-center space-x-1 hover:shadow-highlight"
+              className="text-foreground/60 hover:text-accent transition-colors duration-200 text-sm font-medium flex items-center space-x-1"
             >
               <svg 
                 className="w-5 h-5" 
@@ -25,7 +25,7 @@ export default function Footer() {
             </Link>
             <Link 
               href="#" 
-              className="hover-highlight-effect text-zen-800 dark:text-cream-300 hover:text-briq-orange dark:hover:text-briq-orange hover:bg-briq-orange/20 dark:hover:bg-briq-orange/30 px-3 py-2 rounded-md transition-all duration-200 text-sm font-medium hover:shadow-highlight"
+              className="text-foreground/60 hover:text-accent transition-colors duration-200 text-sm font-medium"
             >
               Feedback
             </Link>
