@@ -416,7 +416,7 @@ export default function Dashboard() {
                           </svg>
                         </button>
                         {isAssetDropdownOpen && (
-                          <div className="absolute z-10 w-full mt-1 border border-foreground/10 rounded-lg shadow-lg overflow-hidden" style={{ backgroundColor: '#bfdbfe' }}>
+                          <div className="absolute z-10 w-full mt-1 border border-foreground/10 rounded-lg shadow-lg overflow-hidden" style={{ backgroundColor: 'var(--color-background, #bfdbfe)' }}>
                             {['USDC', 'WETH'].map(token => (
                               <button
                                 key={token}
@@ -520,7 +520,7 @@ export default function Dashboard() {
                           </svg>
                         </button>
                         {isAssetDropdownOpen && (
-                          <div className="absolute z-10 w-full mt-1 border border-foreground/10 rounded-lg shadow-lg overflow-hidden" style={{ backgroundColor: '#bfdbfe' }}>
+                          <div className="absolute z-10 w-full mt-1 border border-foreground/10 rounded-lg shadow-lg overflow-hidden" style={{ backgroundColor: 'var(--color-background, #bfdbfe)' }}>
                             {['USDC', 'WETH'].map(token => (
                               <button
                                 key={token}

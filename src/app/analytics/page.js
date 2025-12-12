@@ -280,25 +280,6 @@ export default function Analytics() {
                 </div>
               </div>
 
-              {/* Average APY Card */}
-              <div className="glass-card p-4 sm:p-6 hover:scale-[1.02] transition-all duration-300 flex-1 sm:flex-1 lg:flex-none">
-                <div className="flex flex-col">
-                  <h2 className="text-sm sm:text-lg font-semibold text-foreground/60 mb-2 sm:mb-3">
-                    Average APY
-                  </h2>
-                  <div className="text-2xl sm:text-3xl lg:text-4xl font-bold text-green-600 font-jetbrains-mono">
-                    {marketsLoading ? (
-                      <SkeletonText className="h-8 sm:h-10 w-20 sm:w-24" />
-                    ) : (
-                      weightedAverageAPY
-                    )}
-                  </div>
-                  <div className="text-xs text-foreground/50 mt-1 sm:mt-2">
-                    Weighted by TVL
-                  </div>
-                </div>
-              </div>
-
               {/* Total Rewards Card */}
               <div className="glass-card p-4 sm:p-6 hover:scale-[1.02] transition-all duration-300 flex-1 sm:flex-1 lg:flex-none">
                 <div className="flex flex-col">
@@ -392,8 +373,7 @@ export default function Analytics() {
                                       : 'drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1))',
                                     transform: isHovered ? 'scale(1.02)' : 'scale(1)',
                                     transformOrigin: 'center',
-                                    transition: 'all 0.2s ease-in-out',
-                                    cursor: 'pointer'
+                                    transition: 'all 0.2s ease-in-out'
                                   }}
                                 />
                               );
@@ -414,7 +394,7 @@ export default function Analytics() {
                         return (
                           <div 
                             key={index} 
-                            className={`flex items-center justify-between p-3 glass rounded-lg transition-colors duration-200 cursor-pointer backdrop-blur-sm ${
+                            className={`flex items-center justify-between p-3 glass rounded-lg transition-colors duration-200 backdrop-blur-sm ${
                               isHovered ? 'bg-zen-200/30 dark:bg-zen-600/30' : 'hover:bg-foreground/5'
                             }`}
                             onMouseEnter={() => setHoveredSegment({ 
@@ -541,8 +521,7 @@ export default function Analytics() {
                                       : 'drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1))',
                                     transform: shouldScale ? 'scale(1.02)' : 'scale(1)',
                                     transformOrigin: 'center',
-                                    transition: 'all 0.2s ease-in-out',
-                                    cursor: 'pointer'
+                                    transition: 'all 0.2s ease-in-out'
                                   }}
                                 />
                               );

@@ -246,7 +246,12 @@ export default function MarketTable() {
             </svg>
           </button>
           {isNetworkDropdownOpen && (
-            <div className="absolute z-10 w-full sm:w-[140px] mt-1 border border-foreground/10 rounded-lg shadow-lg overflow-hidden" style={{ backgroundColor: '#bfdbfe' }}>
+            <div 
+              className="absolute z-10 w-full sm:w-[140px] mt-1 border border-foreground/10 rounded-lg shadow-lg overflow-hidden" 
+              style={{ 
+                backgroundColor: document.documentElement.classList.contains('dark') ? '#1f2937' : '#bfdbfe'
+              }}
+            >
               {networks.map(network => (
                 <button
                   key={network}
@@ -281,7 +286,12 @@ export default function MarketTable() {
             </svg>
           </button>
           {isAssetDropdownOpen && (
-            <div className="absolute z-10 w-full sm:w-[140px] mt-1 border border-foreground/10 rounded-lg shadow-lg overflow-hidden" style={{ backgroundColor: '#bfdbfe' }}>
+            <div 
+              className="absolute z-10 w-full sm:w-[140px] mt-1 border border-foreground/10 rounded-lg shadow-lg overflow-hidden" 
+              style={{ 
+                backgroundColor: document.documentElement.classList.contains('dark') ? '#1f2937' : '#bfdbfe'
+              }}
+            >
               {tokens.map(token => (
                 <button
                   key={token}

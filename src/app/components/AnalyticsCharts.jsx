@@ -430,7 +430,7 @@ export function AvgDepositMetric() {
         <h2 className="text-sm sm:text-lg font-semibold text-foreground/60 mb-2 sm:mb-3">
           Average Deposit Size
         </h2>
-        <div className="text-2xl sm:text-3xl lg:text-4xl font-bold text-accent font-jetbrains-mono">
+        <div className="text-2xl sm:text-3xl lg:text-4xl font-bold text-green-600 font-jetbrains-mono">
           {formatCurrency(avgDeposit)}
         </div>
         <div className="text-xs text-foreground/50 mt-1 sm:mt-2">
