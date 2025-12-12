@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import CopyButton from './CopyButton';
+import { TokenIcon } from './icons';
 
 export default function RupertActions() {
   const [actions, setActions] = useState([]);
@@ -58,6 +59,15 @@ export default function RupertActions() {
 
   const getActionIcon = (action) => {
     if (action.type === 'strategy_change') {
+      // Use token icons for USDC and WETH
+      if (action.token === 'USDC' || action.token === 'WETH') {
+        return (
+          <div className="w-8 h-8 flex items-center justify-center">
+            <TokenIcon token={action.token} size={32} />
+          </div>
+        );
+      }
+      // Fallback for other tokens
       return (
         <div className="w-8 h-8 bg-green-100 dark:bg-green-900 rounded-full flex items-center justify-center">
           <svg className="w-4 h-4 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">

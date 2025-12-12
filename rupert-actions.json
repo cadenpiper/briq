@@ -6,42 +6,6 @@
       "currentStrategy": "Aave V3",
       "newStrategy": "Compound V3",
       "improvement": "0.62",
-      "txHash": "0xba9d06c135d4c6354578582a0b22de6ca8316dea6505c15098a8e9308aacca71",
-      "fromPool": "0x794a61358D6845594F94dc1DB02A252b5b4814aD",
-      "toPool": "0x9c4ec768c28520B50860ea7a15bd7213a9fF58bf",
-      "timestamp": "2025-12-09T11:23:15.973Z",
-      "id": 1765279395973
-    },
-    {
-      "type": "strategy_change",
-      "token": "USDC",
-      "currentStrategy": "Aave V3",
-      "newStrategy": "Compound V3",
-      "improvement": "0.62",
-      "txHash": "0x9214074698b637c330dafdc95e671613ef1437751b93a82ff2bbccf73f3dc6b8",
-      "fromPool": "0x794a61358D6845594F94dc1DB02A252b5b4814aD",
-      "toPool": "0x9c4ec768c28520B50860ea7a15bd7213a9fF58bf",
-      "timestamp": "2025-12-09T11:28:16.181Z",
-      "id": 1765279696181
-    },
-    {
-      "type": "strategy_change",
-      "token": "USDC",
-      "currentStrategy": "Aave V3",
-      "newStrategy": "Compound V3",
-      "improvement": "0.62",
-      "txHash": "0xe8bbbcf511ee599731b7bb6f868a3e6f891062b7ee53e1369aba389d3f3d85fe",
-      "fromPool": "0x794a61358D6845594F94dc1DB02A252b5b4814aD",
-      "toPool": "0x9c4ec768c28520B50860ea7a15bd7213a9fF58bf",
-      "timestamp": "2025-12-09T11:33:16.270Z",
-      "id": 1765279996270
-    },
-    {
-      "type": "strategy_change",
-      "token": "USDC",
-      "currentStrategy": "Aave V3",
-      "newStrategy": "Compound V3",
-      "improvement": "0.62",
       "txHash": "0x0b87281070978d1ff7346a6efcc32c3388cdc256e83b9d4e4d166597c42febe7",
       "fromPool": "0x794a61358D6845594F94dc1DB02A252b5b4814aD",
       "toPool": "0x9c4ec768c28520B50860ea7a15bd7213a9fF58bf",
@@ -1199,6 +1163,42 @@
       "toPool": "0x9c4ec768c28520B50860ea7a15bd7213a9fF58bf",
       "timestamp": "2025-12-09T22:37:12.455Z",
       "id": 1765319832455
+    },
+    {
+      "type": "strategy_change",
+      "token": "USDC",
+      "currentStrategy": "None",
+      "newStrategy": "Aave V3",
+      "improvement": "3.10",
+      "txHash": "0x886255af1a149aa2f1d285879a1aff8dfff56bed4ed720c27afd0572ad8819bc",
+      "fromPool": "N/A",
+      "toPool": "0x794a61358D6845594F94dc1DB02A252b5b4814aD",
+      "timestamp": "2025-12-12T01:20:51.082Z",
+      "id": 1765502451082
+    },
+    {
+      "type": "strategy_change",
+      "token": "WETH",
+      "currentStrategy": "None",
+      "newStrategy": "Compound V3",
+      "improvement": "5.26",
+      "txHash": "0xc2b1b1c3c01fc83c3fed640f201dae14b3d5e9e0ad693c71867582baa9121ada",
+      "fromPool": "N/A",
+      "toPool": "0x6f7D514bbD4aFf3BcD1140B7344b32f063dEe486",
+      "timestamp": "2025-12-12T01:20:53.259Z",
+      "id": 1765502453259
+    },
+    {
+      "type": "strategy_change",
+      "token": "WETH",
+      "currentStrategy": "Compound V3",
+      "newStrategy": "Aave V3",
+      "improvement": "0.41",
+      "txHash": "0xee684d9275837c235137a2d227df058df22c7018b56447109ccb04356334aaf2",
+      "fromPool": "0x6f7D514bbD4aFf3BcD1140B7344b32f063dEe486",
+      "toPool": "0x794a61358D6845594F94dc1DB02A252b5b4814aD",
+      "timestamp": "2025-12-12T07:45:19.242Z",
+      "id": 1765525519242
     }
   ]
 }
