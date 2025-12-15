@@ -158,7 +158,7 @@ export default function Rupert() {
                 <button
                   onClick={clearChat}
                   disabled={isResetting}
-                  className="flex items-center justify-center space-x-2 px-4 py-2 text-sm bg-briq-orange text-foreground rounded hover:bg-[#e6692a] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  className="flex items-center justify-center space-x-2 px-4 py-2 text-sm bg-foreground/10 text-foreground rounded hover:bg-accent hover:text-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                   title="Reset chat conversation"
                 >
                   <svg 
