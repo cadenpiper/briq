@@ -1,6 +1,7 @@
 import { useWriteContract, useAccount, usePublicClient } from 'wagmi';
 import { parseUnits } from 'viem';
 import { FORK_ADDRESSES } from '../utils/forkAddresses';
+import { supabase } from '../utils/supabase';
 import BriqVaultArtifact from '../abis/BriqVault.json';
 import BriqSharesArtifact from '../abis/BriqShares.json';
 import PriceFeedManagerArtifact from '../abis/PriceFeedManager.json';
@@ -28,12 +29,26 @@ export function useVaultOperations() {
     await publicClient.waitForTransactionReceipt({ hash: approvalHash });
 
     // Then deposit
-    return await writeContractAsync({
+    const hash = await writeContractAsync({
       address: FORK_ADDRESSES.VAULT,
       abi: BriqVaultArtifact.abi,
       functionName: 'deposit',
       args: [tokenAddress, parsedAmount],
     });
+
+    // Save to Supabase
+    if (address) {
+      await supabase.from('transactions').insert({
+        wallet_address: address,
+        type: 'deposit',
+        token: asset,
+        amount: amount,
+        tx_hash: hash,
+        status: 'success'
+      });
+    }
+
+    return hash;
   };
 
   const withdraw = async (asset, amount, slippageTolerance = 0.5) => {
@@ -66,12 +81,26 @@ export function useVaultOperations() {
     // Apply slippage tolerance (default 0.5%)
     const minAmountOut = (expectedAmount * BigInt(Math.floor((100 - slippageTolerance) * 100))) / 10000n;
 
-    return await writeContractAsync({
+    const hash = await writeContractAsync({
       address: FORK_ADDRESSES.VAULT,
       abi: BriqVaultArtifact.abi,
       functionName: 'withdraw',
       args: [tokenAddress, parsedShares, minAmountOut],
     });
+
+    // Save to Supabase
+    if (address) {
+      await supabase.from('transactions').insert({
+        wallet_address: address,
+        type: 'withdraw',
+        token: asset,
+        amount: amount,
+        tx_hash: hash,
+        status: 'success'
+      });
+    }
+
+    return hash;
   };
 
   return {

@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useAccount } from 'wagmi';
 import toast, { Toaster } from 'react-hot-toast';
 import Layout from '../components/Layout';
+import TransactionHistory from '../components/TransactionHistory';
 import { TokenIcon } from '../components/icons';
 import AllocationChart from '../components/AllocationChart';
 import AllocationDisplay from '../components/AllocationDisplay';
@@ -636,6 +637,11 @@ export default function Dashboard() {
                 )}
               </div>
             </div>
+          </div>
+
+          {/* Transaction History */}
+          <div className="mt-8">
+            <TransactionHistory />
           </div>
         </div>
       </div>
