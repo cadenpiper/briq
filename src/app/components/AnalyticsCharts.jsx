@@ -1,7 +1,8 @@
 'use client';
 
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { supabase } from '../utils/supabase';
 
 // Mock data generators
 const generateMockTVLData = () => {
@@ -158,7 +159,71 @@ const generateMockVolumeData = () => {
 
 // Chart Components
 export function TVLChart() {
-  const data = generateMockTVLData();
+  const [data, setData] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [timeRange, setTimeRange] = useState('30d');
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+
+  useEffect(() => {
+    async function fetchTVLData() {
+      const now = new Date();
+      let startDate;
+
+      switch (timeRange) {
+        case '7d':
+          startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+          break;
+        case '30d':
+          startDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+          break;
+        case '90d':
+          startDate = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
+          break;
+        case 'all':
+          startDate = new Date(0); // Beginning of time
+          break;
+        default:
+          startDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+      }
+
+      const { data: snapshots, error } = await supabase
+        .from('tvl_snapshots')
+        .select('tvl_usd, created_at')
+        .gte('created_at', startDate.toISOString())
+        .order('created_at', { ascending: true });
+
+      if (error) {
+        console.error('Error fetching TVL data:', error);
+        setLoading(false);
+        return;
+      }
+
+      const formattedData = snapshots.map(snapshot => {
+        const date = new Date(snapshot.created_at);
+        let formattedDate;
+        
+        // Format based on time range
+        if (timeRange === 'all' || timeRange === '90d') {
+          // Show month and year for longer ranges
+          formattedDate = date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+        } else {
+          // Show month and day for shorter ranges
+          formattedDate = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        }
+        
+        return {
+          date: snapshot.created_at,
+          formattedDate,
+          tvl: parseFloat(snapshot.tvl_usd)
+        };
+      });
+
+      setData(formattedData);
+      setLoading(false);
+    }
+
+    fetchTVLData();
+  }, [timeRange]);
   
   const formatTVL = (value) => {
     if (value >= 1000000) return `$${(value / 1000000).toFixed(1)}M`;
@@ -166,9 +231,67 @@ export function TVLChart() {
     return `$${value}`;
   };
 
+  if (loading) {
+    return (
+      <div className="glass-card p-6">
+        <h3 className="text-lg font-semibold text-foreground mb-6">Total Value Locked</h3>
+        <div className="h-80 flex items-center justify-center">
+          <p className="text-foreground/60">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (data.length === 0) {
+    return (
+      <div className="glass-card p-6">
+        <h3 className="text-lg font-semibold text-foreground mb-6">Total Value Locked</h3>
+        <div className="h-80 flex items-center justify-center">
+          <p className="text-foreground/60">No TVL data yet. Make a deposit to start tracking!</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="glass-card p-6">
-      <h3 className="text-lg font-semibold text-foreground mb-6">Total Value Locked (30 Days)</h3>
+      <div className="flex items-center justify-between mb-6">
+        <h3 className="text-lg font-semibold text-foreground">Total Value Locked</h3>
+        <div className="relative">
+          <button
+            type="button"
+            onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+            className="glass border border-foreground/10 rounded-lg px-4 py-3 text-foreground focus:outline-none focus:ring-2 focus:ring-accent/50 flex items-center justify-between cursor-pointer min-w-[100px]"
+          >
+            <span className="text-sm">{timeRange}</span>
+            <svg className="w-4 h-4 text-foreground/60 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            </svg>
+          </button>
+          {isDropdownOpen && (
+            <div 
+              className="absolute right-0 z-10 w-full mt-1 border border-foreground/10 rounded-lg shadow-lg overflow-hidden" 
+              style={{ 
+                backgroundColor: document.documentElement.classList.contains('dark') ? '#1f2937' : '#bfdbfe'
+              }}
+            >
+              {['7d', '30d', '90d', 'all'].map((range) => (
+                <button
+                  key={range}
+                  type="button"
+                  onClick={() => {
+                    setTimeRange(range);
+                    setIsDropdownOpen(false);
+                  }}
+                  className="w-full px-3 py-2 text-left hover:bg-foreground/5 transition-colors text-sm cursor-pointer"
+                >
+                  {range}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
       <div className="h-80">
         <ResponsiveContainer width="100%" height="100%">
           <LineChart data={data}>

@@ -36,16 +36,32 @@ export function useVaultOperations() {
       args: [tokenAddress, parsedAmount],
     });
 
-    // Save to Supabase
+    // Wait for transaction to be mined
+    await publicClient.waitForTransactionReceipt({ hash });
+
+    // Get updated TVL and save to Supabase
     if (address) {
-      await supabase.from('transactions').insert({
-        wallet_address: address,
-        type: 'deposit',
-        token: asset,
-        amount: amount,
-        tx_hash: hash,
-        status: 'success'
+      const updatedTVL = await publicClient.readContract({
+        address: FORK_ADDRESSES.VAULT,
+        abi: BriqVaultArtifact.abi,
+        functionName: 'getTotalVaultValueInUSD',
       });
+      
+      const tvlUsd = parseFloat((Number(updatedTVL) / 1e18).toFixed(2));
+
+      await Promise.all([
+        supabase.from('transactions').insert({
+          wallet_address: address,
+          type: 'deposit',
+          token: asset,
+          amount: amount,
+          tx_hash: hash,
+          status: 'success'
+        }),
+        supabase.from('tvl_snapshots').insert({
+          tvl_usd: tvlUsd
+        })
+      ]);
     }
 
     return hash;
@@ -88,16 +104,32 @@ export function useVaultOperations() {
       args: [tokenAddress, parsedShares, minAmountOut],
     });
 
-    // Save to Supabase
+    // Wait for transaction to be mined
+    await publicClient.waitForTransactionReceipt({ hash });
+
+    // Get updated TVL and save to Supabase
     if (address) {
-      await supabase.from('transactions').insert({
-        wallet_address: address,
-        type: 'withdraw',
-        token: asset,
-        amount: amount,
-        tx_hash: hash,
-        status: 'success'
+      const updatedTVL = await publicClient.readContract({
+        address: FORK_ADDRESSES.VAULT,
+        abi: BriqVaultArtifact.abi,
+        functionName: 'getTotalVaultValueInUSD',
       });
+      
+      const tvlUsd = parseFloat((Number(updatedTVL) / 1e18).toFixed(2));
+
+      await Promise.all([
+        supabase.from('transactions').insert({
+          wallet_address: address,
+          type: 'withdraw',
+          token: asset,
+          amount: amount,
+          tx_hash: hash,
+          status: 'success'
+        }),
+        supabase.from('tvl_snapshots').insert({
+          tvl_usd: tvlUsd
+        })
+      ]);
     }
 
     return hash;
