@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useAccount } from 'wagmi';
 import { supabase } from '../utils/supabase';
+import { TokenIcon } from './icons';
 
 export default function TransactionHistory() {
   const { address } = useAccount();
@@ -106,19 +107,21 @@ export default function TransactionHistory() {
             {currentTransactions.map((tx) => (
               <tr key={tx.id} className="border-b border-foreground/5 hover:scale-[1.02] transition-transform duration-200">
                 <td className="py-3 px-6 w-1/5 text-center">
-                  <span className={`inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium ${
+                  <span className={`font-mono ${
                     tx.type === 'deposit' 
-                      ? 'bg-green-500/20 text-green-600 dark:text-green-400' 
-                      : 'bg-blue-500/20 text-blue-600 dark:text-blue-400'
+                      ? 'text-green-600 dark:text-green-400' 
+                      : 'text-blue-600 dark:text-blue-400'
                   }`}>
-                    {tx.type === 'deposit' ? 'Deposit' : 'Withdraw'}
-                    <span className="text-sm">
-                      {tx.type === 'deposit' ? '↘' : '↗'}
-                    </span>
+                    {tx.type === 'deposit' ? 'Deposit' : 'Withdrawal'}
                   </span>
                 </td>
-                <td className="py-3 px-6 font-medium w-1/5 text-center">{tx.token}</td>
-                <td className="py-3 px-6 font-mono w-1/5 text-center">{parseFloat(tx.amount).toLocaleString()}</td>
+                <td className="py-3 px-6 font-medium w-1/5 text-center">
+                  <div className="flex items-center justify-center gap-2">
+                    <TokenIcon token={tx.token} size={20} />
+                    {tx.token}
+                  </div>
+                </td>
+                <td className="py-3 px-6 font-mono w-1/5 text-center">{parseFloat(tx.amount).toLocaleString()} <span className="text-foreground/60">{tx.token}</span></td>
                 <td className="py-3 px-6 text-sm text-foreground/60 w-1/5 text-center">{formatDate(tx.created_at)}</td>
                 <td className="py-3 px-6 w-1/5 text-center">
                   <a
@@ -138,7 +141,7 @@ export default function TransactionHistory() {
 
       {/* Pagination */}
       {totalPages > 1 && (
-        <div className="flex items-center justify-between mt-4 pt-4 border-t border-foreground/10">
+        <div className="flex items-center justify-between mt-4">
           <p className="text-sm text-foreground/60">
             Showing {startIndex + 1}-{Math.min(startIndex + itemsPerPage, transactions.length)} of {transactions.length}
           </p>
