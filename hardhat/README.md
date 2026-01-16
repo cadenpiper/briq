@@ -65,8 +65,11 @@ npx hardhat keystore list
 
 ### Testing
 ```shell
-# Run all tests
-npx hardhat test
+# Run all tests (recommended)
+npm test
+
+# Or run directly with hardhat
+npx hardhat test --network hardhat
 
 # Run specific test suite
 npx hardhat test test/BriqVault.ts --network hardhat

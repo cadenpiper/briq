@@ -46,8 +46,5 @@ next-env.d.ts
 /hardhat/artifacts/
 hardhat/deployment.json
 
-# Backup folders
-hardhat-backup-*/
-
 # Fork addresses (changes frequently during development)
 src/app/utils/forkAddresses.js

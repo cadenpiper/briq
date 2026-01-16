@@ -2,8 +2,10 @@
 
 import { useRef, useEffect, useState } from 'react';
 import { useChat } from 'ai/react';
+import { useAccount } from 'wagmi';
 import Layout from '../components/Layout';
 import RupertActions from '../components/RupertActions';
+import { supabase } from '../utils/supabase';
 
 export default function Rupert() {
   const messagesEndRef = useRef(null);
@@ -11,6 +13,7 @@ export default function Rupert() {
   const [isResetting, setIsResetting] = useState(false);
   const [isClient, setIsClient] = useState(false);
   const [isInputCollapsed, setIsInputCollapsed] = useState(false);
+  const { address } = useAccount();
   
   // Ensure client-side rendering to prevent hydration issues
   useEffect(() => {
@@ -49,8 +52,39 @@ export default function Rupert() {
 
   const { messages, input, handleInputChange, handleSubmit, isLoading } = useChat({
     api: '/api/chat',
-    initialMessages: getInitialMessages()
+    initialMessages: getInitialMessages(),
+    onFinish: async (message) => {
+      // Only save to Supabase when message is complete
+      if (address && message.role === 'assistant') {
+        const { error } = await supabase
+          .from('chat_messages')
+          .insert({
+            wallet_address: address,
+            role: message.role,
+            content: message.content
+          });
+        if (error) console.error('Error saving to Supabase:', error);
+      }
+    }
   });
+
+  // Save user messages to Supabase on submit
+  const handleSubmitWithSave = async (e) => {
+    if (!input.trim() || isLoading) return;
+    
+    // Save user message to Supabase
+    if (address) {
+      await supabase
+        .from('chat_messages')
+        .insert({
+          wallet_address: address,
+          role: 'user',
+          content: input
+        });
+    }
+    
+    handleSubmit(e);
+  };
 
   // Save messages to session storage whenever they change
   useEffect(() => {
@@ -220,7 +254,7 @@ export default function Rupert() {
 
             {/* Input Area */}
             <div className="flex-shrink-0 bg-zen-100/10 dark:bg-zen-700/10 px-6 pt-3 pb-2 backdrop-blur-sm">
-              <form onSubmit={handleSubmit} className="flex items-end space-x-4">
+              <form onSubmit={handleSubmitWithSave} className="flex items-end space-x-4">
                 <div className="flex-1 relative">
                   <textarea
                       value={input}
@@ -231,7 +265,7 @@ export default function Rupert() {
                       onKeyDown={(e) => {
                         if (e.key === 'Enter' && !e.shiftKey) {
                           e.preventDefault();
-                          handleSubmit(e);
+                          handleSubmitWithSave(e);
                         }
                       }}
                       placeholder="Ask Rupert anything..."
