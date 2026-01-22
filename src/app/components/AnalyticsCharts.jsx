@@ -1,6 +1,6 @@
 'use client';
 
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
+import { LineChart, Line, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
 import { useState, useEffect } from 'react';
 import { supabase } from '../utils/supabase';
 
@@ -261,9 +261,14 @@ export function TVLChart() {
           <button
             type="button"
             onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-            className="glass border border-foreground/10 rounded-lg px-4 py-3 text-foreground focus:outline-none focus:ring-2 focus:ring-accent/50 flex items-center justify-between cursor-pointer min-w-[100px]"
+            className="glass border border-foreground/10 rounded-lg px-4 py-3 text-foreground focus:outline-none focus:ring-2 focus:ring-accent/50 flex items-center justify-between cursor-pointer min-w-[120px]"
           >
-            <span className="text-sm">{timeRange}</span>
+            <span className="text-sm">
+              {timeRange === '7d' && 'Last 7 Days'}
+              {timeRange === '30d' && 'Last 30 Days'}
+              {timeRange === '90d' && 'Last 90 Days'}
+              {timeRange === 'all' && 'All Time'}
+            </span>
             <svg className="w-4 h-4 text-foreground/60 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
             </svg>
@@ -275,17 +280,22 @@ export function TVLChart() {
                 backgroundColor: document.documentElement.classList.contains('dark') ? '#1f2937' : '#bfdbfe'
               }}
             >
-              {['7d', '30d', '90d', 'all'].map((range) => (
+              {[
+                { value: '7d', label: 'Last 7 Days' },
+                { value: '30d', label: 'Last 30 Days' },
+                { value: '90d', label: 'Last 90 Days' },
+                { value: 'all', label: 'All Time' }
+              ].map((option) => (
                 <button
-                  key={range}
+                  key={option.value}
                   type="button"
                   onClick={() => {
-                    setTimeRange(range);
+                    setTimeRange(option.value);
                     setIsDropdownOpen(false);
                   }}
                   className="w-full px-3 py-2 text-left hover:bg-foreground/5 transition-colors text-sm cursor-pointer"
                 >
-                  {range}
+                  {option.label}
                 </button>
               ))}
             </div>
@@ -294,12 +304,18 @@ export function TVLChart() {
       </div>
       <div className="h-80">
         <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={data}>
+          <AreaChart data={data} margin={{ left: 0, right: 20 }}>
+            <defs>
+              <linearGradient id="tvlGradient" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="5%" stopColor="#3B82F6" stopOpacity={0.3} />
+                <stop offset="95%" stopColor="#3B82F6" stopOpacity={0} />
+              </linearGradient>
+            </defs>
             <CartesianGrid strokeDasharray="3 3" stroke="currentColor" opacity={0.1} />
             <XAxis dataKey="formattedDate" stroke="currentColor" opacity={0.6} fontSize={12} />
             <YAxis tickFormatter={formatTVL} stroke="currentColor" opacity={0.6} fontSize={12} />
-            <Line type="monotone" dataKey="tvl" stroke="#3B82F6" strokeWidth={3} dot={false} />
-          </LineChart>
+            <Area type="monotone" dataKey="tvl" stroke="#3B82F6" strokeWidth={3} fill="url(#tvlGradient)" />
+          </AreaChart>
         </ResponsiveContainer>
       </div>
     </div>
@@ -440,35 +456,12 @@ export function ChainTVLChart() {
 export function UserAnalyticsChart() {
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [timeRange, setTimeRange] = useState('30d');
-  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
   useEffect(() => {
     async function fetchUserData() {
-      const now = new Date();
-      let startDate;
-
-      switch (timeRange) {
-        case '7d':
-          startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-          break;
-        case '30d':
-          startDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-          break;
-        case '90d':
-          startDate = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
-          break;
-        case 'all':
-          startDate = new Date(0);
-          break;
-        default:
-          startDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-      }
-
       const { data: snapshots, error } = await supabase
         .from('user_snapshots')
         .select('total_users, created_at')
-        .gte('created_at', startDate.toISOString())
         .order('created_at', { ascending: true });
 
       if (error) {
@@ -479,13 +472,7 @@ export function UserAnalyticsChart() {
 
       const formattedData = snapshots.map(snapshot => {
         const date = new Date(snapshot.created_at);
-        let formattedDate;
-        
-        if (timeRange === 'all' || timeRange === '90d') {
-          formattedDate = date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
-        } else {
-          formattedDate = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-        }
+        const formattedDate = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
         
         return {
           date: snapshot.created_at,
@@ -499,7 +486,7 @@ export function UserAnalyticsChart() {
     }
 
     fetchUserData();
-  }, [timeRange]);
+  }, []);
 
   if (loading) {
     return (
@@ -525,51 +512,23 @@ export function UserAnalyticsChart() {
 
   return (
     <div className="glass-card p-6">
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between mb-6" style={{ minHeight: '48px' }}>
         <h3 className="text-lg font-semibold text-foreground">Total Users</h3>
-        <div className="relative">
-          <button
-            type="button"
-            onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-            className="glass border border-foreground/10 rounded-lg px-4 py-3 text-foreground focus:outline-none focus:ring-2 focus:ring-accent/50 flex items-center justify-between cursor-pointer min-w-[100px]"
-          >
-            <span className="text-sm">{timeRange}</span>
-            <svg className="w-4 h-4 text-foreground/60 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-            </svg>
-          </button>
-          {isDropdownOpen && (
-            <div 
-              className="absolute right-0 z-10 w-full mt-1 border border-foreground/10 rounded-lg shadow-lg overflow-hidden" 
-              style={{ 
-                backgroundColor: document.documentElement.classList.contains('dark') ? '#1f2937' : '#bfdbfe'
-              }}
-            >
-              {['7d', '30d', '90d', 'all'].map((range) => (
-                <button
-                  key={range}
-                  type="button"
-                  onClick={() => {
-                    setTimeRange(range);
-                    setIsDropdownOpen(false);
-                  }}
-                  className="w-full px-3 py-2 text-left hover:bg-foreground/5 transition-colors text-sm cursor-pointer"
-                >
-                  {range}
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
       </div>
-      <div className="h-80">
+      <div className="h-80 overflow-hidden">
         <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={data}>
+          <AreaChart data={data} margin={{ left: 0, right: 20 }}>
+            <defs>
+              <linearGradient id="userGradient" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="5%" stopColor="#3B82F6" stopOpacity={0.3} />
+                <stop offset="95%" stopColor="#3B82F6" stopOpacity={0} />
+              </linearGradient>
+            </defs>
             <CartesianGrid strokeDasharray="3 3" stroke="currentColor" opacity={0.1} />
             <XAxis dataKey="formattedDate" stroke="currentColor" opacity={0.6} fontSize={12} />
             <YAxis stroke="currentColor" opacity={0.6} fontSize={12} />
-            <Line type="monotone" dataKey="totalUsers" stroke="#3B82F6" strokeWidth={3} dot={false} />
-          </LineChart>
+            <Area type="monotone" dataKey="totalUsers" stroke="#3B82F6" strokeWidth={3} fill="url(#userGradient)" />
+          </AreaChart>
         </ResponsiveContainer>
       </div>
     </div>
@@ -682,7 +641,7 @@ export function VolumeChart() {
 
   return (
     <div className="glass-card p-6">
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between mb-6" style={{ minHeight: '48px' }}>
         <h3 className="text-lg font-semibold text-foreground">Volume</h3>
         <div className="relative">
           <button
@@ -729,14 +688,24 @@ export function VolumeChart() {
           )}
         </div>
       </div>
-      <div className="h-80">
+      <div className="h-80 overflow-hidden">
         <ResponsiveContainer width="100%" height="100%">
-          <BarChart data={data}>
+          <BarChart data={data} margin={{ left: 0, right: 20 }} barGap={4}>
+            <defs>
+              <linearGradient id="depositGradient" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="#10b981" stopOpacity={0.8} />
+                <stop offset="100%" stopColor="#059669" stopOpacity={1} />
+              </linearGradient>
+              <linearGradient id="withdrawalGradient" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="#f87171" stopOpacity={0.8} />
+                <stop offset="100%" stopColor="#EF4444" stopOpacity={1} />
+              </linearGradient>
+            </defs>
             <CartesianGrid strokeDasharray="3 3" stroke="currentColor" opacity={0.1} />
             <XAxis dataKey="formattedDate" stroke="currentColor" opacity={0.6} fontSize={12} />
             <YAxis tickFormatter={formatVolume} stroke="currentColor" opacity={0.6} fontSize={12} />
-            <Bar dataKey="deposits" fill="#059669" name="Deposits" />
-            <Bar dataKey="withdrawals" fill="#EF4444" name="Withdrawals" />
+            <Bar dataKey="deposits" fill="url(#depositGradient)" name="Deposits" radius={[4, 4, 0, 0]} />
+            <Bar dataKey="withdrawals" fill="url(#withdrawalGradient)" name="Withdrawals" radius={[4, 4, 0, 0]} />
           </BarChart>
         </ResponsiveContainer>
       </div>
