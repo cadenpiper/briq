@@ -180,17 +180,15 @@ export function TVLChart() {
           startDate = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
           break;
         case 'all':
-          startDate = new Date(0); // Beginning of time
+          startDate = new Date(0);
           break;
         default:
           startDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
       }
 
-      const { data: snapshots, error } = await supabase
-        .from('tvl_snapshots')
-        .select('tvl_usd, created_at')
-        .gte('created_at', startDate.toISOString())
-        .order('created_at', { ascending: true });
+      const { data: snapshots, error } = await supabase.rpc('get_daily_tvl', {
+        start_date: startDate.toISOString()
+      });
 
       if (error) {
         console.error('Error fetching TVL data:', error);
@@ -198,23 +196,22 @@ export function TVLChart() {
         return;
       }
 
+      console.log('TVL snapshots:', snapshots);
+
       const formattedData = snapshots.map(snapshot => {
-        const date = new Date(snapshot.created_at);
+        const date = new Date(snapshot.date);
         let formattedDate;
         
-        // Format based on time range
         if (timeRange === 'all' || timeRange === '90d') {
-          // Show month and year for longer ranges
           formattedDate = date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
         } else {
-          // Show month and day for shorter ranges
           formattedDate = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
         }
         
         return {
-          date: snapshot.created_at,
+          date: snapshot.date,
           formattedDate,
-          tvl: parseFloat(snapshot.tvl_usd)
+          tvl: parseFloat(snapshot.avg_tvl)
         };
       });
 
@@ -247,7 +244,7 @@ export function TVLChart() {
       <div className="glass-card p-6">
         <h3 className="text-lg font-semibold text-foreground mb-6">Total Value Locked</h3>
         <div className="h-80 flex items-center justify-center">
-          <p className="text-foreground/60">No TVL data yet. Make a deposit to start tracking!</p>
+          <p className="text-foreground/60">No TVL data yet.</p>
         </div>
       </div>
     );
@@ -459,23 +456,23 @@ export function UserAnalyticsChart() {
 
   useEffect(() => {
     async function fetchUserData() {
-      const { data: snapshots, error } = await supabase
-        .from('user_snapshots')
-        .select('total_users, created_at')
-        .order('created_at', { ascending: true });
+      const { data: snapshots, error } = await supabase.rpc('get_daily_users', {
+        start_date: new Date(0).toISOString()
+      });
 
       if (error) {
         console.error('Error fetching user data:', error);
+        console.error('Error details:', JSON.stringify(error, null, 2));
         setLoading(false);
         return;
       }
 
       const formattedData = snapshots.map(snapshot => {
-        const date = new Date(snapshot.created_at);
+        const date = new Date(snapshot.date);
         const formattedDate = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
         
         return {
-          date: snapshot.created_at,
+          date: snapshot.date,
           formattedDate,
           totalUsers: snapshot.total_users
         };
