@@ -17,9 +17,6 @@ import Header from '../components/Header';
 import Footer from '../components/Footer';
 import { 
   TVLChart, 
-  TokenAPYChart, 
-  ProtocolTVLChart, 
-  ChainTVLChart, 
   UserAnalyticsChart, 
   VolumeChart,
   AvgDepositMetric
@@ -596,16 +593,9 @@ export default function Analytics() {
 
           {/* Analytics Charts Grid */}
           <div className="space-y-8 mb-8 animate-fade-in-up">
-            {/* TVL and Token APY Charts */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            {/* TVL Chart */}
+            <div className="grid grid-cols-1 gap-8">
               <TVLChart />
-              <TokenAPYChart />
-            </div>
-            
-            {/* Protocol and Chain TVL Charts */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-              <ProtocolTVLChart />
-              <ChainTVLChart />
             </div>
             
             {/* User Analytics and Volume Charts */}

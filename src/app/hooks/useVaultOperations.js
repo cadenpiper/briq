@@ -60,7 +60,10 @@ export function useVaultOperations() {
         }),
         supabase.from('tvl_snapshots').insert({
           tvl_usd: tvlUsd
-        })
+        }),
+        supabase.from('user_activity').upsert({
+          address: address
+        }, { onConflict: 'address', ignoreDuplicates: true })
       ]);
     }
 

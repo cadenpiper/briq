@@ -298,15 +298,6 @@ export function TVLChart() {
             <CartesianGrid strokeDasharray="3 3" stroke="currentColor" opacity={0.1} />
             <XAxis dataKey="formattedDate" stroke="currentColor" opacity={0.6} fontSize={12} />
             <YAxis tickFormatter={formatTVL} stroke="currentColor" opacity={0.6} fontSize={12} />
-            <Tooltip 
-              formatter={(value) => [formatTVL(value), 'TVL']}
-              labelStyle={{ color: 'var(--foreground)' }}
-              contentStyle={{ 
-                backgroundColor: 'var(--background)', 
-                border: '1px solid rgba(255,255,255,0.1)',
-                borderRadius: '8px'
-              }}
-            />
             <Line type="monotone" dataKey="tvl" stroke="#3B82F6" strokeWidth={3} dot={false} />
           </LineChart>
         </ResponsiveContainer>
@@ -447,49 +438,136 @@ export function ChainTVLChart() {
 }
 
 export function UserAnalyticsChart() {
-  const generateUserCountData = () => {
-    const data = [];
-    const startDate = new Date();
-    startDate.setDate(startDate.getDate() - 30);
-    
-    let totalUsers = 50;
-    
-    for (let i = 0; i < 30; i++) {
-      const date = new Date(startDate);
-      date.setDate(date.getDate() + i);
-      
-      const newUsers = Math.floor(Math.random() * 5) + 1;
-      totalUsers += newUsers;
-      
-      data.push({
-        date: date.toISOString().split('T')[0],
-        formattedDate: date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-        totalUsers
-      });
-    }
-    return data;
-  };
+  const [data, setData] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [timeRange, setTimeRange] = useState('30d');
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
-  const data = generateUserCountData();
+  useEffect(() => {
+    async function fetchUserData() {
+      const now = new Date();
+      let startDate;
+
+      switch (timeRange) {
+        case '7d':
+          startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+          break;
+        case '30d':
+          startDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+          break;
+        case '90d':
+          startDate = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
+          break;
+        case 'all':
+          startDate = new Date(0);
+          break;
+        default:
+          startDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+      }
+
+      const { data: snapshots, error } = await supabase
+        .from('user_snapshots')
+        .select('total_users, created_at')
+        .gte('created_at', startDate.toISOString())
+        .order('created_at', { ascending: true });
+
+      if (error) {
+        console.error('Error fetching user data:', error);
+        setLoading(false);
+        return;
+      }
+
+      const formattedData = snapshots.map(snapshot => {
+        const date = new Date(snapshot.created_at);
+        let formattedDate;
+        
+        if (timeRange === 'all' || timeRange === '90d') {
+          formattedDate = date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+        } else {
+          formattedDate = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        }
+        
+        return {
+          date: snapshot.created_at,
+          formattedDate,
+          totalUsers: snapshot.total_users
+        };
+      });
+
+      setData(formattedData);
+      setLoading(false);
+    }
+
+    fetchUserData();
+  }, [timeRange]);
+
+  if (loading) {
+    return (
+      <div className="glass-card p-6">
+        <h3 className="text-lg font-semibold text-foreground mb-6">Total Users</h3>
+        <div className="h-80 flex items-center justify-center">
+          <p className="text-foreground/60">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (data.length === 0) {
+    return (
+      <div className="glass-card p-6">
+        <h3 className="text-lg font-semibold text-foreground mb-6">Total Users</h3>
+        <div className="h-80 flex items-center justify-center">
+          <p className="text-foreground/60">No user data yet.</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="glass-card p-6">
-      <h3 className="text-lg font-semibold text-foreground mb-6">Total Users (30 Days)</h3>
+      <div className="flex items-center justify-between mb-6">
+        <h3 className="text-lg font-semibold text-foreground">Total Users</h3>
+        <div className="relative">
+          <button
+            type="button"
+            onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+            className="glass border border-foreground/10 rounded-lg px-4 py-3 text-foreground focus:outline-none focus:ring-2 focus:ring-accent/50 flex items-center justify-between cursor-pointer min-w-[100px]"
+          >
+            <span className="text-sm">{timeRange}</span>
+            <svg className="w-4 h-4 text-foreground/60 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            </svg>
+          </button>
+          {isDropdownOpen && (
+            <div 
+              className="absolute right-0 z-10 w-full mt-1 border border-foreground/10 rounded-lg shadow-lg overflow-hidden" 
+              style={{ 
+                backgroundColor: document.documentElement.classList.contains('dark') ? '#1f2937' : '#bfdbfe'
+              }}
+            >
+              {['7d', '30d', '90d', 'all'].map((range) => (
+                <button
+                  key={range}
+                  type="button"
+                  onClick={() => {
+                    setTimeRange(range);
+                    setIsDropdownOpen(false);
+                  }}
+                  className="w-full px-3 py-2 text-left hover:bg-foreground/5 transition-colors text-sm cursor-pointer"
+                >
+                  {range}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
       <div className="h-80">
         <ResponsiveContainer width="100%" height="100%">
           <LineChart data={data}>
             <CartesianGrid strokeDasharray="3 3" stroke="currentColor" opacity={0.1} />
             <XAxis dataKey="formattedDate" stroke="currentColor" opacity={0.6} fontSize={12} />
             <YAxis stroke="currentColor" opacity={0.6} fontSize={12} />
-            <Tooltip 
-              formatter={(value) => [value, 'Total Users']}
-              labelStyle={{ color: 'var(--foreground)' }}
-              contentStyle={{ 
-                backgroundColor: 'var(--background)', 
-                border: '1px solid rgba(255,255,255,0.1)',
-                borderRadius: '8px'
-              }}
-            />
             <Line type="monotone" dataKey="totalUsers" stroke="#3B82F6" strokeWidth={3} dot={false} />
           </LineChart>
         </ResponsiveContainer>
