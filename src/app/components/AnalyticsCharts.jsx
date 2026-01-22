@@ -577,7 +577,80 @@ export function UserAnalyticsChart() {
 }
 
 export function VolumeChart() {
-  const data = generateMockVolumeData();
+  const [data, setData] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [timeRange, setTimeRange] = useState('30d');
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+
+  useEffect(() => {
+    async function fetchVolumeData() {
+      const now = new Date();
+      let startDate;
+      let rpcFunction;
+      let dateFormat;
+
+      switch (timeRange) {
+        case '7d':
+          startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+          rpcFunction = 'get_daily_volume';
+          dateFormat = 'short';
+          break;
+        case '30d':
+          startDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+          rpcFunction = 'get_daily_volume';
+          dateFormat = 'short';
+          break;
+        case '90d':
+          startDate = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
+          rpcFunction = 'get_weekly_volume';
+          dateFormat = 'medium';
+          break;
+        case 'all':
+          startDate = new Date(0);
+          rpcFunction = 'get_monthly_volume';
+          dateFormat = 'long';
+          break;
+        default:
+          startDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+          rpcFunction = 'get_daily_volume';
+          dateFormat = 'short';
+      }
+
+      const { data: volumeData, error } = await supabase
+        .rpc(rpcFunction, { start_date: startDate.toISOString() });
+
+      if (error) {
+        console.error('Error fetching volume data:', error);
+        setLoading(false);
+        return;
+      }
+
+      const formattedData = volumeData.map(item => {
+        const date = new Date(item.date + 'T00:00:00');
+        let formattedDate;
+        
+        if (dateFormat === 'long') {
+          formattedDate = date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+        } else if (dateFormat === 'medium') {
+          formattedDate = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        } else {
+          formattedDate = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        }
+        
+        return {
+          date: item.date,
+          formattedDate,
+          deposits: parseFloat(item.deposits),
+          withdrawals: parseFloat(item.withdrawals)
+        };
+      });
+
+      setData(formattedData);
+      setLoading(false);
+    }
+
+    fetchVolumeData();
+  }, [timeRange]);
   
   const formatVolume = (value) => {
     if (value >= 1000000) return `$${(value / 1000000).toFixed(1)}M`;
@@ -585,24 +658,83 @@ export function VolumeChart() {
     return `$${value}`;
   };
 
+  if (loading) {
+    return (
+      <div className="glass-card p-6">
+        <h3 className="text-lg font-semibold text-foreground mb-6">Volume</h3>
+        <div className="h-80 flex items-center justify-center">
+          <p className="text-foreground/60">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (data.length === 0) {
+    return (
+      <div className="glass-card p-6">
+        <h3 className="text-lg font-semibold text-foreground mb-6">Volume</h3>
+        <div className="h-80 flex items-center justify-center">
+          <p className="text-foreground/60">No volume data yet.</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="glass-card p-6">
-      <h3 className="text-lg font-semibold text-foreground mb-6">Daily Volume (30 Days)</h3>
+      <div className="flex items-center justify-between mb-6">
+        <h3 className="text-lg font-semibold text-foreground">Volume</h3>
+        <div className="relative">
+          <button
+            type="button"
+            onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+            className="glass border border-foreground/10 rounded-lg px-4 py-3 text-foreground focus:outline-none focus:ring-2 focus:ring-accent/50 flex items-center justify-between cursor-pointer min-w-[120px]"
+          >
+            <span className="text-sm">
+              {timeRange === '7d' && 'Last 7 Days'}
+              {timeRange === '30d' && 'Last 30 Days'}
+              {timeRange === '90d' && 'Last 90 Days'}
+              {timeRange === 'all' && 'All Time'}
+            </span>
+            <svg className="w-4 h-4 text-foreground/60 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            </svg>
+          </button>
+          {isDropdownOpen && (
+            <div 
+              className="absolute right-0 z-10 w-full mt-1 border border-foreground/10 rounded-lg shadow-lg overflow-hidden" 
+              style={{ 
+                backgroundColor: document.documentElement.classList.contains('dark') ? '#1f2937' : '#bfdbfe'
+              }}
+            >
+              {[
+                { value: '7d', label: 'Last 7 Days' },
+                { value: '30d', label: 'Last 30 Days' },
+                { value: '90d', label: 'Last 90 Days' },
+                { value: 'all', label: 'All Time' }
+              ].map((option) => (
+                <button
+                  key={option.value}
+                  type="button"
+                  onClick={() => {
+                    setTimeRange(option.value);
+                    setIsDropdownOpen(false);
+                  }}
+                  className="w-full px-3 py-2 text-left hover:bg-foreground/5 transition-colors text-sm cursor-pointer"
+                >
+                  {option.label}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
       <div className="h-80">
         <ResponsiveContainer width="100%" height="100%">
           <BarChart data={data}>
             <CartesianGrid strokeDasharray="3 3" stroke="currentColor" opacity={0.1} />
             <XAxis dataKey="formattedDate" stroke="currentColor" opacity={0.6} fontSize={12} />
             <YAxis tickFormatter={formatVolume} stroke="currentColor" opacity={0.6} fontSize={12} />
-            <Tooltip 
-              formatter={(value, name) => [formatVolume(value), name === 'deposits' ? 'Deposits' : 'Withdrawals']}
-              labelStyle={{ color: 'var(--foreground)' }}
-              contentStyle={{ 
-                backgroundColor: 'var(--background)', 
-                border: '1px solid rgba(255,255,255,0.1)',
-                borderRadius: '8px'
-              }}
-            />
             <Bar dataKey="deposits" fill="#059669" name="Deposits" />
             <Bar dataKey="withdrawals" fill="#EF4444" name="Withdrawals" />
           </BarChart>
