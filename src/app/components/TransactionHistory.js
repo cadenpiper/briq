@@ -1,11 +1,11 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useImperativeHandle, forwardRef } from 'react';
 import { useAccount } from 'wagmi';
 import { supabase } from '../utils/supabase';
 import { TokenIcon } from './icons';
 
-export default function TransactionHistory() {
+const TransactionHistory = forwardRef((props, ref) => {
   const { address } = useAccount();
   const [transactions, setTransactions] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
@@ -19,24 +19,30 @@ export default function TransactionHistory() {
       return;
     }
 
-    async function fetchTransactions() {
-      setLoading(true);
-      const { data, error } = await supabase
-        .from('transactions')
-        .select('*')
-        .eq('wallet_address', address)
-        .order('created_at', { ascending: false });
-
-      if (error) {
-        console.error('Error fetching transactions:', error);
-      } else {
-        setTransactions(data || []);
-      }
-      setLoading(false);
-    }
-
     fetchTransactions();
   }, [address]);
+
+  async function fetchTransactions() {
+    if (!address) return;
+    setLoading(true);
+    const { data, error } = await supabase
+      .from('transactions')
+      .select('*')
+      .eq('wallet_address', address)
+      .order('created_at', { ascending: false});
+
+    if (error) {
+      console.error('Error fetching transactions:', error);
+    } else {
+      setTransactions(data || []);
+    }
+    setLoading(false);
+  }
+
+  // Expose refetch function to parent
+  useImperativeHandle(ref, () => ({
+    refetch: fetchTransactions
+  }));
 
   const totalPages = Math.ceil(transactions.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
@@ -170,4 +176,8 @@ export default function TransactionHistory() {
       )}
     </div>
   );
-}
+});
+
+TransactionHistory.displayName = 'TransactionHistory';
+
+export default TransactionHistory;

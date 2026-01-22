@@ -23,6 +23,7 @@ import StrategyCompoundArtifact from '../abis/StrategyCompoundComet.json';
 
 export default function Dashboard() {
   const { address, isConnected } = useAccount();
+  const transactionHistoryRef = useRef();
   const [selectedAction, setSelectedAction] = useState('deposit');
   const [selectedAsset, setSelectedAsset] = useState('USDC');
   const [amount, setAmount] = useState('');
@@ -31,7 +32,7 @@ export default function Dashboard() {
   const assetDropdownRef = useRef(null);
   const { usdc, weth, isLoading } = useTokenBalances();
   const { deposit, withdraw, isPending } = useVaultOperations();
-  const { userValueUSD, hasPosition, shareBalance, totalSupply, totalVaultValue } = useVaultPosition();
+  const { userValueUSD, hasPosition, shareBalance, totalSupply, totalVaultValue, refetch: refetchPosition } = useVaultPosition();
   const { wethPrice, usdcPrice } = useTokenPrices();
   
   // Helper function to hide sensitive data
@@ -51,7 +52,7 @@ export default function Dashboard() {
   }, []);
   
   const CONTRACTS = getContractAddresses();
-  const { markets } = useContractMarketData({
+  const { markets, refetch: refetchMarkets } = useContractMarketData({
     contracts: CONTRACTS,
     vaultAbi: BriqVaultArtifact.abi,
     coordinatorAbi: StrategyCoordinatorArtifact.abi,
@@ -86,6 +87,12 @@ export default function Dashboard() {
       await deposit(selectedAsset, amount);
       toast.success('Deposit successful');
       setAmount('');
+      // Refetch all data
+      transactionHistoryRef.current?.refetch();
+      setTimeout(() => {
+        refetchPosition();
+        refetchMarkets();
+      }, 2000);
     } catch (error) {
       if (error.message.includes('User rejected')) {
         toast.error('Transaction rejected');
@@ -116,6 +123,12 @@ export default function Dashboard() {
       await withdraw(selectedAsset, amount);
       toast.success('Withdrawal successful');
       setAmount('');
+      // Refetch all data
+      transactionHistoryRef.current?.refetch();
+      setTimeout(() => {
+        refetchPosition();
+        refetchMarkets();
+      }, 2000);
     } catch (error) {
       if (error.message.includes('User rejected')) {
         toast.error('Transaction rejected');
@@ -641,7 +654,7 @@ export default function Dashboard() {
 
           {/* Transaction History */}
           <div className="mt-8">
-            <TransactionHistory />
+            <TransactionHistory ref={transactionHistoryRef} />
           </div>
         </div>
       </div>

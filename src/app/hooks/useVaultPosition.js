@@ -15,52 +15,75 @@ export function useVaultPosition() {
     userValueUSD: 0,
   });
 
+  const fetchData = async () => {
+    if (!publicClient || !address) return;
+    
+    console.log('Fetching vault position...');
+    try {
+      const [shareBalance, totalSupply, totalVaultValue] = await Promise.all([
+        publicClient.readContract({
+          address: FORK_ADDRESSES.SHARES,
+          abi: BriqSharesArtifact.abi,
+          functionName: 'balanceOf',
+          args: [address],
+        }),
+        publicClient.readContract({
+          address: FORK_ADDRESSES.SHARES,
+          abi: BriqSharesArtifact.abi,
+          functionName: 'totalSupply',
+        }),
+        publicClient.readContract({
+          address: FORK_ADDRESSES.VAULT,
+          abi: BriqVaultArtifact.abi,
+          functionName: 'getTotalVaultValueInUSD',
+        }),
+      ]);
+
+      const userValueUSD = shareBalance && totalSupply && totalVaultValue && totalSupply > 0n
+        ? (shareBalance * totalVaultValue) / totalSupply
+        : 0n;
+
+      console.log('Updated position:', { shareBalance: shareBalance.toString(), userValueUSD: parseFloat(formatUnits(userValueUSD, 18)) });
+
+      setData({
+        shareBalance,
+        totalSupply,
+        totalVaultValue,
+        userValueUSD: parseFloat(formatUnits(userValueUSD, 18)),
+      });
+    } catch (error) {
+      console.error('Error fetching vault position:', error);
+    }
+  };
+
   useEffect(() => {
     if (!publicClient || !address) return;
 
-    const fetchData = async () => {
-      try {
-        const [shareBalance, totalSupply, totalVaultValue] = await Promise.all([
-          publicClient.readContract({
-            address: FORK_ADDRESSES.SHARES,
-            abi: BriqSharesArtifact.abi,
-            functionName: 'balanceOf',
-            args: [address],
-          }),
-          publicClient.readContract({
-            address: FORK_ADDRESSES.SHARES,
-            abi: BriqSharesArtifact.abi,
-            functionName: 'totalSupply',
-          }),
-          publicClient.readContract({
-            address: FORK_ADDRESSES.VAULT,
-            abi: BriqVaultArtifact.abi,
-            functionName: 'getTotalVaultValueInUSD',
-          }),
-        ]);
-
-        const userValueUSD = shareBalance && totalSupply && totalVaultValue && totalSupply > 0n
-          ? (shareBalance * totalVaultValue) / totalSupply
-          : 0n;
-
-        setData({
-          shareBalance,
-          totalSupply,
-          totalVaultValue,
-          userValueUSD: parseFloat(formatUnits(userValueUSD, 18)),
-        });
-      } catch (error) {
-        console.error('Error fetching vault position:', error);
-      }
-    };
-
     fetchData();
-    const interval = setInterval(fetchData, 10000);
-    return () => clearInterval(interval);
+
+    // Watch for Transfer events on the shares contract
+    const unwatch = publicClient.watchContractEvent({
+      address: FORK_ADDRESSES.SHARES,
+      abi: BriqSharesArtifact.abi,
+      eventName: 'Transfer',
+      onLogs: (logs) => {
+        // Refetch if any transfer involves this user's address
+        const relevantTransfer = logs.some(
+          log => log.args.to === address || log.args.from === address
+        );
+        if (relevantTransfer) {
+          console.log('Share balance changed, refetching...');
+          fetchData();
+        }
+      }
+    });
+
+    return () => unwatch();
   }, [publicClient, address]);
 
   return {
     ...data,
     hasPosition: data.shareBalance > 0n,
+    refetch: fetchData,
   };
 }
