@@ -37,7 +37,7 @@ const HealthMeter = ({ health, maxHealth = 5, width = 60, height = 8 }) => {
       onMouseLeave={() => setShowTooltip(false)}
     >
       <div 
-        className="relative border-2 border-black rounded overflow-hidden"
+        className="relative border-2 border-foreground/20 rounded overflow-hidden"
         style={{ width: `${width}px`, height: `${height}px` }}
       >
         {/* Background */}

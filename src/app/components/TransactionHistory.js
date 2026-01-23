@@ -115,7 +115,7 @@ const TransactionHistory = forwardRef((props, ref) => {
                 <td className="py-3 px-6 w-1/5 text-center">
                   <span className={`font-mono ${
                     tx.type === 'deposit' 
-                      ? 'text-green-600 dark:text-green-400' 
+                      ? 'text-green-500' 
                       : 'text-blue-600 dark:text-blue-400'
                   }`}>
                     {tx.type === 'deposit' ? 'Deposit' : 'Withdrawal'}
