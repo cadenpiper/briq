@@ -231,7 +231,7 @@ export function TVLChart() {
   if (loading) {
     return (
       <div className="glass-card p-6">
-        <h3 className="text-lg font-semibold text-foreground mb-6">Total Value Locked</h3>
+        <h3 className="text-lg font-semibold text-foreground mb-6">TVL Trend</h3>
         <div className="h-80 flex items-center justify-center">
           <p className="text-foreground/60">Loading...</p>
         </div>
@@ -242,7 +242,7 @@ export function TVLChart() {
   if (data.length === 0) {
     return (
       <div className="glass-card p-6">
-        <h3 className="text-lg font-semibold text-foreground mb-6">Total Value Locked</h3>
+        <h3 className="text-lg font-semibold text-foreground mb-6">TVL Trend</h3>
         <div className="h-80 flex items-center justify-center">
           <p className="text-foreground/60">No TVL data yet.</p>
         </div>
@@ -253,7 +253,7 @@ export function TVLChart() {
   return (
     <div className="glass-card p-6">
       <div className="flex items-center justify-between mb-6">
-        <h3 className="text-lg font-semibold text-foreground">Total Value Locked</h3>
+        <h3 className="text-lg font-semibold text-foreground">TVL Trend</h3>
         <div className="relative">
           <button
             type="button"
@@ -738,30 +738,23 @@ export function VolumeChart() {
   );
 }
 
-export function AvgDepositMetric() {
-  // Generate mock average deposit size
-  const avgDeposit = 2847; // Mock value
-  
-  const formatCurrency = (value) => {
-    return value.toLocaleString('en-US', {
-      style: 'currency',
-      currency: 'USD',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0
-    });
-  };
+export function AvgAPYMetric({ markets }) {
+  // Calculate average APY from markets
+  const avgAPY = markets && markets.length > 0 
+    ? markets.reduce((sum, market) => sum + market.apyFormatted, 0) / markets.length 
+    : 0;
 
   return (
     <div className="glass-card p-6 hover:scale-[1.02] transition-all duration-300">
       <div className="flex flex-col">
         <h2 className="text-sm sm:text-lg font-semibold text-foreground/60 mb-2 sm:mb-3">
-          Average Deposit Size
+          Average APY
         </h2>
-        <div className="text-2xl sm:text-3xl lg:text-4xl font-bold text-green-600 font-jetbrains-mono">
-          {formatCurrency(avgDeposit)}
+        <div className="text-2xl sm:text-3xl lg:text-4xl font-bold text-accent font-jetbrains-mono">
+          {avgAPY.toFixed(2)}%
         </div>
         <div className="text-xs text-foreground/50 mt-1 sm:mt-2">
-          Per user deposit
+          Across all protocols
         </div>
       </div>
     </div>
