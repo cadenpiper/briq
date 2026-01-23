@@ -1,7 +1,7 @@
 'use client';
 
 import { LineChart, Line, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../utils/supabase';
 
 // Mock data generators
@@ -537,6 +537,25 @@ export function VolumeChart() {
   const [loading, setLoading] = useState(true);
   const [timeRange, setTimeRange] = useState('30d');
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [hoveredData, setHoveredData] = useState(null);
+
+  const CustomTooltip = useCallback(({ active, payload }) => {
+    if (active && payload && payload.length) {
+      const data = payload[0].payload;
+      const newData = {
+        deposits: data.deposits,
+        withdrawals: data.withdrawals,
+        date: data.formattedDate
+      };
+      setHoveredData(prev => {
+        if (prev?.date !== newData.date) return newData;
+        return prev;
+      });
+    } else if (hoveredData) {
+      setHoveredData(null);
+    }
+    return null;
+  }, [hoveredData]);
 
   useEffect(() => {
     async function fetchVolumeData() {
@@ -639,8 +658,16 @@ export function VolumeChart() {
   return (
     <div className="glass-card p-6">
       <div className="flex items-center justify-between mb-6" style={{ minHeight: '48px' }}>
-        <h3 className="text-lg font-semibold text-foreground">Volume</h3>
-        <div className="relative">
+        <div className="flex items-center gap-4 flex-1 min-w-0">
+          <h3 className="text-lg font-semibold text-foreground whitespace-nowrap">Volume</h3>
+          {hoveredData && (
+            <div className="flex items-center gap-3 text-sm font-jetbrains-mono overflow-hidden">
+              <span className="text-green-600 whitespace-nowrap">${hoveredData.deposits.toLocaleString()}</span>
+              <span className="text-red-500 whitespace-nowrap">${hoveredData.withdrawals.toLocaleString()}</span>
+            </div>
+          )}
+        </div>
+        <div className="relative flex-shrink-0">
           <button
             type="button"
             onClick={() => setIsDropdownOpen(!isDropdownOpen)}
@@ -701,6 +728,7 @@ export function VolumeChart() {
             <CartesianGrid strokeDasharray="3 3" stroke="currentColor" opacity={0.1} />
             <XAxis dataKey="formattedDate" stroke="currentColor" opacity={0.6} fontSize={12} />
             <YAxis tickFormatter={formatVolume} stroke="currentColor" opacity={0.6} fontSize={12} />
+            <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(255, 255, 255, 0.1)' }} />
             <Bar dataKey="deposits" fill="url(#depositGradient)" name="Deposits" radius={[4, 4, 0, 0]} />
             <Bar dataKey="withdrawals" fill="url(#withdrawalGradient)" name="Withdrawals" radius={[4, 4, 0, 0]} />
           </BarChart>
