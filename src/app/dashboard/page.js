@@ -13,6 +13,7 @@ import { useTokenBalances } from '../hooks/useTokenBalances';
 import { useVaultOperations } from '../hooks/useVaultOperations';
 import { useVaultPosition } from '../hooks/useVaultPosition';
 import { useContractMarketData } from '../hooks/useContractMarketData';
+import { useSubgraphMarketData } from '../hooks/useSubgraphMarketData';
 import { useTokenPrices } from '../hooks/useTokenPrices';
 import { getContractAddresses } from '../utils/forkAddresses';
 import BriqVaultArtifact from '../abis/BriqVault.json';
@@ -61,15 +62,18 @@ export default function Dashboard() {
     strategyCompoundAbi: StrategyCompoundArtifact.abi
   });
 
-  // Calculate APYs from market data
-  const usdcMarkets = markets?.filter(m => m.tokenSymbol === 'USDC') || [];
-  const wethMarkets = markets?.filter(m => m.tokenSymbol === 'WETH') || [];
+  // Get subgraph data for best APY across all networks
+  const { data: subgraphMarkets } = useSubgraphMarketData();
+
+  // Calculate best APYs from subgraph data (Arbitrum only for forked network)
+  const usdcSubgraphMarkets = subgraphMarkets?.filter(m => m.token === 'USDC' && m.network === 'Arbitrum One') || [];
+  const wethSubgraphMarkets = subgraphMarkets?.filter(m => m.token === 'WETH' && m.network === 'Arbitrum One') || [];
   
-  const usdcAPY = usdcMarkets.length > 0 
-    ? Math.max(...usdcMarkets.map(m => parseFloat(m.apyFormatted))).toFixed(2)
+  const usdcAPY = usdcSubgraphMarkets.length > 0 
+    ? Math.max(...usdcSubgraphMarkets.map(m => parseFloat(m.apyValue))).toFixed(2)
     : '0.00';
-  const wethAPY = wethMarkets.length > 0 
-    ? Math.max(...wethMarkets.map(m => parseFloat(m.apyFormatted))).toFixed(2)
+  const wethAPY = wethSubgraphMarkets.length > 0 
+    ? Math.max(...wethSubgraphMarkets.map(m => parseFloat(m.apyValue))).toFixed(2)
     : '0.00';
   
   // Calculate weighted average APY based on actual vault allocation
@@ -465,13 +469,23 @@ export default function Dashboard() {
                           onChange={(e) => setAmount(e.target.value)}
                           className="w-full bg-foreground/5 border border-foreground/10 rounded-lg px-3 py-2 text-foreground focus:outline-none focus:ring-2 focus:ring-accent/50"
                         />
-                        <button 
-                          type="button"
-                          onClick={handleMaxClick}
-                          className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-foreground/60 hover:text-foreground"
-                        >
-                          MAX
-                        </button>
+                        <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-2">
+                          {amount && (
+                            <span className="text-xs text-foreground/40">
+                              ${selectedAsset === 'USDC' 
+                                ? (parseFloat(amount) * usdcPrice).toFixed(2)
+                                : (parseFloat(amount) * wethPrice).toFixed(2)
+                              }
+                            </span>
+                          )}
+                          <button 
+                            type="button"
+                            onClick={handleMaxClick}
+                            className="text-xs text-foreground/60 hover:text-foreground"
+                          >
+                            MAX
+                          </button>
+                        </div>
                       </div>
                       <div className="text-xs text-foreground/60 mt-1">
                         Balance: {isLoading ? '...' : isPrivacyMode ? '••••••' : `${selectedAsset === 'USDC' ? usdc : weth} ${selectedAsset}`}
@@ -508,7 +522,7 @@ export default function Dashboard() {
                       </div>
                       <div className="flex justify-between text-xs">
                         <span className="text-foreground/60">Current APY</span>
-                        <span className="text-green-500">{selectedAsset === 'USDC' ? usdcAPY : wethAPY}%</span>
+                        <span className="text-green-600 dark:text-green-500 font-semibold">{selectedAsset === 'USDC' ? usdcAPY : wethAPY}%</span>
                       </div>
                     </div>
 
@@ -574,13 +588,20 @@ export default function Dashboard() {
                           onChange={(e) => setAmount(e.target.value)}
                           className="w-full bg-foreground/5 border border-foreground/10 rounded-lg px-3 py-2 text-foreground focus:outline-none focus:ring-2 focus:ring-accent/50"
                         />
-                        <button 
-                          type="button"
-                          onClick={() => setAmount((Number(shareBalance) / 1e18).toString())}
-                          className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-foreground/60 hover:text-foreground"
-                        >
-                          MAX
-                        </button>
+                        <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-2">
+                          {amount && shareBalance > 0n && (
+                            <span className="text-xs text-foreground/40">
+                              ${((parseFloat(amount) / (Number(shareBalance) / 1e18)) * userValueUSD).toFixed(2)}
+                            </span>
+                          )}
+                          <button 
+                            type="button"
+                            onClick={() => setAmount((Number(shareBalance) / 1e18).toString())}
+                            className="text-xs text-foreground/60 hover:text-foreground"
+                          >
+                            MAX
+                          </button>
+                        </div>
                       </div>
                       <div className="text-xs text-foreground/60 mt-1">
                         Available: {formatPrivateValue((Number(shareBalance) / 1e18).toFixed(4), '', ' BRIQ')}
@@ -595,17 +616,19 @@ export default function Dashboard() {
                         const tokenValueToWithdraw = shareBalanceEther > 0 
                           ? (sharesToWithdraw / shareBalanceEther) * userValueUSD 
                           : 0;
-                        const isAvailable = tokenValueToWithdraw <= availableLiquidity;
+                        const isAvailable = availableLiquidity > 0 && tokenValueToWithdraw <= availableLiquidity;
                         
                         return (
-                          <div className={`flex items-center space-x-1 mt-2 text-xs ${isAvailable ? 'text-green-500' : 'text-red-500'}`}>
+                          <div className={`flex items-center space-x-1 mt-2 text-xs font-semibold ${isAvailable ? 'text-green-600 dark:text-green-500' : 'text-red-500'}`}>
                             <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                               <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
                             </svg>
                             <span>
                               {isAvailable 
                                 ? `${selectedAsset} available ($${availableLiquidity.toFixed(2)} liquidity)`
-                                : `Insufficient ${selectedAsset} liquidity ($${availableLiquidity.toFixed(2)} available)`
+                                : availableLiquidity === 0
+                                  ? `${selectedAsset} unavailable ($0.00 liquidity)`
+                                  : `Insufficient ${selectedAsset} liquidity ($${availableLiquidity.toFixed(2)} available)`
                               }
                             </span>
                           </div>

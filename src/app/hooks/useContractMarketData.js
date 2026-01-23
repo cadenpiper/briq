@@ -52,24 +52,24 @@ export function useContractMarketData({ contracts, vaultAbi, coordinatorAbi, pri
             const analytics = aaveAnalyticsArray[i];
             const currentBalance = analytics[0]; // First element is currentBalance
 
-            if (currentBalance > 0n) {
-              // Determine token symbol
-              const isUSDC = tokenAddress.toLowerCase() === contracts.USDC?.toLowerCase();
-              const isWETH = tokenAddress.toLowerCase() === contracts.WETH?.toLowerCase();
-              
-              let tokenSymbol = 'UNKNOWN';
-              let decimals = 18;
-              
-              if (isUSDC) {
-                tokenSymbol = 'USDC';
-                decimals = 6;
-              } else if (isWETH) {
-                tokenSymbol = 'WETH';
-                decimals = 18;
-              }
+            // Determine token symbol
+            const isUSDC = tokenAddress.toLowerCase() === contracts.USDC?.toLowerCase();
+            const isWETH = tokenAddress.toLowerCase() === contracts.WETH?.toLowerCase();
+            
+            let tokenSymbol = 'UNKNOWN';
+            let decimals = 18;
+            
+            if (isUSDC) {
+              tokenSymbol = 'USDC';
+              decimals = 6;
+            } else if (isWETH) {
+              tokenSymbol = 'WETH';
+              decimals = 18;
+            }
 
-              // Get USD value
-              let usdValue = 0n;
+            // Get USD value
+            let usdValue = 0n;
+            if (currentBalance > 0n) {
               try {
                 usdValue = await publicClient.readContract({
                   address: contracts.PRICE_FEED_MANAGER,
@@ -80,22 +80,22 @@ export function useContractMarketData({ contracts, vaultAbi, coordinatorAbi, pri
               } catch (error) {
                 console.log(`Could not get USD value for Aave ${tokenSymbol}:`, error.message);
               }
-
-              // Get APY - same as rewards hooks
-              const currentAPY = analytics[5]; // 6th element is currentAPY (0-indexed)
-
-              markets.push({
-                tokenAddress,
-                tokenSymbol,
-                strategyName: 'Aave',
-                balance: currentBalance.toString(),
-                balanceFormatted: parseFloat(formatUnits(currentBalance, decimals)),
-                usdValue: usdValue.toString(),
-                usdValueFormatted: parseFloat(formatUnits(usdValue, 18)),
-                apyBasisPoints: Number(currentAPY),
-                apyFormatted: (Number(currentAPY) / 100).toFixed(2)
-              });
             }
+
+            // Get APY - same as rewards hooks
+            const currentAPY = analytics[5]; // 6th element is currentAPY (0-indexed)
+
+            markets.push({
+              tokenAddress,
+              tokenSymbol,
+              strategyName: 'Aave',
+              balance: currentBalance.toString(),
+              balanceFormatted: parseFloat(formatUnits(currentBalance, decimals)),
+              usdValue: usdValue.toString(),
+              usdValueFormatted: parseFloat(formatUnits(usdValue, 18)),
+              apyBasisPoints: Number(currentAPY),
+              apyFormatted: (Number(currentAPY) / 100).toFixed(2)
+            });
           }
         } catch (error) {
           console.log('Could not fetch Aave balances:', error.message);
@@ -116,24 +116,24 @@ export function useContractMarketData({ contracts, vaultAbi, coordinatorAbi, pri
             const analytics = compoundAnalyticsArray[i];
             const currentBalance = analytics[0]; // First element is currentBalance
 
-            if (currentBalance > 0n) {
-              // Determine token symbol
-              const isUSDC = tokenAddress.toLowerCase() === contracts.USDC?.toLowerCase();
-              const isWETH = tokenAddress.toLowerCase() === contracts.WETH?.toLowerCase();
-              
-              let tokenSymbol = 'UNKNOWN';
-              let decimals = 18;
-              
-              if (isUSDC) {
-                tokenSymbol = 'USDC';
-                decimals = 6;
-              } else if (isWETH) {
-                tokenSymbol = 'WETH';
-                decimals = 18;
-              }
+            // Determine token symbol
+            const isUSDC = tokenAddress.toLowerCase() === contracts.USDC?.toLowerCase();
+            const isWETH = tokenAddress.toLowerCase() === contracts.WETH?.toLowerCase();
+            
+            let tokenSymbol = 'UNKNOWN';
+            let decimals = 18;
+            
+            if (isUSDC) {
+              tokenSymbol = 'USDC';
+              decimals = 6;
+            } else if (isWETH) {
+              tokenSymbol = 'WETH';
+              decimals = 18;
+            }
 
-              // Get USD value
-              let usdValue = 0n;
+            // Get USD value
+            let usdValue = 0n;
+            if (currentBalance > 0n) {
               try {
                 usdValue = await publicClient.readContract({
                   address: contracts.PRICE_FEED_MANAGER,
@@ -144,22 +144,22 @@ export function useContractMarketData({ contracts, vaultAbi, coordinatorAbi, pri
               } catch (error) {
                 console.log(`Could not get USD value for Compound ${tokenSymbol}:`, error.message);
               }
-
-              // Get APY - same as rewards hooks  
-              const currentAPY = analytics[6]; // 7th element is currentAPY for Compound
-
-              markets.push({
-                tokenAddress,
-                tokenSymbol,
-                strategyName: 'Compound',
-                balance: currentBalance.toString(),
-                balanceFormatted: parseFloat(formatUnits(currentBalance, decimals)),
-                usdValue: usdValue.toString(),
-                usdValueFormatted: parseFloat(formatUnits(usdValue, 18)),
-                apyBasisPoints: Number(currentAPY),
-                apyFormatted: (Number(currentAPY) / 100).toFixed(2)
-              });
             }
+
+            // Get APY - same as rewards hooks  
+            const currentAPY = analytics[6]; // 7th element is currentAPY for Compound
+
+            markets.push({
+              tokenAddress,
+              tokenSymbol,
+              strategyName: 'Compound',
+              balance: currentBalance.toString(),
+              balanceFormatted: parseFloat(formatUnits(currentBalance, decimals)),
+              usdValue: usdValue.toString(),
+              usdValueFormatted: parseFloat(formatUnits(usdValue, 18)),
+              apyBasisPoints: Number(currentAPY),
+              apyFormatted: (Number(currentAPY) / 100).toFixed(2)
+            });
           }
         } catch (error) {
           console.log('Could not fetch Compound balances:', error.message);
