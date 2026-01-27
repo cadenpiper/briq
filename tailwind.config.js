@@ -15,7 +15,6 @@ module.exports = {
         'lato': ['var(--font-lato)'],
       },
       colors: {
-        'briq-orange': '#FF7A2F',
         'cream': {
           50: '#E5D5B7',
           100: '#DBC9A6',

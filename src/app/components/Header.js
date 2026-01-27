@@ -85,7 +85,7 @@ export default function Header() {
             {/* Mobile hamburger menu button */}
             <button
               onClick={toggleMobileMenu}
-              className="md:hidden p-2 rounded-md text-zen-800 dark:text-cream-200 hover:text-briq-orange dark:hover:text-briq-orange hover:bg-briq-orange/20 dark:hover:bg-briq-orange/30 transition-all duration-200"
+              className="md:hidden p-2 rounded-md text-zen-800 dark:text-cream-200"
               aria-label="Toggle mobile menu"
             >
               <svg
