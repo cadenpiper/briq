@@ -48,3 +48,6 @@ hardhat/deployment.json
 
 # Fork addresses (changes frequently during development)
 src/app/utils/forkAddresses.js
+
+# Architecture documentation (local reference)
+ARCHITECTURE.md
