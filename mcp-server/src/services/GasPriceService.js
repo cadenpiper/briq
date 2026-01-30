@@ -1,14 +1,30 @@
 import { EtherscanClient } from '../clients/EtherscanClient.js';
 import { TokenPriceService } from './TokenPriceService.js';
 import { GasPriceFormatter } from '../formatters/GasPriceFormatter.js';
+import { createErrorResponse } from '../utils/errorResponse.js';
+
+// Constants
+const GAS_CONSTANTS = {
+  STANDARD_TRANSFER_GAS: 21000,
+  WEI_TO_GWEI: 1e9,
+  GWEI_TO_ETH: 1e9,
+  ETHEREUM_MULTIPLIERS: {
+    STANDARD: 1.1,
+    FAST: 1.2
+  },
+  ARBITRUM_MULTIPLIERS: {
+    STANDARD: 1.05,
+    FAST: 1.1
+  }
+};
 
 /**
  * Service for fetching and processing gas price data from multiple networks
  */
 export class GasPriceService {
-  constructor() {
+  constructor(tokenPriceService) {
     this.etherscanClient = new EtherscanClient();
-    this.tokenPriceService = new TokenPriceService();
+    this.tokenPriceService = tokenPriceService;
     this.formatter = new GasPriceFormatter();
   }
 
@@ -23,17 +39,17 @@ export class GasPriceService {
 
       // Convert from wei to gwei
       const gasPriceWei = parseInt(gasData, 16);
-      const gasPriceGwei = gasPriceWei / 1e9;
+      const gasPriceGwei = gasPriceWei / GAS_CONSTANTS.WEI_TO_GWEI;
       
       return {
         safe_gas_price: gasPriceGwei,
-        standard_gas_price: gasPriceGwei * 1.1, // 10% higher for standard
-        fast_gas_price: gasPriceGwei * 1.2, // 20% higher for fast
+        standard_gas_price: gasPriceGwei * GAS_CONSTANTS.ETHEREUM_MULTIPLIERS.STANDARD,
+        fast_gas_price: gasPriceGwei * GAS_CONSTANTS.ETHEREUM_MULTIPLIERS.FAST,
         eth_price_usd: ethPrice,
         transfer_cost_usd: {
-          safe: ((gasPriceGwei * 21000) / 1e9) * ethPrice,
-          standard: ((gasPriceGwei * 1.1 * 21000) / 1e9) * ethPrice,
-          fast: ((gasPriceGwei * 1.2 * 21000) / 1e9) * ethPrice
+          safe: ((gasPriceGwei * GAS_CONSTANTS.STANDARD_TRANSFER_GAS) / GAS_CONSTANTS.GWEI_TO_ETH) * ethPrice,
+          standard: ((gasPriceGwei * GAS_CONSTANTS.ETHEREUM_MULTIPLIERS.STANDARD * GAS_CONSTANTS.STANDARD_TRANSFER_GAS) / GAS_CONSTANTS.GWEI_TO_ETH) * ethPrice,
+          fast: ((gasPriceGwei * GAS_CONSTANTS.ETHEREUM_MULTIPLIERS.FAST * GAS_CONSTANTS.STANDARD_TRANSFER_GAS) / GAS_CONSTANTS.GWEI_TO_ETH) * ethPrice
         }
       };
     } catch (error) {
@@ -53,17 +69,17 @@ export class GasPriceService {
 
       // Convert from wei to gwei
       const gasPriceWei = parseInt(gasData, 16);
-      const gasPriceGwei = gasPriceWei / 1e9;
+      const gasPriceGwei = gasPriceWei / GAS_CONSTANTS.WEI_TO_GWEI;
       
       return {
         safe_gas_price: gasPriceGwei,
-        standard_gas_price: gasPriceGwei * 1.05, // 5% higher for standard (Arbitrum has lower variance)
-        fast_gas_price: gasPriceGwei * 1.1, // 10% higher for fast
+        standard_gas_price: gasPriceGwei * GAS_CONSTANTS.ARBITRUM_MULTIPLIERS.STANDARD,
+        fast_gas_price: gasPriceGwei * GAS_CONSTANTS.ARBITRUM_MULTIPLIERS.FAST,
         eth_price_usd: ethPrice,
         transfer_cost_usd: {
-          safe: ((gasPriceGwei * 21000) / 1e9) * ethPrice,
-          standard: ((gasPriceGwei * 1.05 * 21000) / 1e9) * ethPrice,
-          fast: ((gasPriceGwei * 1.1 * 21000) / 1e9) * ethPrice
+          safe: ((gasPriceGwei * GAS_CONSTANTS.STANDARD_TRANSFER_GAS) / GAS_CONSTANTS.GWEI_TO_ETH) * ethPrice,
+          standard: ((gasPriceGwei * GAS_CONSTANTS.ARBITRUM_MULTIPLIERS.STANDARD * GAS_CONSTANTS.STANDARD_TRANSFER_GAS) / GAS_CONSTANTS.GWEI_TO_ETH) * ethPrice,
+          fast: ((gasPriceGwei * GAS_CONSTANTS.ARBITRUM_MULTIPLIERS.FAST * GAS_CONSTANTS.STANDARD_TRANSFER_GAS) / GAS_CONSTANTS.GWEI_TO_ETH) * ethPrice
         }
       };
     } catch (error) {
@@ -76,38 +92,18 @@ export class GasPriceService {
    * Get gas prices for specified networks
    */
   async getGasPrices(network) {
-    try {
-      const results = {};
+    const results = {};
 
-      if (network === 'ethereum') {
-        results.ethereum = await this.getEthereumGasPrices();
-      } else if (network === 'arbitrum') {
-        results.arbitrum = await this.getArbitrumGasPrices();
-      } else if (network === 'both') {
-        // Fetch networks sequentially with delay to avoid API conflicts
-        try {
-          results.ethereum = await this.getEthereumGasPrices();
-        } catch (error) {
-          console.error('Error fetching Ethereum gas prices:', error);
-          throw new Error(`Failed to fetch Ethereum gas prices: ${error.message}`);
-        }
-
-        // Delay between API calls since they use the same endpoint/key
-        await new Promise(resolve => setTimeout(resolve, 2000));
-
-        try {
-          results.arbitrum = await this.getArbitrumGasPrices();
-        } catch (error) {
-          console.error('Error fetching Arbitrum gas prices:', error);
-          throw new Error(`Failed to fetch Arbitrum gas prices: ${error.message}`);
-        }
-      }
-
-      return results;
-    } catch (error) {
-      console.error('Error in getGasPrices:', error);
-      throw error;
+    if (network === 'ethereum') {
+      results.ethereum = await this.getEthereumGasPrices();
+    } else if (network === 'arbitrum') {
+      results.arbitrum = await this.getArbitrumGasPrices();
+    } else if (network === 'both') {
+      results.ethereum = await this.getEthereumGasPrices();
+      results.arbitrum = await this.getArbitrumGasPrices();
     }
+
+    return results;
   }
 
   /**
@@ -128,10 +124,6 @@ export class GasPriceService {
         if (network === 'ethereum') {
           results.ethereum = await this.getEthereumGasPrices();
         } else if (network === 'arbitrum') {
-          // Add delay between API calls to avoid conflicts
-          if (results.ethereum) {
-            await new Promise(resolve => setTimeout(resolve, 1000));
-          }
           results.arbitrum = await this.getArbitrumGasPrices();
         }
       }
@@ -148,15 +140,7 @@ export class GasPriceService {
         ]
       };
     } catch (error) {
-      return {
-        content: [
-          {
-            type: 'text',
-            text: `Error fetching gas prices: ${error.message}`
-          }
-        ],
-        isError: true
-      };
+      return createErrorResponse(error, { tool: 'get_gas_prices' });
     }
   }
 
@@ -177,9 +161,6 @@ export class GasPriceService {
         if (network === 'ethereum') {
           results.ethereum = await this.getEthereumGasPrices();
         } else if (network === 'arbitrum') {
-          if (results.ethereum) {
-            await new Promise(resolve => setTimeout(resolve, 1000));
-          }
           results.arbitrum = await this.getArbitrumGasPrices();
         }
       }
@@ -196,15 +177,7 @@ export class GasPriceService {
         ]
       };
     } catch (error) {
-      return {
-        content: [
-          {
-            type: 'text',
-            text: `Error fetching detailed gas prices: ${error.message}`
-          }
-        ],
-        isError: true
-      };
+      return createErrorResponse(error, { tool: 'get_detailed_gas_prices' });
     }
   }
 }

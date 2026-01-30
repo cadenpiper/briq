@@ -16,6 +16,8 @@ import { BriqAnalyticsService } from './src/services/BriqAnalyticsService.js';
 import { DeFiMarketService } from './src/services/DeFiMarketService.js';
 import { StrategyService } from './src/services/StrategyService.js';
 import { AutonomousOptimizer } from './src/services/AutonomousOptimizer.js';
+import { validateToolArgs, ValidationError, TOOL_SCHEMAS } from './src/utils/validation.js';
+import { logger } from './src/utils/logger.js';
 
 // Load environment variables from both parent directory and hardhat directory
 dotenv.config({ path: path.join(process.cwd(), '..', '.env.local') });
@@ -35,16 +37,94 @@ class RupertMCPServer {
       }
     );
 
-    // Initialize services
-    this.gasPriceService = new GasPriceService();
-    this.tokenPriceService = new TokenPriceService();
-    this.briqAnalyticsService = new BriqAnalyticsService();
-    this.defiMarketService = new DeFiMarketService();
-    this.strategyService = new StrategyService();
-    this.autonomousOptimizer = new AutonomousOptimizer(this.strategyService, this.defiMarketService);
-
+    this.startTime = Date.now();
+    
+    // Initialize services with error handling
+    this.initializeServices();
     this.setupToolHandlers();
     this.setupErrorHandling();
+    this.setupGracefulShutdown();
+  }
+
+  initializeServices() {
+    // Core services (required)
+    try {
+      this.tokenPriceService = new TokenPriceService();
+    } catch (error) {
+      logger.error('Failed to initialize TokenPriceService', { error: error.message });
+      throw new Error('TokenPriceService is required. Please set COINMARKETCAP_API_KEY in .env.local');
+    }
+
+    try {
+      this.gasPriceService = new GasPriceService(this.tokenPriceService);
+    } catch (error) {
+      logger.error('Failed to initialize GasPriceService', { error: error.message });
+      throw new Error('GasPriceService is required. Please set ETHERSCAN_API_KEY in .env.local');
+    }
+
+    try {
+      this.defiMarketService = new DeFiMarketService();
+    } catch (error) {
+      logger.error('Failed to initialize DeFiMarketService', { error: error.message });
+      throw new Error('DeFiMarketService is required. Please set NEXT_PUBLIC_GRAPHQL_API_KEY in .env.local');
+    }
+
+    // Optional services (graceful degradation)
+    try {
+      this.briqAnalyticsService = new BriqAnalyticsService();
+    } catch (error) {
+      logger.warn('BriqAnalyticsService unavailable', { error: error.message });
+      this.briqAnalyticsService = null;
+    }
+
+    try {
+      this.strategyService = new StrategyService();
+      this.autonomousOptimizer = new AutonomousOptimizer(this.strategyService, this.defiMarketService);
+    } catch (error) {
+      logger.warn('StrategyService/AutonomousOptimizer unavailable', { error: error.message, note: 'Set RUPERT_PRIVATE_KEY in hardhat/.env to enable' });
+      this.strategyService = null;
+      this.autonomousOptimizer = null;
+    }
+  }
+
+  setupGracefulShutdown() {
+    const shutdown = async (signal) => {
+      logger.info('Shutting down gracefully', { signal });
+      
+      if (this.autonomousOptimizer) {
+        this.autonomousOptimizer.stop();
+      }
+      
+      process.exit(0);
+    };
+
+    process.on('SIGTERM', () => shutdown('SIGTERM'));
+    process.on('SIGINT', () => shutdown('SIGINT'));
+  }
+
+  handleHealthCheck() {
+    const uptime = Math.floor((Date.now() - this.startTime) / 1000);
+    
+    const health = {
+      status: 'healthy',
+      uptime,
+      timestamp: new Date().toISOString(),
+      services: {
+        tokenPriceService: this.tokenPriceService ? 'ok' : 'unavailable',
+        gasPriceService: this.gasPriceService ? 'ok' : 'unavailable',
+        defiMarketService: this.defiMarketService ? 'ok' : 'unavailable',
+        briqAnalyticsService: this.briqAnalyticsService ? 'ok' : 'degraded',
+        strategyService: this.strategyService?.isConfigured ? 'ok' : 'degraded',
+        autonomousOptimizer: this.autonomousOptimizer?.isRunning ? 'running' : 'stopped'
+      }
+    };
+
+    return {
+      content: [{
+        type: 'text',
+        text: JSON.stringify(health, null, 2)
+      }]
+    };
   }
 
   // Setup MCP tool handlers
@@ -192,6 +272,14 @@ class RupertMCPServer {
               type: 'object',
               properties: {}
             }
+          },
+          {
+            name: 'health_check',
+            description: 'Check server health and service status',
+            inputSchema: {
+              type: 'object',
+              properties: {}
+            }
           }
         ]
       };
@@ -202,33 +290,81 @@ class RupertMCPServer {
       const { name, arguments: args } = request.params;
 
       try {
+        // Validate input arguments
+        const validatedArgs = validateToolArgs(name, args, TOOL_SCHEMAS[name]);
+
         switch (name) {
           case 'get_market_data':
-            return await this.defiMarketService.handleGetMarketData(args);
+            return await this.defiMarketService.handleGetMarketData(validatedArgs);
           
           case 'get_token_prices':
-            return await this.tokenPriceService.handleGetTokenPrices(args?.tokens);
+            return await this.tokenPriceService.handleGetTokenPrices(validatedArgs?.tokens);
           
           case 'get_gas_prices':
-            return await this.gasPriceService.handleGetGasPrices(args?.networks);
+            return await this.gasPriceService.handleGetGasPrices(validatedArgs?.networks);
           
           case 'get_detailed_gas_prices':
-            return await this.gasPriceService.handleGetDetailedGasPrices(args?.networks);
+            return await this.gasPriceService.handleGetDetailedGasPrices(validatedArgs?.networks);
           
           case 'get_briq_data':
+            if (!this.briqAnalyticsService) {
+              return {
+                content: [{
+                  type: 'text',
+                  text: 'Briq analytics unavailable. Requires local Hardhat node with deployed contracts.'
+                }],
+                isError: true
+              };
+            }
             return await this.briqAnalyticsService.handleGetBriqAnalytics();
           
           case 'get_current_strategies':
+            if (!this.strategyService) {
+              return {
+                content: [{
+                  type: 'text',
+                  text: 'Strategy service unavailable. Requires RUPERT_PRIVATE_KEY in hardhat/.env'
+                }],
+                isError: true
+              };
+            }
             return await this.strategyService.handleGetCurrentStrategies();
           
           case 'optimize_strategies':
+            if (!this.strategyService) {
+              return {
+                content: [{
+                  type: 'text',
+                  text: 'Strategy service unavailable. Requires RUPERT_PRIVATE_KEY in hardhat/.env'
+                }],
+                isError: true
+              };
+            }
             const marketData = await this.defiMarketService.getAllMarketData();
             return await this.strategyService.handleSetOptimalStrategies(marketData);
           
           case 'get_rupert_wallet_status':
+            if (!this.strategyService) {
+              return {
+                content: [{
+                  type: 'text',
+                  text: 'Strategy service unavailable. Requires RUPERT_PRIVATE_KEY in hardhat/.env'
+                }],
+                isError: true
+              };
+            }
             return await this.strategyService.handleGetWalletStatus();
           
           case 'start_autonomous_optimization':
+            if (!this.autonomousOptimizer) {
+              return {
+                content: [{
+                  type: 'text',
+                  text: 'Autonomous optimizer unavailable. Requires RUPERT_PRIVATE_KEY in hardhat/.env'
+                }],
+                isError: true
+              };
+            }
             this.autonomousOptimizer.start();
             return {
               content: [{
@@ -238,6 +374,15 @@ class RupertMCPServer {
             };
           
           case 'stop_autonomous_optimization':
+            if (!this.autonomousOptimizer) {
+              return {
+                content: [{
+                  type: 'text',
+                  text: 'Autonomous optimizer unavailable.'
+                }],
+                isError: true
+              };
+            }
             this.autonomousOptimizer.stop();
             return {
               content: [{
@@ -247,6 +392,15 @@ class RupertMCPServer {
             };
           
           case 'get_optimization_status':
+            if (!this.autonomousOptimizer) {
+              return {
+                content: [{
+                  type: 'text',
+                  text: 'Autonomous optimizer unavailable.'
+                }],
+                isError: true
+              };
+            }
             const status = this.autonomousOptimizer.getStatus();
             return {
               content: [{
@@ -255,17 +409,30 @@ class RupertMCPServer {
               }]
             };
           
+          case 'health_check':
+            return this.handleHealthCheck();
+          
           default:
             throw new Error(`Unknown tool: ${name}`);
         }
       } catch (error) {
-        return {
-          content: [
-            {
+        // Handle validation errors with clear messages
+        if (error instanceof ValidationError) {
+          return {
+            content: [{
               type: 'text',
-              text: `Error executing ${name}: ${error.message}`
-            }
-          ],
+              text: `Invalid input: ${error.message}`
+            }],
+            isError: true
+          };
+        }
+        
+        // Handle other errors
+        return {
+          content: [{
+            type: 'text',
+            text: `Error executing ${name}: ${error.message}`
+          }],
           isError: true
         };
       }
@@ -377,24 +544,29 @@ class RupertMCPServer {
     const transport = new StdioServerTransport();
     await this.server.connect(transport);
     
-    // Auto-start autonomous optimization if strategy service is configured
-    if (this.strategyService.isConfigured) {
-      console.log('🤖 Auto-starting Rupert autonomous optimization...');
+    // Wait for strategy service to initialize before checking configuration
+    if (this.strategyService) {
+      await this.strategyService.ensureInitialized();
+    }
+    
+    // Auto-start autonomous optimization if available
+    if (this.autonomousOptimizer && this.strategyService?.isConfigured) {
+      logger.info('Auto-starting Rupert autonomous optimization');
       try {
         this.autonomousOptimizer.start();
       } catch (error) {
-        console.error('❌ Failed to start autonomous optimizer:', error.message);
-        console.log('🔄 Retrying in 30 seconds...');
+        logger.error('Failed to start autonomous optimizer', { error: error.message });
+        logger.info('Retrying in 30 seconds');
         setTimeout(() => {
           try {
             this.autonomousOptimizer.start();
           } catch (retryError) {
-            console.error('❌ Retry failed:', retryError.message);
+            logger.error('Retry failed', { error: retryError.message });
           }
         }, 30000);
       }
     } else {
-      console.log('⚠️ Strategy service not configured - autonomous optimization disabled');
+      logger.warn('Autonomous optimization disabled', { reason: 'requires RUPERT_PRIVATE_KEY' });
     }
     
     // Server running on stdio

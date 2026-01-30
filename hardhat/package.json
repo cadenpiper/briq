@@ -38,10 +38,10 @@
     "viem": "^2.39.0"
   },
   "dependencies": {
-    "@aave/core-v3": "^1.19.3",
-    "@chainlink/contracts": "^1.5.0",
-    "@nomicfoundation/hardhat-keystore": "^3.0.3",
     "@openzeppelin/contracts": "^5.4.0",
-    "@pythnetwork/pyth-sdk-solidity": "^4.2.0"
+    "@chainlink/contracts": "^1.5.0",
+    "@pythnetwork/pyth-sdk-solidity": "^4.2.0",
+    "@aave/core-v3": "^1.19.3",
+    "@nomicfoundation/hardhat-keystore": "^3.0.3"
   }
 }

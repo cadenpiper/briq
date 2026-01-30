@@ -1,5 +1,6 @@
 import { ViemClient } from '../clients/ViemClient.js';
 import { AnalyticsFormatter } from '../formatters/AnalyticsFormatter.js';
+import { createErrorResponse } from '../utils/errorResponse.js';
 
 /**
  * Service for Briq protocol analytics and contract interactions
@@ -148,15 +149,7 @@ export class BriqAnalyticsService {
       const data = await this.getBriqAnalytics();
       return this.formatter.formatAnalytics(data);
     } catch (error) {
-      return {
-        content: [
-          {
-            type: 'text',
-            text: `Error fetching Briq analytics: ${error.message}`
-          }
-        ],
-        isError: true
-      };
+      return createErrorResponse(error, { tool: 'get_briq_data' });
     }
   }
 }

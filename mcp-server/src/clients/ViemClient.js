@@ -1,13 +1,18 @@
 import { createPublicClient, http, formatUnits } from 'viem';
 import { localhost } from 'viem/chains';
-import { getContractAddresses } from '../../../src/app/utils/forkAddresses.js';
-import { readFileSync } from 'fs';
+import { getContractAddresses } from '../config/contractAddresses.js';
+import { readFile } from 'fs/promises';
 import path from 'path';
+import { fileURLToPath } from 'url';
 
-// Load ABI from JSON files
-const loadABI = (filename) => {
-  const filePath = path.join(process.cwd(), '..', 'src', 'app', 'abis', filename);
-  return JSON.parse(readFileSync(filePath, 'utf8')).abi;
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// Load ABI from JSON files (async)
+const loadABI = async (filename) => {
+  const filePath = path.join(__dirname, '..', 'abis', filename);
+  const content = await readFile(filePath, 'utf8');
+  return JSON.parse(content).abi;
 };
 
 /**
@@ -21,17 +26,52 @@ export class ViemClient {
       transport: http('http://localhost:8545')
     });
 
-    // Import Briq contract addresses from frontend (same source of truth)
-    this.contracts = getContractAddresses();
+    this.contracts = null;
+    this.abis = null;
+    this.initialized = false;
+    this.initPromise = this.initialize();
+  }
 
-    // Load ABIs from JSON files (same as frontend)
-    this.abis = {
-      vault: loadABI('BriqVault.json'),
-      strategyCoordinator: loadABI('StrategyCoordinator.json'),
-      priceFeedManager: loadABI('PriceFeedManager.json'),
-      strategyAave: loadABI('StrategyAave.json'),
-      strategyCompound: loadABI('StrategyCompoundComet.json')
-    };
+  /**
+   * Initialize contracts and ABIs asynchronously
+   */
+  async initialize() {
+    if (this.initialized) return;
+
+    try {
+      // Load contract addresses
+      this.contracts = await getContractAddresses();
+
+      // Load ABIs in parallel
+      const [vault, strategyCoordinator, priceFeedManager, strategyAave, strategyCompound] = await Promise.all([
+        loadABI('BriqVault.json'),
+        loadABI('StrategyCoordinator.json'),
+        loadABI('PriceFeedManager.json'),
+        loadABI('StrategyAave.json'),
+        loadABI('StrategyCompoundComet.json')
+      ]);
+
+      this.abis = {
+        vault,
+        strategyCoordinator,
+        priceFeedManager,
+        strategyAave,
+        strategyCompound
+      };
+
+      this.initialized = true;
+    } catch (error) {
+      throw new Error(`Failed to initialize ViemClient: ${error.message}`);
+    }
+  }
+
+  /**
+   * Ensure client is initialized before use
+   */
+  async ensureInitialized() {
+    if (!this.initialized) {
+      await this.initPromise;
+    }
   }
 
   /**
@@ -44,7 +84,8 @@ export class ViemClient {
   /**
    * Get vault address
    */
-  getVaultAddress() {
+  async getVaultAddress() {
+    await this.ensureInitialized();
     return this.contracts.VAULT;
   }
 
@@ -52,6 +93,7 @@ export class ViemClient {
    * Get total vault value in USD
    */
   async getTotalVaultValueInUSD() {
+    await this.ensureInitialized();
     return await this.client.readContract({
       address: this.contracts.VAULT,
       abi: this.abis.vault,
@@ -63,6 +105,7 @@ export class ViemClient {
    * Get supported tokens
    */
   async getSupportedTokens() {
+    await this.ensureInitialized();
     return await this.client.readContract({
       address: this.contracts.VAULT,
       abi: this.abis.vault,
@@ -74,6 +117,7 @@ export class ViemClient {
    * Get strategy balance for a token
    */
   async getStrategyBalance(tokenAddress) {
+    await this.ensureInitialized();
     return await this.client.readContract({
       address: this.contracts.STRATEGY_COORDINATOR,
       abi: this.abis.strategyCoordinator,
@@ -86,6 +130,7 @@ export class ViemClient {
    * Get token value in USD
    */
   async getTokenValueInUSD(tokenAddress, balance) {
+    await this.ensureInitialized();
     return await this.client.readContract({
       address: this.contracts.PRICE_FEED_MANAGER,
       abi: this.abis.priceFeedManager,
@@ -98,6 +143,7 @@ export class ViemClient {
    * Get strategy APY
    */
   async getStrategyAPY(tokenAddress) {
+    await this.ensureInitialized();
     return await this.client.readContract({
       address: this.contracts.STRATEGY_COORDINATOR,
       abi: this.abis.strategyCoordinator,
@@ -126,6 +172,7 @@ export class ViemClient {
    * Get Aave strategy rewards
    */
   async getAaveRewards() {
+    await this.ensureInitialized();
     try {
       const [supportedTokens, analyticsArray] = await this.client.readContract({
         address: this.contracts.STRATEGY_AAVE,
@@ -186,6 +233,7 @@ export class ViemClient {
    * Get Compound strategy rewards
    */
   async getCompoundRewards() {
+    await this.ensureInitialized();
     try {
       const [supportedTokens, analyticsArray] = await this.client.readContract({
         address: this.contracts.STRATEGY_COMPOUND,

@@ -9,11 +9,9 @@ Briq is a modern DeFi protocol that provides users with an intuitive interface t
 ### Key Features
 
 - **Automated Yield Optimization**: Intelligent routing between Aave V3 and Compound V3 protocols
-- **Multi-Chain Support**: Compatible for all EVM networks  
 - **Vault-Based Architecture**: Secure deposit and withdrawal mechanisms
 - **Real-time Analytics**: Interactive charts and portfolio tracking with Recharts
 - **AI Assistant (Rupert)**: Real-time blockchain data and DeFi guidance with MCP integration
-- **Web3 Integration**: Seamless wallet connection via RainbowKit and Wagmi
 
 ## Installation
 
@@ -53,18 +51,36 @@ cd ..
 Create a `.env.local` file in the root directory with the following variables:
 
 ```env
-# Wallet Connect Project ID (required for RainbowKit)
-NEXT_PUBLIC_PROJECT_ID=
+# Required - Wallet Connect Project ID for RainbowKit
+NEXT_PUBLIC_PROJECT_ID=your_walletconnect_project_id
 
-# GraphQL API Key for blockchain data queries
-NEXT_PUBLIC_GRAPHQL_API_KEY=
+# Required - GraphQL API Key for blockchain data queries (The Graph)
+NEXT_PUBLIC_GRAPHQL_API_KEY=your_graph_api_key
 
-# OpenAI API Key (required for Rupert AI assistant)
-OPENAI_API_KEY=
+# Required - OpenAI API Key for Rupert AI assistant
+OPENAI_API_KEY=your_openai_api_key
 
-# Etherscan API Key (required for real-time blockchain data)
-ETHERSCAN_API_KEY=
+# Required - Etherscan API Key for real-time blockchain data
+ETHERSCAN_API_KEY=your_etherscan_api_key
+
+# Required - CoinMarketCap API Key for token price data
+COINMARKETCAP_API_KEY=your_coinmarketcap_api_key
 ```
+
+Create a `.env` file in the `hardhat/` directory for autonomous optimization (optional):
+
+```env
+# Optional - Rupert wallet address for autonomous strategy optimization
+RUPERT_ADDRESS=0x...
+
+# Optional - Rupert private key for executing strategy changes
+RUPERT_PRIVATE_KEY=0x...
+
+# Optional - RPC URL (defaults to http://localhost:8545)
+RPC_URL=http://localhost:8545
+```
+
+**Note**: Autonomous optimization features require `RUPERT_PRIVATE_KEY`. Without it, the MCP server will run in read-only mode.
 
 ## Getting Started
 

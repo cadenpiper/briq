@@ -1,4 +1,5 @@
 import { request, gql } from 'graphql-request';
+import { RateLimiter } from '../utils/rateLimiter.js';
 
 /**
  * Client for The Graph GraphQL API interactions
@@ -17,6 +18,8 @@ export class GraphQLClient {
     if (!this.apiKey) {
       throw new Error("NEXT_PUBLIC_GRAPHQL_API_KEY not found in environment variables");
     }
+    
+    this.rateLimiter = new RateLimiter(10); // 10 requests per minute
   }
 
   /**
@@ -52,9 +55,11 @@ export class GraphQLClient {
    * Query markets from a specific subgraph
    */
   async queryMarkets(subgraphId, tokenSymbol) {
-    const url = this.getSubgraphUrl(subgraphId);
-    const query = this.createMarketQuery(tokenSymbol);
-    const response = await request(url, query);
-    return response.markets;
+    return this.rateLimiter.execute(async () => {
+      const url = this.getSubgraphUrl(subgraphId);
+      const query = this.createMarketQuery(tokenSymbol);
+      const response = await request(url, query);
+      return response.markets;
+    });
   }
 }

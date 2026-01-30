@@ -53,7 +53,7 @@ npm install
 npx hardhat keystore set ARBITRUM_RPC_URL
 # Enter your Alchemy API key when prompted
 
-# For deployment (optional)
+# For deployment
 npx hardhat keystore set PRIVATE_KEY
 # Enter your private key when prompted
 
@@ -69,23 +69,16 @@ npx hardhat keystore list
 npm test
 
 # Or run directly with hardhat
-npx hardhat test --network hardhat
+npx hardhat test --network localhost
 
 # Run specific test suite
-npx hardhat test test/BriqVault.ts --network hardhat
+npx hardhat test test/BriqVault.ts --network localhost
 
 # Run with gas reporting
-npx hardhat test --gas-stats --network hardhat
+npx hardhat test --gas-stats --network localhost
 
 # Run Solidity fuzz tests
-npx hardhat test test/BriqVault.t.sol --network hardhat
-```
-
-### Deployment
-
-Deploy to Arbitrum mainnet:
-```shell
-npx hardhat ignition deploy ignition/modules/BriqCore.ts --network arbitrum
+npx hardhat test test/BriqVault.t.sol --network localhost
 ```
 
 ## Protocol Overview

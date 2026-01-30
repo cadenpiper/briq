@@ -1,5 +1,6 @@
 import { GraphQLClient } from '../clients/GraphQLClient.js';
 import { MarketDataFormatter } from '../formatters/MarketDataFormatter.js';
+import { createErrorResponse, createSuccessResponse } from '../utils/errorResponse.js';
 
 /**
  * Service for DeFi market data from The Graph protocol
@@ -134,34 +135,12 @@ export class DeFiMarketService {
       }
 
       if (filteredMarkets.length === 0) {
-        return {
-          content: [
-            {
-              type: 'text',
-              text: 'No market data found matching the specified filters.'
-            }
-          ]
-        };
+        return createSuccessResponse({ markets: [], message: 'No market data found matching the specified filters.' });
       }
 
-      return {
-        content: [
-          {
-            type: 'text',
-            text: JSON.stringify(filteredMarkets, null, 2)
-          }
-        ]
-      };
+      return createSuccessResponse(filteredMarkets);
     } catch (error) {
-      return {
-        content: [
-          {
-            type: 'text',
-            text: `Error fetching market data: ${error.message}`
-          }
-        ],
-        isError: true
-      };
+      return createErrorResponse(error, { tool: 'get_market_data' });
     }
   }
 
@@ -174,14 +153,7 @@ export class DeFiMarketService {
       const tokenMarkets = allMarkets.filter(m => m.token === token);
       
       if (tokenMarkets.length === 0) {
-        return {
-          content: [
-            {
-              type: 'text',
-              text: `No market data found for ${token}.`
-            }
-          ]
-        };
+        return createSuccessResponse({ message: `No market data found for ${token}.` });
       }
 
       // Sort by APY descending
@@ -189,15 +161,7 @@ export class DeFiMarketService {
       
       return this.formatter.formatBestYield(tokenMarkets, token);
     } catch (error) {
-      return {
-        content: [
-          {
-            type: 'text',
-            text: `Error finding best yield: ${error.message}`
-          }
-        ],
-        isError: true
-      };
+      return createErrorResponse(error, { tool: 'get_best_yield', details: { token } });
     }
   }
 }

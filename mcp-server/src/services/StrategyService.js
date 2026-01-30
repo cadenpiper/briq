@@ -1,10 +1,5 @@
 import { ethers } from 'ethers';
-import dotenv from 'dotenv';
-import { readFileSync } from 'fs';
-import path from 'path';
-
-dotenv.config({ path: '../.env.local' });
-dotenv.config({ path: '../hardhat/.env' });
+import { getContractAddresses } from '../config/contractAddresses.js';
 
 const STRATEGY_ABI = [
   "function balanceOf(address _token) external view returns (uint256)",
@@ -21,39 +16,27 @@ const STRATEGY_TYPES = {
   COMPOUND: 1
 };
 
-// Load deployment and config data
-function loadContractAddresses() {
-  const deploymentPath = path.join(process.cwd(), '../hardhat/deployment.json');
-  const configPath = path.join(process.cwd(), '../hardhat/config.json');
-  
-  const deployment = JSON.parse(readFileSync(deploymentPath, 'utf8'));
-  const config = JSON.parse(readFileSync(configPath, 'utf8'));
-  
-  const chainId = deployment.chainId || "31337";
-  const chainConfig = config.CHAIN_CONFIG[chainId];
-  
-  return {
-    strategyAave: deployment.contracts.StrategyAave,
-    strategyCompound: deployment.contracts.StrategyCompoundComet,
-    strategyCoordinator: deployment.contracts.StrategyCoordinator,
-    tokens: {
-      USDC: chainConfig.usdcAddress,
-      WETH: chainConfig.wethAddress
-    }
-  };
-}
-
 export class StrategyService {
   constructor() {
     this.provider = new ethers.JsonRpcProvider(process.env.RPC_URL || 'http://localhost:8545');
     this.walletAddress = process.env.RUPERT_ADDRESS;
-    
+    this.isConfigured = false;
+    this.initialized = false;
+    this.initPromise = this.initialize();
+  }
+
+  async initialize() {
+    if (this.initialized) return;
+
     try {
-      const addresses = loadContractAddresses();
-      this.strategyAaveAddress = addresses.strategyAave;
-      this.strategyCompoundAddress = addresses.strategyCompound;
-      this.contractAddress = addresses.strategyCoordinator;
-      this.tokenAddresses = addresses.tokens;
+      const addresses = await getContractAddresses();
+      this.strategyAaveAddress = addresses.STRATEGY_AAVE;
+      this.strategyCompoundAddress = addresses.STRATEGY_COMPOUND;
+      this.contractAddress = addresses.STRATEGY_COORDINATOR;
+      this.tokenAddresses = {
+        USDC: addresses.USDC,
+        WETH: addresses.WETH
+      };
       
       // Only initialize wallet and contract if private key is present
       if (process.env.RUPERT_PRIVATE_KEY) {
@@ -62,12 +45,18 @@ export class StrategyService {
         this.strategyCompound = new ethers.Contract(this.strategyCompoundAddress, STRATEGY_ABI, this.provider);
         this.contract = new ethers.Contract(this.contractAddress, COORDINATOR_ABI, this.wallet);
         this.isConfigured = true;
-      } else {
-        this.isConfigured = false;
       }
+      
+      this.initialized = true;
     } catch (error) {
-      console.error('Failed to load contract addresses:', error.message);
-      this.isConfigured = false;
+      console.error('Failed to initialize StrategyService:', error.message);
+      throw error;
+    }
+  }
+
+  async ensureInitialized() {
+    if (!this.initialized) {
+      await this.initPromise;
     }
   }
 
@@ -78,6 +67,7 @@ export class StrategyService {
   }
 
   async getWalletStatus() {
+    await this.ensureInitialized();
     const balance = await this.provider.getBalance(this.walletAddress);
     return {
       address: this.walletAddress,
@@ -107,6 +97,7 @@ export class StrategyService {
   }
 
   async getCurrentStrategies() {
+    await this.ensureInitialized();
     this.checkConfiguration();
     const strategies = {};
     
@@ -163,6 +154,7 @@ export class StrategyService {
   }
 
   async setOptimalStrategies(marketData) {
+    await this.ensureInitialized();
     this.checkConfiguration();
     const results = [];
     

@@ -1,3 +1,6 @@
+import { RateLimiter } from '../utils/rateLimiter.js';
+import { createErrorResponse, createSuccessResponse } from '../utils/errorResponse.js';
+
 /**
  * Service for fetching token price data
  */
@@ -7,14 +10,22 @@ export class TokenPriceService {
     if (!this.coinMarketCapApiKey) {
       throw new Error('COINMARKETCAP_API_KEY not found in environment variables');
     }
+    this.rateLimiter = new RateLimiter(10); // 10 requests per minute
+    this.cache = null;
+    this.cacheExpiry = 0;
+    this.CACHE_TTL = 60000; // 1 minute cache
   }
 
   /**
-   * Get current token prices from CoinMarketCap API
+   * Get current token prices from CoinMarketCap API with caching
    */
   async getTokenPrices() {
-    try {
-      // Get ETH and USDC prices from CoinMarketCap
+    // Return cached data if still valid
+    if (this.cache && Date.now() < this.cacheExpiry) {
+      return this.cache;
+    }
+
+    return this.rateLimiter.execute(async () => {
       const response = await fetch('https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest?symbol=ETH,USDC', {
         headers: {
           'X-CMC_PRO_API_KEY': this.coinMarketCapApiKey,
@@ -35,7 +46,7 @@ export class TokenPriceService {
       const ethPriceUSD = data.data.ETH.quote.USD.price;
       const usdcPriceUSD = data.data.USDC.quote.USD.price;
 
-      return {
+      const result = {
         ETH: {
           price_usd: ethPriceUSD,
           symbol: 'ETH',
@@ -47,10 +58,13 @@ export class TokenPriceService {
           name: 'USD Coin'
         }
       };
-    } catch (error) {
-      console.error('Error fetching token prices:', error);
-      throw error;
-    }
+
+      // Cache the result
+      this.cache = result;
+      this.cacheExpiry = Date.now() + this.CACHE_TTL;
+
+      return result;
+    });
   }
 
   /**
@@ -65,30 +79,23 @@ export class TokenPriceService {
         const ethPrice = allPrices.ETH.price_usd;
         const usdcPrice = allPrices.USDC.price_usd;
         
-        return {
-          content: [
-            {
-              type: 'text',
-              text: JSON.stringify({
-                ETH: {
-                  price: ethPrice,
-                  symbol: 'ETH',
-                  name: 'Ethereum'
-                },
-                WETH: {
-                  price: ethPrice,
-                  symbol: 'WETH', 
-                  name: 'Wrapped Ether'
-                },
-                USDC: {
-                  price: usdcPrice,
-                  symbol: 'USDC',
-                  name: 'USD Coin'
-                }
-              }, null, 2)
-            }
-          ]
-        };
+        return createSuccessResponse({
+          ETH: {
+            price: ethPrice,
+            symbol: 'ETH',
+            name: 'Ethereum'
+          },
+          WETH: {
+            price: ethPrice,
+            symbol: 'WETH', 
+            name: 'Wrapped Ether'
+          },
+          USDC: {
+            price: usdcPrice,
+            symbol: 'USDC',
+            name: 'USD Coin'
+          }
+        });
       }
 
       // Handle specific token requests
@@ -118,24 +125,9 @@ export class TokenPriceService {
         }
       }
 
-      return {
-        content: [
-          {
-            type: 'text',
-            text: JSON.stringify(results, null, 2)
-          }
-        ]
-      };
+      return createSuccessResponse(results);
     } catch (error) {
-      return {
-        content: [
-          {
-            type: 'text',
-            text: `Error fetching token prices: ${error.message}`
-          }
-        ],
-        isError: true
-      };
+      return createErrorResponse(error, { tool: 'get_token_prices' });
     }
   }
 

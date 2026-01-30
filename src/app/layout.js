@@ -33,7 +33,7 @@ export const metadata = {
   title: "Briq",
   description: "Briq - Web3 Application",
   icons: {
-    icon: './favicon.png',
+    icon: '/favicon.png',
   },
 };
 
