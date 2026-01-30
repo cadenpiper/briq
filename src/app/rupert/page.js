@@ -4,7 +4,7 @@ import { useRef, useEffect, useState } from 'react';
 import { useChat } from 'ai/react';
 import { useAccount } from 'wagmi';
 import Layout from '../components/Layout';
-import RupertActions from '../components/RupertActions';
+import RupertActions from './components/RupertActions';
 import { supabase } from '../utils/supabase';
 
 export default function Rupert() {

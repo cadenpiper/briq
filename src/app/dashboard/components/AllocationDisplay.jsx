@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from 'react';
-import { ProtocolIcon } from './icons';
+import { ProtocolIcon } from '../../components/icons';
 
 const AllocationDisplay = ({ allocations, isMobile = false }) => {
   const [showTooltip, setShowTooltip] = useState(false);

@@ -1,8 +1,8 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import CopyButton from './CopyButton';
-import { TokenIcon } from './icons';
+import CopyButton from '../../components/CopyButton';
+import { TokenIcon } from '../../components/icons';
 
 export default function RupertActions() {
   const [actions, setActions] = useState([]);

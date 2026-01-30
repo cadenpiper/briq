@@ -2,8 +2,8 @@
 
 import { useState, useEffect, useImperativeHandle, forwardRef } from 'react';
 import { useAccount } from 'wagmi';
-import { supabase } from '../utils/supabase';
-import { TokenIcon } from './icons';
+import { supabase } from '../../utils/supabase';
+import { TokenIcon } from '../../components/icons';
 
 const TransactionHistory = forwardRef((props, ref) => {
   const { address } = useAccount();

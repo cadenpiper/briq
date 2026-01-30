@@ -1,8 +1,8 @@
 "use client";
 
 import Layout from '../components/Layout';
-import MarketTable from '../components/MarketTable';
-import MarketOverview from '../components/MarketOverview';
+import MarketTable from './components/MarketTable';
+import MarketOverview from './components/MarketOverview';
 import { useSubgraphMarketData } from '../hooks/useSubgraphMarketData';
 
 export default function Markets() {

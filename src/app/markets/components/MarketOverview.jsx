@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo } from 'react';
-import { formatTVL, formatAPY } from '../utils/formatters';
+import { formatTVL, formatAPY } from '../../utils/formatters';
 
 export default function MarketOverview({ data, loading, error }) {
   const metrics = useMemo(() => {

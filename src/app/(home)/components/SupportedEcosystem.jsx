@@ -1,4 +1,4 @@
-import { NetworkIcon, TokenIcon, ProtocolIcon } from './icons';
+import { NetworkIcon, TokenIcon, ProtocolIcon } from '../../components/icons';
 
 export default function SupportedEcosystem() {
   return (

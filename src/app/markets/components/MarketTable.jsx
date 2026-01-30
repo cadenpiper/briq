@@ -1,10 +1,10 @@
 "use client";
 
 import { useState, useMemo, useEffect, useRef } from 'react';
-import { formatAPY, formatTVL, formatUtilization } from '../utils/formatters';
-import { useSubgraphMarketData } from '../hooks/useSubgraphMarketData';
-import { ProtocolIcon, TokenIcon, NetworkIcon } from './icons';
-import HealthMeter from './HealthMeter';
+import { formatAPY, formatTVL, formatUtilization } from '../../utils/formatters';
+import { useSubgraphMarketData } from '../../hooks/useSubgraphMarketData';
+import { ProtocolIcon, TokenIcon, NetworkIcon } from '../../components/icons';
+import HealthMeter from '../../components/HealthMeter';
 
 export default function MarketTable() {
   const [selectedNetworks, setSelectedNetworks] = useState([]);
