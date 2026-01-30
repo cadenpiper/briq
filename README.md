@@ -104,38 +104,34 @@ Open [http://localhost:3000](http://localhost:3000) with your browser to see the
 briq/
 ├── src/                     # Source code directory
 │   └── app/                 # Next.js App Router directory
-│       ├── abis/            # Smart contract ABIs
-│       ├── analytics/       # Analytics components
+│       ├── (home)/          # Home route group
+│       │   ├── page.js      # Home page
+│       │   └── components/  # Home-specific components
+│       ├── dashboard/       # Dashboard route
+│       │   ├── page.js      # Dashboard page
+│       │   └── components/  # Dashboard-specific components
+│       ├── markets/         # Markets route
+│       │   ├── page.js      # Markets page
+│       │   └── components/  # Markets-specific components
+│       ├── rupert/          # Rupert AI assistant route
+│       │   ├── page.js      # Rupert page
+│       │   └── components/  # Rupert-specific components
+│       ├── analytics/       # Analytics route
+│       │   └── page.js      # Analytics page
 │       ├── api/             # API routes
 │       │   └── chat/        # Rupert AI chat API with MCP integration
-│       ├── briq/            # Briq-specific pages
-│       ├── components/      # Reusable React components
+│       ├── abis/            # Smart contract ABIs
+│       ├── components/      # Shared components (Header, Footer, etc.)
 │       ├── context/         # React context providers
-│       ├── home/            # Home page components
 │       ├── hooks/           # Custom React hooks
-│       ├── markets/         # Markets page components
-│       ├── portfolio/       # Portfolio page components
-│       ├── rupert/          # Rupert AI assistant interface
 │       ├── utils/           # Utility functions
 │       │   └── simpleMcpClient.js  # MCP client for blockchain data
 │       ├── layout.js        # Root layout component
 │       ├── page.js          # Main page component
 │       ├── providers.jsx    # App providers setup
 │       └── globals.css      # Global styles
-├── mcp-server/              # Model Context Protocol server
-│   ├── index.js             # MCP server with blockchain tools
-│   ├── package.json         # Server dependencies
-│   └── README.md            # MCP server documentation
-├── hardhat/                 # Smart contracts directory
-│   ├── contracts/           # Solidity smart contracts
-│   │   ├── strategies/      # Strategy implementations
-│   │   ├── interfaces/      # Contract interfaces
-│   │   └── libraries/       # Contract libraries
-│   ├── test/                # Contract tests
-│   ├── ignition/            # Deployment modules
-│   ├── scripts/             # Utility scripts
-│   ├── config.json          # Multi-chain configuration
-│   └── README.md            # Smart contracts documentation
+├── mcp-server/              # Model Context Protocol server (see mcp-server/README.md)
+├── hardhat/                 # Smart contracts (see hardhat/README.md)
 ├── public/                  # Static assets
 │   └── images/              # Image files
 ├── .env.local               # Environment variables
