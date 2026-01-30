@@ -1,6 +1,6 @@
-# briq-core
+# Briq Core
 
-Production-ready smart contracts powering the Briq protocol - a sophisticated multi-strategy yield vault with USD-normalized shares.
+Smart contracts powering the Briq protocol - a multi-strategy yield vault with USD-normalized shares.
 
 ## Features
 
@@ -8,7 +8,7 @@ Production-ready smart contracts powering the Briq protocol - a sophisticated mu
 - **USD-Normalized Shares**: Fair distribution using dual-oracle price feeds (Chainlink + Pyth)
 - **Robust Security**: Comprehensive access controls, emergency pause, slippage protection
 - **Gas Optimized**: Efficient deployment and execution costs
-- **Battle-Tested**: 100% test coverage with 150+ comprehensive tests
+- **Comprehensive Testing**: 100% test coverage with 150+ tests (TypeScript + Solidity)
 
 ## Architecture
 
@@ -27,8 +27,8 @@ Production-ready smart contracts powering the Briq protocol - a sophisticated mu
 
 ## Security
 
-### Audit Status ✅
-- **Static Analysis**: Slither analysis with 88% issue reduction (33→4 findings)
+### Audit Status
+- **Static Analysis**: Slither analysis
 - **Test Coverage**: 100% with 31 BriqVault + 140+ total tests
 - **Security Features**: SafeERC20, reentrancy protection, access controls, emergency pause
 - **Code Quality**: Immutable variables, custom errors, gas optimization
@@ -40,20 +40,21 @@ Production-ready smart contracts powering the Briq protocol - a sophisticated mu
 - **Access Control**: Timelock-protected admin functions with role-based permissions
 - **Slippage Protection**: Configurable limits to protect user withdrawals
 
-## Usage
+## Installation
 
-### Installation
-```shell
+```bash
 npm install
 ```
 
-### Environment Setup
-```shell
-# Set up Hardhat keystore for secure secret management
-npx hardhat keystore set ARBITRUM_RPC_URL
-# Enter your Alchemy API key when prompted
+## Environment Setup
 
-# For deployment
+### Using Hardhat Keystore (Recommended)
+```bash
+# Set up Arbitrum RPC URL
+npx hardhat keystore set ARBITRUM_RPC_URL
+# Enter your Alchemy/Infura API URL when prompted
+
+# For deployment (optional)
 npx hardhat keystore set PRIVATE_KEY
 # Enter your private key when prompted
 
@@ -61,24 +62,76 @@ npx hardhat keystore set PRIVATE_KEY
 npx hardhat keystore list
 ```
 
-**Note**: The keystore encrypts and stores secrets locally. Tests and deployment will automatically use these values from the keystore without needing `.env` files.
+**Note**: The keystore encrypts and stores secrets locally. No `.env` files needed.
+
+## Usage
+
+### Start Local Fork
+```bash
+# Start Hardhat node with Arbitrum fork
+npm run node
+
+# In another terminal, deploy and configure
+npm run setup-fork
+```
+
+The `setup-fork` command runs:
+1. `deploy` - Deploy all contracts
+2. `configure` - Configure strategies and price feeds
+3. `fund` - Fund test accounts with USDC/WETH
+4. `fund-rupert` - Fund Rupert wallet
+5. `set-rupert` - Set Rupert as strategy manager
+6. `balance` - Check balances
+
+### Individual Scripts
+
+```bash
+# Deploy contracts
+npm run deploy
+
+# Configure strategies
+npm run configure
+
+# Fund test account
+npm run fund
+
+# Fund Rupert wallet
+npm run fund-rupert
+
+# Set Rupert as manager
+npm run set-rupert
+
+# Check balances
+npm run balance
+```
 
 ### Testing
-```shell
-# Run all tests (recommended)
+
+```bash
+# Run all tests
 npm test
 
-# Or run directly with hardhat
-npx hardhat test --network localhost
+# Run with coverage
+npm run test:coverage
 
-# Run specific test suite
-npx hardhat test test/BriqVault.ts --network localhost
-
-# Run with gas reporting
-npx hardhat test --gas-stats --network localhost
+# Run specific test file
+npx hardhat test test/BriqVault.ts
 
 # Run Solidity fuzz tests
-npx hardhat test test/BriqVault.t.sol --network localhost
+npx hardhat test test/BriqVault.t.sol
+
+# Run with gas reporting
+REPORT_GAS=true npm test
+```
+
+### Compilation
+
+```bash
+# Compile contracts
+npm run compile
+
+# Clean artifacts
+npm run clean
 ```
 
 ## Protocol Overview
@@ -95,41 +148,69 @@ npx hardhat test test/BriqVault.t.sol --network localhost
 - **Failure Resilience**: Graceful handling of individual strategy failures
 - **Price Feed Redundancy**: Dual-oracle system ensures reliable pricing
 
+## Project Structure
+
+```
+hardhat/
+├── contracts/
+│   ├── BriqVault.sol              # Main vault contract
+│   ├── StrategyCoordinator.sol    # Multi-strategy coordinator
+│   ├── PriceFeedManager.sol       # Dual-oracle price feeds
+│   ├── BriqShares.sol            # ERC20 shares token
+│   ├── BriqTimelock.sol          # Governance timelock
+│   ├── StrategyBase.sol          # Base strategy implementation
+│   ├── strategies/
+│   │   ├── StrategyAave.sol      # Aave V3 integration
+│   │   └── StrategyCompoundComet.sol # Compound V3 integration
+│   ├── interfaces/
+│   │   └── IComet.sol            # Compound V3 interface
+│   ├── libraries/
+│   │   └── Errors.sol            # Custom error definitions
+│   └── test/
+│       └── MockPriceFeedManager.sol # Test mocks
+├── test/                          # Test files (.ts and .sol)
+├── scripts/forking/               # Forking utility scripts
+├── ignition/                      # Deployment modules
+├── audit/                         # Audit documentation
+├── config.json                    # Chain configuration
+├── deployment.json                # Deployed contract addresses
+└── hardhat.config.ts              # Hardhat configuration
+```
+
+## Configuration
+
+### config.json
+Chain-specific configuration for Arbitrum One:
+- Aave V3 pool address
+- Compound V3 market addresses (USDC, WETH)
+- Token addresses (USDC, WETH)
+- Whale addresses for testing
+- Chainlink price feed addresses
+
+### deployment.json
+Automatically updated with deployed contract addresses after running `npm run deploy`.
+
 ## Development
 
 ### Prerequisites
 - Node.js 18+
 - Hardhat v3
 - TypeScript
-- Alchemy API key for Arbitrum forking
+- Alchemy/Infura API key for Arbitrum forking
 
-### Project Structure
-```
-contracts/
-├── BriqVault.sol              # Main vault contract
-├── StrategyCoordinator.sol    # Multi-strategy coordinator
-├── PriceFeedManager.sol       # Dual-oracle price feeds
-├── BriqShares.sol            # ERC20 shares token
-├── BriqTimelock.sol          # Governance timelock
-├── strategies/
-│   ├── StrategyAave.sol      # Aave V3 integration
-│   └── StrategyCompoundComet.sol # Compound V3 integration
-└── libraries/
-    └── Errors.sol            # Custom error definitions
-```
-
-### Contributing
-1. Fork the repository
-2. Create a feature branch
-3. Add comprehensive tests
-4. Ensure all tests pass
-5. Submit a pull request
+### Adding New Strategies
+1. Inherit from `StrategyBase.sol`
+2. Implement required functions: `deposit()`, `withdraw()`, `balanceOf()`, `getCurrentAPY()`
+3. Add strategy to `StrategyCoordinator`
+4. Write comprehensive tests
+5. Update documentation
 
 ## License
 
-MIT License
+UNLICENSED
 
 ---
 
-**Last Updated**: December 2024
-**Version**: 1.0.0
+**Version**: 1.0.0  
+**Network**: Arbitrum One  
+**Last Updated**: January 2026
