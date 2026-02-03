@@ -1,20 +1,17 @@
 import { useState, useEffect } from 'react';
-import { createPublicClient, http, formatUnits } from 'viem';
-import { localhost } from 'viem/chains';
-
-// Create public client for direct contract calls
-const publicClient = createPublicClient({
-  chain: localhost,
-  transport: http('http://localhost:8545')
-});
+import { formatUnits } from 'viem';
+import { useAccount } from 'wagmi';
+import { getContractAddresses } from '../utils/forkAddresses';
+import { getPublicClient } from '../utils/publicClients';
 
 /**
  * Custom hook for getting market-specific data from contracts (strategy balances, allocations, APY, etc.)
  * Used by the Analytics page to show protocol-specific metrics
- * @param {Object} contracts - Contract addresses
  * @param {Array} abis - Contract ABIs needed
  */
-export function useContractMarketData({ contracts, vaultAbi, coordinatorAbi, priceFeedAbi, strategyAaveAbi, strategyCompoundAbi }) {
+export function useContractMarketData({ vaultAbi, coordinatorAbi, priceFeedAbi, strategyAaveAbi, strategyCompoundAbi }) {
+  const { chainId } = useAccount();
+  const contracts = getContractAddresses(chainId);
   const [marketData, setMarketData] = useState({
     markets: [],
     isLoading: true,
@@ -22,16 +19,18 @@ export function useContractMarketData({ contracts, vaultAbi, coordinatorAbi, pri
   });
 
   const fetchMarketData = async () => {
-    // Check if contracts object exists and has required properties
-    if (!contracts || !contracts.VAULT || !contracts.STRATEGY_AAVE || !contracts.STRATEGY_COMPOUND) {
-      console.log('Missing contracts:', contracts);
+    // Check if chainId is available and contracts exist
+    if (!chainId || !contracts || !contracts.VAULT || !contracts.STRATEGY_AAVE || !contracts.STRATEGY_COMPOUND) {
+      console.log('Missing chainId or contracts:', { chainId, contracts });
       setMarketData(prev => ({ 
         ...prev, 
         isLoading: false,
-        error: 'Contract addresses not available'
+        error: 'ChainId or contract addresses not available'
       }));
       return;
     }
+
+    const publicClient = getPublicClient(chainId);
 
     try {
       setMarketData(prev => ({ ...prev, isLoading: true, error: null }));
@@ -188,7 +187,7 @@ export function useContractMarketData({ contracts, vaultAbi, coordinatorAbi, pri
     // Refetch every 30 seconds
     const interval = setInterval(fetchMarketData, 30000);
     return () => clearInterval(interval);
-  }, [contracts?.STRATEGY_AAVE, contracts?.STRATEGY_COMPOUND]);
+  }, [chainId, contracts?.STRATEGY_AAVE, contracts?.STRATEGY_COMPOUND]);
 
   return { ...marketData, refetch: fetchMarketData };
 }

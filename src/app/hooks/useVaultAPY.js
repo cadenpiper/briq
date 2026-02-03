@@ -1,16 +1,15 @@
 import { useState, useEffect } from 'react';
-import { createPublicClient, http } from 'viem';
-import { localhost } from 'viem/chains';
-import { FORK_ADDRESSES } from '../utils/forkAddresses';
+import { useAccount } from 'wagmi';
+import { getPublicClient } from '../utils/publicClients';
+import { getContractAddresses } from '../utils/forkAddresses';
 import StrategyAaveArtifact from '../abis/StrategyAave.json';
 import StrategyCompoundArtifact from '../abis/StrategyCompoundComet.json';
 
-const publicClient = createPublicClient({
-  chain: localhost,
-  transport: http('http://localhost:8545')
-});
-
 export function useVaultAPY() {
+  const { chainId } = useAccount();
+  const CONTRACTS = getContractAddresses(chainId);
+  const publicClient = getPublicClient(chainId);
+  
   const [apyData, setApyData] = useState({
     usdcAPY: '0.00',
     wethAPY: '0.00',
@@ -25,7 +24,7 @@ export function useVaultAPY() {
         // Get Aave APYs
         try {
           const [aaveTokens, aaveAnalytics] = await publicClient.readContract({
-            address: FORK_ADDRESSES.STRATEGY_AAVE,
+            address: CONTRACTS.STRATEGY_AAVE,
             abi: StrategyAaveArtifact.abi,
             functionName: 'getAllTokenAnalytics'
           });
@@ -35,9 +34,9 @@ export function useVaultAPY() {
             const analytics = aaveAnalytics[i];
             const currentAPY = Number(analytics[5]); // 6th element is currentAPY
 
-            if (tokenAddress.toLowerCase() === FORK_ADDRESSES.USDC.toLowerCase()) {
+            if (tokenAddress.toLowerCase() === CONTRACTS.USDC.toLowerCase()) {
               apyByToken.USDC.push(currentAPY);
-            } else if (tokenAddress.toLowerCase() === FORK_ADDRESSES.WETH.toLowerCase()) {
+            } else if (tokenAddress.toLowerCase() === CONTRACTS.WETH.toLowerCase()) {
               apyByToken.WETH.push(currentAPY);
             }
           }
@@ -48,7 +47,7 @@ export function useVaultAPY() {
         // Get Compound APYs
         try {
           const [compoundTokens, compoundAnalytics] = await publicClient.readContract({
-            address: FORK_ADDRESSES.STRATEGY_COMPOUND,
+            address: CONTRACTS.STRATEGY_COMPOUND,
             abi: StrategyCompoundArtifact.abi,
             functionName: 'getAllTokenAnalytics'
           });
@@ -58,9 +57,9 @@ export function useVaultAPY() {
             const analytics = compoundAnalytics[i];
             const currentAPY = Number(analytics[6]); // 7th element is currentAPY for Compound
 
-            if (tokenAddress.toLowerCase() === FORK_ADDRESSES.USDC.toLowerCase()) {
+            if (tokenAddress.toLowerCase() === CONTRACTS.USDC.toLowerCase()) {
               apyByToken.USDC.push(currentAPY);
-            } else if (tokenAddress.toLowerCase() === FORK_ADDRESSES.WETH.toLowerCase()) {
+            } else if (tokenAddress.toLowerCase() === CONTRACTS.WETH.toLowerCase()) {
               apyByToken.WETH.push(currentAPY);
             }
           }

@@ -5,17 +5,20 @@ import { updateFrontendAddresses } from './updateFrontendAddresses.js';
 async function main() {
   console.log("⚙️  Configuring Briq Protocol\n");
   
-  // Load deployment addresses
-  if (!fs.existsSync('./deployment.json')) {
-    throw new Error("deployment.json not found. Run deploy script first.");
-  }
-  
-  const deploymentData = JSON.parse(fs.readFileSync('./deployment.json', 'utf8'));
-  const contracts = deploymentData.contracts;
-  
   const { viem } = await network.connect();
   const publicClient = await viem.getPublicClient();
   const chainId = await publicClient.getChainId();
+  
+  // Load deployment addresses from chain-specific file
+  const chainSpecificFile = `./deployment-${chainId}.json`;
+  const deploymentFile = fs.existsSync(chainSpecificFile) ? chainSpecificFile : './deployment.json';
+  
+  if (!fs.existsSync(deploymentFile)) {
+    throw new Error(`${deploymentFile} not found. Run deploy script first.`);
+  }
+  
+  const deploymentData = JSON.parse(fs.readFileSync(deploymentFile, 'utf8'));
+  const contracts = deploymentData.contracts;
   
   // Load network configuration
   const configData = JSON.parse(fs.readFileSync('./config.json', 'utf8'));
@@ -38,20 +41,15 @@ async function main() {
     compoundMarketWETH: COMPOUND_COMET_WETH,
     usdcAddress: USDC_ADDRESS,
     wethAddress: WETH_ADDRESS,
-    priceFeeds: PRICE_FEEDS
+    chainlinkPriceFeeds: CHAINLINK_FEEDS,
+    pythPriceIds: PYTH_PRICE_IDS
   } = chainConfig;
   
-  // Verify we're on Arbitrum fork
+  // Verify we're on correct fork
   const usdcCode = await publicClient.getCode({ address: USDC_ADDRESS });
   if (!usdcCode || usdcCode === '0x') {
-    throw new Error("USDC contract not found - ensure you're on Arbitrum fork");
+    throw new Error(`USDC contract not found - ensure you're on ${chainConfig.name} fork`);
   }
-
-  // Use price feeds from config.json
-  const CHAINLINK_FEEDS = {
-    USDC_USD: PRICE_FEEDS.USDC, // USDC/USD
-    ETH_USD: PRICE_FEEDS.WETH   // ETH/USD
-  };
 
   console.log("📊 Setting up price feeds...");
   
@@ -63,21 +61,43 @@ async function main() {
   const strategyCompound = await viem.getContractAt("StrategyCompoundComet", contracts.StrategyCompoundComet);
   const strategyCoordinator = await viem.getContractAt("StrategyCoordinator", contracts.StrategyCoordinator);
   
-  // Configure USDC price feed (6 decimals)
+  // Configure Chainlink price feeds
   await priceFeedManager.write.setPriceFeed([
     USDC_ADDRESS,
-    CHAINLINK_FEEDS.USDC_USD,
+    CHAINLINK_FEEDS.USDC,
     6
   ]);
   
-  // Configure WETH price feed (18 decimals)
   await priceFeedManager.write.setPriceFeed([
     WETH_ADDRESS,
-    CHAINLINK_FEEDS.ETH_USD,
+    CHAINLINK_FEEDS.WETH,
     18
   ]);
   
-  console.log("✅ Price feeds configured");
+  console.log("✅ Chainlink price feeds configured");
+
+  // Configure Pyth price IDs (fallback)
+  if (PYTH_PRICE_IDS.USDC && PYTH_PRICE_IDS.USDC !== "") {
+    await priceFeedManager.write.setPythPriceId([
+      USDC_ADDRESS,
+      PYTH_PRICE_IDS.USDC
+    ]);
+    console.log("✅ Pyth USDC price ID configured");
+  } else {
+    console.log("⚠️  Pyth USDC price ID not configured - fallback unavailable");
+  }
+
+  if (PYTH_PRICE_IDS.WETH && PYTH_PRICE_IDS.WETH !== "") {
+    await priceFeedManager.write.setPythPriceId([
+      WETH_ADDRESS,
+      PYTH_PRICE_IDS.WETH
+    ]);
+    console.log("✅ Pyth WETH price ID configured");
+  } else {
+    console.log("⚠️  Pyth WETH price ID not configured - fallback unavailable");
+  }
+  
+  console.log("✅ Price feeds fully configured");
 
   console.log("\n🔗 Setting up contract relationships...");
   
@@ -184,7 +204,7 @@ async function main() {
     WETH: WETH_ADDRESS
   };
   
-  updateFrontendAddresses(deployedAddresses);
+  updateFrontendAddresses(deployedAddresses, chainId);
   
   console.log("\n✅ Configuration complete!");
 }

@@ -1,6 +1,8 @@
 {
   "CHAIN_CONFIG": {
     "31337": {
+      "name": "Arbitrum Fork",
+      "pythContract": "0xff1a0f4744e8582DF1aE09D5611b887B6a12925C",
       "aavePoolV3": "0x794a61358D6845594F94dc1DB02A252b5b4814aD",
       "compoundMarketUSDC": "0x9c4ec768c28520B50860ea7a15bd7213a9fF58bf",
       "compoundMarketWETH": "0x6f7D514bbD4aFf3BcD1140B7344b32f063dEe486",
@@ -8,9 +10,32 @@
       "wethAddress": "0x82aF49447D8a07e3bd95BD0d56f35241523fBab1",
       "usdcWhale": "0x47c031236e19d024b42f8AE6780E44A573170703",
       "wethWhale": "0x489ee077994B6658eAfA855C308275EAd8097C4A",
-      "priceFeeds": {
+      "chainlinkPriceFeeds": {
         "USDC": "0x50834F3163758fcC1Df9973b6e91f0F0F0434aD3",
         "WETH": "0x639Fe6ab55C921f74e7fac1ee960C0B6293ba612"
+      },
+      "pythPriceIds": {
+        "USDC": "0xeaa020c61cc479712813461ce153894a96a6c00b21ed0cfc2798d1f9a9e9c94a",
+        "WETH": "0xff61491a931112ddf1bd8147cd1b641375f79f5825126d665480874634fd0ace"
+      }
+    },
+    "31338": {
+      "name": "Ethereum Fork",
+      "pythContract": "0x4305FB66699C3B2702D4d05CF36551390A4c69C6",
+      "aavePoolV3": "0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2",
+      "compoundMarketUSDC": "0xc3d688B66703497DAA19211EEdff47f25384cdc3",
+      "compoundMarketWETH": "0xA17581A9E3356d9A858b789D68B4d866e593aE94",
+      "usdcAddress": "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
+      "wethAddress": "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2",
+      "usdcWhale": "0x37305B1cD40574E4C5Ce33f8e8306Be057fD7341",
+      "wethWhale": "0xF04a5cC80B1E94C69B48f5ee68a08CD2F09A7c3E",
+      "chainlinkPriceFeeds": {
+        "USDC": "0x8fFfFfd4AfB6115b954Bd326cbe7B4BA576818f6",
+        "WETH": "0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419"
+      },
+      "pythPriceIds": {
+        "USDC": "0xeaa020c61cc479712813461ce153894a96a6c00b21ed0cfc2798d1f9a9e9c94a",
+        "WETH": "0xff61491a931112ddf1bd8147cd1b641375f79f5825126d665480874634fd0ace"
       }
     }
   }

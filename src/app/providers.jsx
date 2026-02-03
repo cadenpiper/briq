@@ -17,20 +17,16 @@ import {
     injectedWallet,
     safeWallet,
 } from "@rainbow-me/rainbowkit/wallets"
-import { WagmiProvider } from "wagmi";
-import {
-    mainnet,
-    arbitrum,
-} from "wagmi/chains";
+import { WagmiProvider, createConfig, http } from "wagmi";
 import {
     QueryClientProvider,
     QueryClient,
 } from "@tanstack/react-query";
 
-// Define localhost chain with proper configuration
-const localhost = {
+// Define localhost chains for forked networks
+const localhostArbitrum = {
   id: 31337,
-  name: 'Localhost',
+  name: 'Arbitrum Fork',
   nativeCurrency: {
     decimals: 18,
     name: 'Ether',
@@ -41,6 +37,23 @@ const localhost = {
       http: ['http://127.0.0.1:8545'],
     },
   },
+  testnet: true,
+};
+
+const localhostEthereum = {
+  id: 31338,
+  name: 'Ethereum Fork',
+  nativeCurrency: {
+    decimals: 18,
+    name: 'Ether',
+    symbol: 'ETH',
+  },
+  rpcUrls: {
+    default: {
+      http: ['http://127.0.0.1:8546'],
+    },
+  },
+  testnet: true,
 };
 
 const queryClient = new QueryClient();
@@ -62,12 +75,14 @@ const connectors = connectorsForWallets(
     }
 );
 
-const config = getDefaultConfig({
-    appName: "Briq",
-    projectId: process.env.NEXT_PUBLIC_PROJECT_ID,
-    chains: [mainnet, arbitrum, localhost],
-    ssr: true,
+const config = createConfig({
+    chains: [localhostArbitrum, localhostEthereum],
+    transports: {
+        [localhostArbitrum.id]: http('http://127.0.0.1:8545'),
+        [localhostEthereum.id]: http('http://127.0.0.1:8546'),
+    },
     connectors,
+    ssr: true,
 })
 
 const Providers = ({ children }) => {

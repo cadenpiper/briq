@@ -53,7 +53,7 @@ contract PriceFeedManager is Ownable {
     IPyth public immutable pythContract;
 
     /// @notice Maximum age for Chainlink price data (1 hour)
-    uint256 public constant CHAINLINK_STALENESS_THRESHOLD = 1 hours;
+    uint256 public constant CHAINLINK_STALENESS_THRESHOLD = 24 hours;
     
     /// @notice Maximum age for Pyth price data (20 seconds)  
     uint256 public constant PYTH_STALENESS_THRESHOLD = 20 seconds;

@@ -1,20 +1,21 @@
 import { useAccount, useReadContracts } from 'wagmi';
-import { FORK_ADDRESSES } from '../utils/forkAddresses';
+import { getContractAddresses } from '../utils/forkAddresses';
 import ERC20_ABI from '../abis/ERC20.json';
 
 export function useTokenBalances() {
-  const { address, isConnected } = useAccount();
+  const { address, isConnected, chainId } = useAccount();
+  const CONTRACTS = getContractAddresses(chainId);
 
   const { data, isLoading } = useReadContracts({
     contracts: [
       {
-        address: FORK_ADDRESSES.USDC,
+        address: CONTRACTS.USDC,
         abi: ERC20_ABI,
         functionName: 'balanceOf',
         args: [address],
       },
       {
-        address: FORK_ADDRESSES.WETH,
+        address: CONTRACTS.WETH,
         abi: ERC20_ABI,
         functionName: 'balanceOf',
         args: [address],

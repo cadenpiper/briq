@@ -1,12 +1,7 @@
 import { useState, useEffect } from 'react';
-import { createPublicClient, http, formatUnits } from 'viem';
-import { localhost } from 'viem/chains';
-
-// Create public client for direct contract calls
-const publicClient = createPublicClient({
-  chain: localhost,
-  transport: http('http://localhost:8545')
-});
+import { formatUnits } from 'viem';
+import { useAccount } from 'wagmi';
+import { getPublicClient } from '../utils/publicClients';
 
 /**
  * Custom hook for getting Aave strategy rewards analytics
@@ -16,6 +11,7 @@ const publicClient = createPublicClient({
  * @param {Array} priceFeedAbi - PriceFeedManager contract ABI
  */
 export function useAaveRewardsAnalytics({ contracts, strategyAaveAbi, priceFeedAbi }) {
+  const { chainId } = useAccount();
   const [rewardsData, setRewardsData] = useState({
     totalRewards: 0,
     totalRewardsUSD: 0,
@@ -25,6 +21,7 @@ export function useAaveRewardsAnalytics({ contracts, strategyAaveAbi, priceFeedA
   });
 
   const fetchRewardsData = async () => {
+    const publicClient = getPublicClient(chainId || 31337);
     // Check if contracts object exists and has required properties
     if (!contracts || !contracts.STRATEGY_AAVE || !strategyAaveAbi) {
       console.log('Missing contracts or ABI for Aave rewards:', { contracts, hasAbi: !!strategyAaveAbi });

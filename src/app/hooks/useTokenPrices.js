@@ -1,15 +1,13 @@
 import { useState, useEffect } from 'react';
-import { createPublicClient, http, formatUnits } from 'viem';
-import { localhost } from 'viem/chains';
+import { formatUnits } from 'viem';
+import { useAccount } from 'wagmi';
 import { getContractAddresses } from '../utils/forkAddresses';
+import { getPublicClient } from '../utils/publicClients';
 import PriceFeedManagerArtifact from '../abis/PriceFeedManager.json';
 
-const publicClient = createPublicClient({
-  chain: localhost,
-  transport: http('http://localhost:8545')
-});
-
 export function useTokenPrices() {
+  const { chainId } = useAccount();
+  
   const [prices, setPrices] = useState({
     wethPrice: 0,
     usdcPrice: 0,
@@ -18,7 +16,10 @@ export function useTokenPrices() {
 
   useEffect(() => {
     const fetchPrices = async () => {
-      const CONTRACTS = getContractAddresses();
+      if (!chainId) return;
+      
+      const publicClient = getPublicClient(chainId);
+      const CONTRACTS = getContractAddresses(chainId);
       
       try {
         // Get both WETH and USDC prices (Chainlink returns 8 decimals)
@@ -54,7 +55,7 @@ export function useTokenPrices() {
     fetchPrices();
     const interval = setInterval(fetchPrices, 30000);
     return () => clearInterval(interval);
-  }, []);
+  }, [chainId]);
 
   return prices;
 }

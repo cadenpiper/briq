@@ -67,15 +67,41 @@ npx hardhat keystore list
 ## Usage
 
 ### Start Local Fork
-```bash
-# Start Hardhat node with Arbitrum fork
-npm run node
 
-# In another terminal, deploy and configure
-npm run setup-fork
+**Arbitrum Fork:**
+```bash
+# Terminal 1: Start Arbitrum fork
+npm run node:arbitrum
+
+# Terminal 2: Deploy and configure
+npm run setup:arbitrum
 ```
 
-The `setup-fork` command runs:
+**Ethereum Fork:**
+```bash
+# Terminal 1: Start Ethereum fork
+npm run node:ethereum
+
+# Terminal 2: Deploy and configure
+npm run setup:ethereum
+```
+
+**Running Both Forks Simultaneously:**
+```bash
+# Terminal 1: Arbitrum fork (port 8545)
+npm run node:arbitrum
+
+# Terminal 2: Ethereum fork (port 8546)
+npm run node:ethereum
+
+# Terminal 3: Setup Arbitrum
+npm run setup:arbitrum
+
+# Terminal 4: Setup Ethereum
+npm run setup:ethereum
+```
+
+The setup commands run:
 1. `deploy` - Deploy all contracts
 2. `configure` - Configure strategies and price feeds
 3. `fund` - Fund test accounts with USDC/WETH

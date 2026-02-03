@@ -1,12 +1,6 @@
 import { useState, useEffect } from 'react';
-import { createPublicClient, http } from 'viem';
-import { localhost } from 'viem/chains';
-
-// Create public client for direct contract calls (no wallet needed)
-const publicClient = createPublicClient({
-  chain: localhost,
-  transport: http('http://localhost:8545')
-});
+import { useAccount } from 'wagmi';
+import { getPublicClient } from '../utils/publicClients';
 
 /**
  * Custom hook for reading contract data without wallet connection
@@ -24,6 +18,8 @@ export function usePublicContract({
   refetchInterval = 0,
   enabled = true
 }) {
+  const { chainId } = useAccount();
+  const publicClient = getPublicClient(chainId);
   const [data, setData] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);

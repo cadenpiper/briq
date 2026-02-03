@@ -3,7 +3,7 @@ import fs from 'fs';
 import { formatEther } from 'viem';
 
 async function main() {
-  console.log("🚀 Deploying Briq Protocol with Chainlink Price Feeds\n");
+  console.log("🚀 Deploying Briq Protocol with Chainlink + Pyth Price Feeds\n");
   
   const { viem } = await network.connect();
   const publicClient = await viem.getPublicClient();
@@ -14,17 +14,24 @@ async function main() {
   console.log(`Deployer: ${deployer.account.address}`);
   console.log(`Chain ID: ${chainId}`);
   console.log(`Balance: ${formatEther(balance)} ETH\n`);
-  console.log("📄 Deploying contracts...");
 
-  // Arbitrum Pyth contract address
-  const PYTH_CONTRACT = "0xff1a0f4744e8582DF1aE09D5611b887B6a12925C";
+  // Load chain-specific configuration
+  const config = JSON.parse(fs.readFileSync('./config.json', 'utf8'));
+  const chainConfig = config.CHAIN_CONFIG[chainId.toString()];
+  
+  if (!chainConfig) {
+    throw new Error(`No configuration found for chain ID ${chainId}`);
+  }
+  
+  console.log(`Network: ${chainConfig.name}`);
+  console.log("📄 Deploying contracts...");
 
   // 1. Deploy BriqTimelock (governance timelock)
   const timelock = await viem.deployContract("BriqTimelock", [deployer.account.address]);
   console.log(`   BriqTimelock: ${timelock.address}`);
 
   // 2. Deploy PriceFeedManager (Chainlink + Pyth price feed integration)
-  const priceFeedManager = await viem.deployContract("PriceFeedManager", [timelock.address, PYTH_CONTRACT]);
+  const priceFeedManager = await viem.deployContract("PriceFeedManager", [timelock.address, chainConfig.pythContract]);
   console.log(`   PriceFeedManager: ${priceFeedManager.address}`);
   
   // Verify contract was deployed
@@ -77,8 +84,10 @@ async function main() {
     }
   };
   
-  fs.writeFileSync('./deployment.json', JSON.stringify(deploymentData, null, 2));
-  console.log("📝 Addresses saved to deployment.json");
+  // Save to chain-specific deployment file
+  const deploymentFile = `./deployment-${chainId}.json`;
+  fs.writeFileSync(deploymentFile, JSON.stringify(deploymentData, null, 2));
+  console.log(`📝 Addresses saved to ${deploymentFile}`);
   
   console.log("\n🔗 Key Features Deployed:");
   console.log("   • USD-normalized share distribution");

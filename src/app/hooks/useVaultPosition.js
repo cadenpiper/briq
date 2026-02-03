@@ -1,13 +1,13 @@
 import { useState, useEffect } from 'react';
-import { useAccount, usePublicClient } from 'wagmi';
+import { useAccount } from 'wagmi';
 import { formatUnits } from 'viem';
-import { FORK_ADDRESSES } from '../utils/forkAddresses';
+import { getContractAddresses } from '../utils/forkAddresses';
+import { getPublicClient } from '../utils/publicClients';
 import BriqSharesArtifact from '../abis/BriqShares.json';
 import BriqVaultArtifact from '../abis/BriqVault.json';
 
 export function useVaultPosition() {
-  const { address } = useAccount();
-  const publicClient = usePublicClient();
+  const { address, chainId } = useAccount();
   const [data, setData] = useState({
     shareBalance: 0n,
     totalSupply: 0n,
@@ -16,24 +16,27 @@ export function useVaultPosition() {
   });
 
   const fetchData = async () => {
-    if (!publicClient || !address) return;
+    if (!address || !chainId) return;
     
-    console.log('Fetching vault position...');
+    const publicClient = getPublicClient(chainId);
+    const CONTRACTS = getContractAddresses(chainId);
+    console.log('Fetching vault position for chain:', chainId);
+    console.log('Using addresses:', CONTRACTS);
     try {
       const [shareBalance, totalSupply, totalVaultValue] = await Promise.all([
         publicClient.readContract({
-          address: FORK_ADDRESSES.SHARES,
+          address: CONTRACTS.SHARES,
           abi: BriqSharesArtifact.abi,
           functionName: 'balanceOf',
           args: [address],
         }),
         publicClient.readContract({
-          address: FORK_ADDRESSES.SHARES,
+          address: CONTRACTS.SHARES,
           abi: BriqSharesArtifact.abi,
           functionName: 'totalSupply',
         }),
         publicClient.readContract({
-          address: FORK_ADDRESSES.VAULT,
+          address: CONTRACTS.VAULT,
           abi: BriqVaultArtifact.abi,
           functionName: 'getTotalVaultValueInUSD',
         }),
@@ -57,13 +60,15 @@ export function useVaultPosition() {
   };
 
   useEffect(() => {
-    if (!publicClient || !address) return;
+    if (!address || !chainId) return;
 
+    const publicClient = getPublicClient(chainId);
+    const CONTRACTS = getContractAddresses(chainId);
     fetchData();
 
     // Watch for Transfer events on the shares contract
     const unwatch = publicClient.watchContractEvent({
-      address: FORK_ADDRESSES.SHARES,
+      address: CONTRACTS.SHARES,
       abi: BriqSharesArtifact.abi,
       eventName: 'Transfer',
       onLogs: (logs) => {
@@ -79,7 +84,7 @@ export function useVaultPosition() {
     });
 
     return () => unwatch();
-  }, [publicClient, address]);
+  }, [address, chainId]);
 
   return {
     ...data,
